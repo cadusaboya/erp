@@ -20,6 +20,8 @@ const Sidebar: React.FC = () => {
     { name: "Eventos", href: "/dashboard", icon: <LayoutGrid size={20} /> },
     { name: "Clientes", href: "/clientes", icon: <User size={20} /> },
     { name: "Lançamentos", href: "/lancamentos", icon: <Menu size={20} /> },
+    { name: "Contas a Pagar", href: "/contas", icon: <Menu size={20} /> },
+    { name: "Contas a Receber", href: "/contas/receber", icon: <Menu size={20} /> },
   ];
 
   return (

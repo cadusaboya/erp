@@ -19,3 +19,37 @@ class PaymentOrder(models.Model):
 
     def __str__(self):
         return f"{self.type.capitalize()} - {self.person} ({self.date})"
+    
+class Bill(models.Model):
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('overdue', 'Overdue'),
+    ]
+
+    person = models.ForeignKey('clients.Client', on_delete=models.CASCADE, related_name="bills")
+    description = models.TextField()
+    date_due = models.DateField()
+    value = models.DecimalField(max_digits=10, decimal_places=2)
+    doc_number = models.CharField(max_length=50, blank=True, null=True, unique=True)
+    event = models.ForeignKey('events.Event', on_delete=models.SET_NULL, blank=True, null=True, related_name="bills")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='open')
+
+    def __str__(self):
+        return f"{self.person.name} - {self.value} - {self.status}"
+    
+class Income(models.Model):
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('received', 'Received'),
+    ]
+
+    person = models.ForeignKey('clients.Client', on_delete=models.CASCADE, related_name="incomes")
+    description = models.TextField()
+    date_due = models.DateField()
+    value = models.DecimalField(max_digits=10, decimal_places=2)
+    doc_number = models.CharField(max_length=50, blank=True, null=True, unique=True)
+    event = models.ForeignKey('events.Event', on_delete=models.SET_NULL, blank=True, null=True, related_name="incomes")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='open')
+
+    def __str__(self):
+        return f"{self.person.name} - {self.value} - {self.status}"

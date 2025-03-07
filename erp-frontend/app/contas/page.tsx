@@ -1,7 +1,6 @@
-"use client";
+"use client"
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
@@ -9,13 +8,15 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { Input } from "@/components/ui/input";
 import { Menu, LayoutGrid, User, PlusCircle } from "lucide-react";
 
-interface Event {
+interface Bill {
   id: number;
-  type: string;
-  client: number;
-  date: string;
-  total_value: string;
-  payment_form: string;
+  person: string;
+  description: string;
+  date_due: string;
+  value: string;
+  doc_number?: string;
+  event?: string | null;
+  status: "open" | "overdue";
 }
 
 const Sidebar: React.FC = () => {
@@ -32,29 +33,29 @@ const Sidebar: React.FC = () => {
       <h1 className="text-xl font-bold mb-6">ERP Dashboard</h1>
       <nav className="flex flex-col gap-3">
         {menuItems.map((item) => (
-          <Link key={item.name} href={item.href}>
+          <a key={item.name} href={item.href}>
             <div className="flex items-center gap-3 p-3 hover:bg-gray-800 rounded-lg cursor-pointer">
               {item.icon} <span>{item.name}</span>
             </div>
-          </Link>
+          </a>
         ))}
       </nav>
     </div>
   );
 };
 
-const TableComponent: React.FC<{ data: Event[]; title: string; onEventCreated: () => void }> = ({ data, title, onEventCreated }) => {
-  const { register, handleSubmit, reset } = useForm<Event>();
+const TableComponent: React.FC<{ data: Bill[]; title: string; onBillCreated: () => void }> = ({ data, title, onBillCreated }) => {
+  const { register, handleSubmit, reset } = useForm<Bill>();
   const [open, setOpen] = useState(false);
 
-  const onSubmit = async (formData: Event) => {
+  const onSubmit = async (formData: Bill) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch("http://127.0.0.1:8000/events/create/", {
+      const response = await fetch("http://127.0.0.1:8000/orders/bills/create/", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -64,14 +65,14 @@ const TableComponent: React.FC<{ data: Event[]; title: string; onEventCreated: (
       });
 
       if (!response.ok) {
-        throw new Error("Erro ao criar evento");
+        throw new Error("Erro ao criar conta");
       }
 
-      onEventCreated(); // Trigger a refetch after creation
+      onBillCreated(); // Trigger a refetch after creation
       setOpen(false);
       reset();
     } catch (error) {
-      console.error("Erro ao criar evento:", error);
+      console.error("Erro ao criar conta:", error);
     }
   };
 
@@ -82,19 +83,24 @@ const TableComponent: React.FC<{ data: Event[]; title: string; onEventCreated: (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button className="flex items-center gap-2">
-              <PlusCircle size={18} /> Novo Evento
+              <PlusCircle size={18} /> Nova Conta
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Novo Evento</DialogTitle>
+              <DialogTitle>Nova Conta</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-              <Input placeholder="Tipo" {...register("type", { required: true })} />
-              <Input type="number" placeholder="ID do Cliente" {...register("client", { required: true })} />
-              <Input type="date" {...register("date", { required: true })} />
-              <Input type="number" placeholder="Valor Total" {...register("total_value", { required: true })} />
-              <Input placeholder="Forma de Pagamento" {...register("payment_form", { required: true })} />
+              <Input placeholder="Pessoa (ID)" {...register("person", { required: true })} />
+              <Input placeholder="Descrição" {...register("description", { required: true })} />
+              <Input type="date" {...register("date_due", { required: true })} />
+              <Input type="number" placeholder="Valor" {...register("value", { required: true })} />
+              <Input placeholder="Número do Documento" {...register("doc_number")} />
+              <Input placeholder="Evento (opcional)" {...register("event")} />
+              <select {...register("status")} className="p-2 border rounded w-full">
+                <option value="open">Aberta</option>
+                <option value="overdue">Vencida</option>
+              </select>
               <DialogFooter>
                 <Button variant="outline" type="button" onClick={() => setOpen(false)}>Cancelar</Button>
                 <Button type="submit" className="ml-2">Salvar</Button>
@@ -107,25 +113,27 @@ const TableComponent: React.FC<{ data: Event[]; title: string; onEventCreated: (
         <TableHeader>
           <TableRow>
             <TableCell>ID</TableCell>
-            <TableCell>Tipo</TableCell>
-            <TableCell>Cliente</TableCell>
-            <TableCell>Data</TableCell>
-            <TableCell>Valor Total</TableCell>
-            <TableCell>Forma de Pagamento</TableCell>
-            <TableCell>Ações</TableCell>
+            <TableCell>Pessoa</TableCell>
+            <TableCell>Descrição</TableCell>
+            <TableCell>Data de Vencimento</TableCell>
+            <TableCell>Valor</TableCell>
+            <TableCell>Número do Documento</TableCell>
+            <TableCell>Evento</TableCell>
+            <TableCell>Status</TableCell>
           </TableRow>
         </TableHeader>
         <tbody>
-          {data.map((event) => (
-            <TableRow key={event.id}>
-              <TableCell>{event.id}</TableCell>
-              <TableCell>{event.type}</TableCell>
-              <TableCell>{event.client}</TableCell>
-              <TableCell>{event.date}</TableCell>
-              <TableCell>{event.total_value}</TableCell>
-              <TableCell>{event.payment_form}</TableCell>
-              <TableCell>
-                <Button variant="outline">Editar</Button>
+          {data.map((bill) => (
+            <TableRow key={bill.id}>
+              <TableCell>{bill.id}</TableCell>
+              <TableCell>{bill.person}</TableCell>
+              <TableCell>{bill.description}</TableCell>
+              <TableCell>{bill.date_due}</TableCell>
+              <TableCell>R$ {bill.value}</TableCell>
+              <TableCell>{bill.doc_number || "N/A"}</TableCell>
+              <TableCell>{bill.event || "N/A"}</TableCell>
+              <TableCell className={bill.status === "overdue" ? "text-red-500" : "text-green-500"}>
+                {bill.status.toUpperCase()}
               </TableCell>
             </TableRow>
           ))}
@@ -136,16 +144,16 @@ const TableComponent: React.FC<{ data: Event[]; title: string; onEventCreated: (
 };
 
 export default function Page() {
-  const [data, setData] = useState<Event[]>([]);
+  const [data, setData] = useState<Bill[]>([]);
 
-  const fetchEvents = async () => {
+  const fetchBills = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch("http://127.0.0.1:8000/events/", {
+      const response = await fetch("http://127.0.0.1:8000/orders/bills/", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -153,25 +161,25 @@ export default function Page() {
       });
 
       if (!response.ok) {
-        throw new Error("Erro ao buscar eventos");
+        throw new Error("Erro ao buscar contas");
       }
 
       const result = await response.json();
-      setData([...result.events]);
+      setData([...result.bills]);
     } catch (error) {
-      console.error("Erro ao buscar eventos:", error);
+      console.error("Erro ao buscar contas:", error);
     }
   };
 
   useEffect(() => {
-    fetchEvents();
+    fetchBills();
   }, []);
 
   return (
     <div className="flex">
       <Sidebar />
       <div className="flex-1 p-6">
-        <TableComponent data={data} title="Eventos" onEventCreated={fetchEvents} />
+        <TableComponent data={data} title="Contas a Pagar" onBillCreated={fetchBills} />
       </div>
     </div>
   );
