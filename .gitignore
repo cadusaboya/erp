@@ -1,0 +1,52 @@
+# ========================
+# General
+# ========================
+*.log
+*.env
+*.sqlite3
+.DS_Store
+.vscode/
+.idea/
+node_modules/
+venv/
+.env.local
+.env.development
+.env.production
+.env.test
+
+# ========================
+# Django
+# ========================
+__pycache__/
+db.sqlite3
+/media/
+/staticfiles/
+*.pyc
+*.pyo
+*.pyd
+celerybeat-schedule
+instance/
+migrations/*  # Exclude all migrations except __init__.py
+!migrations/__init__.py
+
+# ========================
+# Next.js
+# ========================
+.next/
+out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+.vercel/
+dist/
+.cache/
+
+# ========================
+# Git
+# ========================
+*.swp
+*.swo
+*.bak
+*.orig
