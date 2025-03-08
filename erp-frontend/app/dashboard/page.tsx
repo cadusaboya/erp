@@ -189,7 +189,7 @@ const TableComponent: React.FC<{ data: Event[]; title: string; onEventCreated: (
               <TableCell>{event.date}</TableCell>
               <TableCell>{event.event_name}</TableCell>
               <TableCell>{event.client_name}</TableCell>
-              <TableCell>{event.type}</TableCell>
+              <TableCell>{event.type.charAt(0).toUpperCase() + event.type.slice(1)}</TableCell>
               <TableCell>R$ {event.total_value}</TableCell>
               <TableCell>
               <Link href={`/dashboard/${event.id}`}>

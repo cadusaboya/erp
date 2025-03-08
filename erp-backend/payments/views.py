@@ -61,6 +61,26 @@ def list_bills(request):
     
     return Response({"message": "Contas recuperadas com sucesso", "bills": serializer.data}, status=status.HTTP_200_OK)
 
+@api_view(["PUT", "PATCH"])
+@permission_classes([IsAuthenticated])
+def update_bill(request, bill_id):
+    """
+    Update an existing bill. The user must own the bill.
+    Supports both full (PUT) and partial (PATCH) updates.
+    """
+    try:
+        bill = Bill.objects.get(id=bill_id, user=request.user)  # Ensure the bill belongs to the user
+    except Bill.DoesNotExist:
+        return Response({"message": "Conta não encontrada"}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = BillSerializer(bill, data=request.data, partial=True)  # Allow partial updates
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Conta atualizada com sucesso", "bill": serializer.data}, status=status.HTTP_200_OK)
+    
+    return Response({"message": "Erro ao atualizar conta", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def create_income(request):
