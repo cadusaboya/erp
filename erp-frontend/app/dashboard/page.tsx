@@ -12,24 +12,32 @@ import { Menu, LayoutGrid, User, PlusCircle } from "lucide-react";
 interface Event {
   id: number;
   type: string;
+  event_name: string;
   client: number;
+  client_name: string;
   date: string;
   total_value: string;
-  payment_form: string;
 }
+
+interface Client {
+  id: number;
+  name: string;
+}
+
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 const Sidebar: React.FC = () => {
   const menuItems = [
     { name: "Eventos", href: "/dashboard", icon: <LayoutGrid size={20} /> },
     { name: "Clientes", href: "/clientes", icon: <User size={20} /> },
-    { name: "Lançamentos", href: "/lancamentos", icon: <Menu size={20} /> },
+    { name: "Extrato", href: "/lancamentos", icon: <Menu size={20} /> },
     { name: "Contas a Pagar", href: "/contas", icon: <Menu size={20} /> },
     { name: "Contas a Receber", href: "/contas/receber", icon: <Menu size={20} /> },
   ];
 
   return (
     <div className="w-64 h-screen bg-gray-900 text-white p-4 flex flex-col">
-      <h1 className="text-xl font-bold mb-6">ERP Dashboard</h1>
+      <h1 className="text-xl font-bold mb-6">Sistema Financeiro</h1>
       <nav className="flex flex-col gap-3">
         {menuItems.map((item) => (
           <Link key={item.name} href={item.href}>
@@ -46,6 +54,37 @@ const Sidebar: React.FC = () => {
 const TableComponent: React.FC<{ data: Event[]; title: string; onEventCreated: () => void }> = ({ data, title, onEventCreated }) => {
   const { register, handleSubmit, reset } = useForm<Event>();
   const [open, setOpen] = useState(false);
+  const [clients, setClients] = useState<Client[]>([]);
+
+  // Fetch clients for dropdown
+  const fetchClients = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Token não encontrado");
+      }
+
+      const response = await fetch(`${API_BASE_URL}/clients/`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao buscar clientes");
+      }
+
+      const result = await response.json();
+      setClients(result.clients);
+    } catch (error) {
+      console.error("Erro ao buscar clientes:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
   const onSubmit = async (formData: Event) => {
     try {
@@ -54,7 +93,7 @@ const TableComponent: React.FC<{ data: Event[]; title: string; onEventCreated: (
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch("http://127.0.0.1:8000/events/create/", {
+      const response = await fetch(`${API_BASE_URL}/events/create/`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -90,11 +129,41 @@ const TableComponent: React.FC<{ data: Event[]; title: string; onEventCreated: (
               <DialogTitle>Novo Evento</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-              <Input placeholder="Tipo" {...register("type", { required: true })} />
-              <Input type="number" placeholder="ID do Cliente" {...register("client", { required: true })} />
+              
+              {/* Event Name */}
+              <Input placeholder="Nome do Evento" {...register("event_name", { required: true })} />
+
+              {/* Event Type Dropdown */}
+              <select {...register("type", { required: true })} className="p-2 border rounded w-full">
+                <option value="">Selecione um Tipo</option>
+                <option value="15 anos">15 Anos</option>
+                <option value="empresarial">Empresarial</option>
+                <option value="aniversário">Aniversário</option>
+                <option value="batizado">Batizado</option>
+                <option value="bodas">Bodas</option>
+                <option value="casamento">Casamento</option>
+                <option value="chá">Chá</option>
+                <option value="formatura">Formatura</option>
+                <option value="outros">Outros</option>
+
+              </select>
+
+              {/* Client Dropdown - Fetch from API */}
+              <select {...register("client", { required: true })} className="p-2 border rounded w-full">
+                <option value="">Selecione um Cliente</option>
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Date */}
               <Input type="date" {...register("date", { required: true })} />
+
+              {/* Total Value */}
               <Input type="number" placeholder="Valor Total" {...register("total_value", { required: true })} />
-              <Input placeholder="Forma de Pagamento" {...register("payment_form", { required: true })} />
+
               <DialogFooter>
                 <Button variant="outline" type="button" onClick={() => setOpen(false)}>Cancelar</Button>
                 <Button type="submit" className="ml-2">Salvar</Button>
@@ -106,26 +175,26 @@ const TableComponent: React.FC<{ data: Event[]; title: string; onEventCreated: (
       <Table>
         <TableHeader>
           <TableRow>
-            <TableCell>ID</TableCell>
-            <TableCell>Tipo</TableCell>
-            <TableCell>Cliente</TableCell>
             <TableCell>Data</TableCell>
+            <TableCell>Nome</TableCell>
+            <TableCell>Cliente</TableCell> 
+            <TableCell>Tipo</TableCell>
             <TableCell>Valor Total</TableCell>
-            <TableCell>Forma de Pagamento</TableCell>
             <TableCell>Ações</TableCell>
           </TableRow>
         </TableHeader>
         <tbody>
           {data.map((event) => (
             <TableRow key={event.id}>
-              <TableCell>{event.id}</TableCell>
-              <TableCell>{event.type}</TableCell>
-              <TableCell>{event.client}</TableCell>
               <TableCell>{event.date}</TableCell>
-              <TableCell>{event.total_value}</TableCell>
-              <TableCell>{event.payment_form}</TableCell>
+              <TableCell>{event.event_name}</TableCell>
+              <TableCell>{event.client_name}</TableCell>
+              <TableCell>{event.type}</TableCell>
+              <TableCell>R$ {event.total_value}</TableCell>
               <TableCell>
-                <Button variant="outline">Editar</Button>
+              <Link href={`/dashboard/${event.id}`}>
+                <Button variant="outline">Ver Mais</Button>
+              </Link>
               </TableCell>
             </TableRow>
           ))}
@@ -145,7 +214,7 @@ export default function Page() {
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch("http://127.0.0.1:8000/events/", {
+      const response = await fetch(`${API_BASE_URL}/events/`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -157,7 +226,7 @@ export default function Page() {
       }
 
       const result = await response.json();
-      setData([...result.events]);
+      setData(result.events);
     } catch (error) {
       console.error("Erro ao buscar eventos:", error);
     }

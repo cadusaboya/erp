@@ -26,12 +26,12 @@ def create_payment_order(request):
 @permission_classes([IsAuthenticated])
 def list_payment_orders(request):
     """
-    List payment orders belonging to the logged-in user.
+    List payment orders belonging to the logged-in user in descending order (most recent first).
     """
-    orders = PaymentOrder.objects.filter(user=request.user)
+    orders = PaymentOrder.objects.filter(user=request.user).order_by("-date")  # Order by date descending
     serializer = PaymentOrderSerializer(orders, many=True)
     
-    return Response({"message": "Ordens de pagamento recuperadas com sucesso", "orders": serializer.data}, status=status.HTTP_200_OK)
+    return Response({"message": "Ordens de pagamento recuperadas com sucesso", "orders": serializer.data}, status=200)
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -40,7 +40,8 @@ def create_bill(request):
     Create a new bill linked to the specified person.
     """
     data = request.data.copy()
-    
+    data["user"] = request.user.id  # Link order to logged-in user
+
     serializer = BillSerializer(data=data)
     if serializer.is_valid():
         serializer.save()
@@ -55,7 +56,7 @@ def list_bills(request):
     """
     List all bills.
     """
-    bills = Bill.objects.all()
+    bills = Bill.objects.filter(user=request.user).order_by("date_due")  # Order by date ascending
     serializer = BillSerializer(bills, many=True)
     
     return Response({"message": "Contas recuperadas com sucesso", "bills": serializer.data}, status=status.HTTP_200_OK)
@@ -67,7 +68,8 @@ def create_income(request):
     Create a new income entry.
     """
     data = request.data.copy()
-    
+    data["user"] = request.user.id  # Link order to logged-in user
+
     serializer = IncomeSerializer(data=data)
     if serializer.is_valid():
         serializer.save()
@@ -82,7 +84,7 @@ def list_incomes(request):
     """
     List all incomes.
     """
-    incomes = Income.objects.all()
+    incomes = Income.objects.filter(user=request.user).order_by("date_due")
     serializer = IncomeSerializer(incomes, many=True)
     
     return Response({"message": "Recebimentos recuperados com sucesso", "incomes": serializer.data}, status=status.HTTP_200_OK)

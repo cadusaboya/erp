@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "events",
     "payments",
     "clients",
+    'django_celery_beat',
     "rest_framework",
     "rest_framework_simplejwt",
 ]

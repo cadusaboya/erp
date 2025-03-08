@@ -4,7 +4,7 @@ from .models import PaymentOrder, Bill, Income
 class PaymentOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentOrder
-        fields = ["id", "type", "person", "description", "date", "doc_number", "value", "event"]
+        fields = '__all__'
 
 class BillSerializer(serializers.ModelSerializer):
     class Meta:
