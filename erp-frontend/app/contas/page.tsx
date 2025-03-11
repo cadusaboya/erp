@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { fetchBills } from "@/services/bills";
+import { fetchRecords } from "@/services/records"; // ✅ Import generalized fetch
 import Sidebar from "@/components/Sidebar";
 import TableComponent from "@/components/TableContas";
 
-interface Bill {
+interface FinanceRecord {
   id: number;
   person: string;
   description: string;
@@ -17,26 +17,27 @@ interface Bill {
 }
 
 export default function Page() {
-  const [data, setBills] = useState<Bill[]>([]);
+  const [data, setData] = useState<FinanceRecord[]>([]);
 
-  const loadBills = async () => {
-    const data = await fetchBills();
-    setBills(data);
+  const loadRecords = async () => {
+    const fetchedData = await fetchRecords("bill"); // ✅ Uses generic fetchRecords
+    setData(fetchedData);
   };
 
-  const handleBillCreated = async () => {
-    await loadBills(); // Fetch the updated list from the API
-  };
-  
   useEffect(() => {
-    loadBills();
+    loadRecords();
   }, []);
 
   return (
     <div className="flex">
       <Sidebar />
       <div className="flex-1 p-6">
-        <TableComponent data={data} title="Contas a Pagar" onBillCreated={handleBillCreated} />
+        <TableComponent 
+          title="Contas a Pagar" 
+          data={data} 
+          type="bill" 
+          onRecordUpdated={loadRecords} // ✅ Uses generic loadRecords
+        />
       </div>
     </div>
   );

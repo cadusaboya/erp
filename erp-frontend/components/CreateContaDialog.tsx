@@ -5,10 +5,10 @@ import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { createBill } from "@/services/bills";
+import { createRecord } from "@/services/records";
 import { fetchEvents } from "@/services/events";
 
-interface Bill {
+interface Conta {
   id?: number;
   person: string;
   description: string;
@@ -24,43 +24,48 @@ interface Event {
   event_name: string;
 }
 
-interface CreateBillDialogProps {
+interface CreateContaDialogProps {
   open: boolean;
   onClose: () => void;
-  onBillCreated: () => void;
+  onRecordCreated: () => void;
+  type: "bill" | "income"; // Type to differentiate
 }
 
-const CreateBillDialog: React.FC<CreateBillDialogProps> = ({ open, onClose, onBillCreated }) => {
-  const { register, handleSubmit, reset } = useForm<Bill>();
+const CreateContaDialog: React.FC<CreateContaDialogProps> = ({ open, onClose, onRecordCreated, type }) => {
+  const { register, handleSubmit, reset } = useForm<Conta>();
   const [events, setEvents] = useState<Event[]>([]);
   const [eventsLoaded, setEventsLoaded] = useState(false);
 
-  // ✅ Fetch events only when the dialog is opened
-    useEffect(() => {
-        const loadEvents = async () => {
-        if (open && !eventsLoaded) {
-            const eventsData = await fetchEvents();
-            setEvents(eventsData);
-            setEventsLoaded(true);
-        }
-        };
-        loadEvents();
-    }, [open, eventsLoaded]);
+  // ✅ Fetch events only when the dialog opens
+  useEffect(() => {
+    const loadEvents = async () => {
+      if (open && !eventsLoaded) {
+        const eventsData = await fetchEvents();
+        setEvents(eventsData);
+        setEventsLoaded(true);
+      }
+    };
+    loadEvents();
+  }, [open, eventsLoaded]);
 
-  const onSubmit = async (formData: Bill) => {
-    const success = await createBill(formData);
+  const onSubmit = async (formData: Conta) => {
+    const success = await createRecord(type, formData); // Dynamically calls for "bill" or "income"
+  
     if (success) {
-      onBillCreated(); // Refresh table
+      onRecordCreated(); // Refresh table
       reset();
       onClose(); // Close dialog
     }
   };
+  
 
-  return (  
+  return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nova Conta</DialogTitle>
+          <DialogTitle>
+            {type === "bill" ? "Nova Conta a Pagar" : "Novo Recebimento"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <Input placeholder="Pessoa (Nome)" {...register("person", { required: true })} />
@@ -71,7 +76,9 @@ const CreateBillDialog: React.FC<CreateBillDialogProps> = ({ open, onClose, onBi
           <select {...register("event")} className="p-2 border rounded w-full">
             <option value="">Sem Evento</option>
             {events.map((event) => (
-              <option key={event.id} value={event.id}>{event.event_name}</option>
+              <option key={event.id} value={event.id}>
+                {event.event_name}
+              </option>
             ))}
           </select>
           <select {...register("status")} className="p-2 border rounded w-full">
@@ -79,8 +86,12 @@ const CreateBillDialog: React.FC<CreateBillDialogProps> = ({ open, onClose, onBi
             <option value="pago">Pago</option>
           </select>
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" className="ml-2">Salvar</Button>
+            <Button variant="outline" type="button" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" className="ml-2">
+              Salvar
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -88,4 +99,4 @@ const CreateBillDialog: React.FC<CreateBillDialogProps> = ({ open, onClose, onBi
   );
 };
 
-export default CreateBillDialog;
+export default CreateContaDialog;

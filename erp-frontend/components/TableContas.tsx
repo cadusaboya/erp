@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
-import CreateBillDialog from "@/components/CreateBillDialog";
-import { PlusCircle } from "lucide-react";
+import EditContaDialog from "@/components/EditContaDialog"
 import Filters from "@/components/FiltersDialog";
-import EditBillDialog from "@/components/EditBillDialog";
+import CreateContaDialog from "@/components/CreateContaDialog"
+import { PlusCircle } from "lucide-react";
 
-interface Bill {
+interface FinanceRecord {
   id: number;
   person: string;
   description: string;
@@ -17,7 +17,7 @@ interface Bill {
   doc_number?: string;
   event?: string | null;
   status: "em aberto" | "pago" | "vencido";
-}   
+}
 
 type FiltersType = {
   startDate: string;
@@ -29,21 +29,29 @@ type FiltersType = {
   maxValue: string;
 };
 
-const TableComponent: React.FC<{ data: Bill[]; title: string; onBillCreated: () => void }> = ({ data, title, onBillCreated }) => {
-  const [open, setOpen] = useState(false);
+interface TableComponentProps {
+  data: FinanceRecord[];
+  title: string;
+  type: "bill" | "income"; // Determines if it's for Bills or Incomes
+  onRecordUpdated: () => void;
+}
+
+const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRecordUpdated }) => {
+  const [createOpen, setCreateOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<FinanceRecord | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<FiltersType>({
-      startDate: "",
-      endDate: "",
-      person: "",
-      description: "",
-      status: ["em aberto", "vencido", "pago"],
-      minValue: "",
-      maxValue: ""
-    });
+    startDate: "",
+    endDate: "",
+    person: "",
+    description: "",
+    status: ["em aberto", "vencido", "pago"],
+    minValue: "",
+    maxValue: "",
+  });
+
   const itemsPerPage = 13;
 
   useEffect(() => {
@@ -56,7 +64,6 @@ const TableComponent: React.FC<{ data: Bill[]; title: string; onBillCreated: () 
     setCurrentPage(1);
   };
 
-
   const clearFilters = () => {
     setFilters({
       startDate: "",
@@ -65,29 +72,29 @@ const TableComponent: React.FC<{ data: Bill[]; title: string; onBillCreated: () 
       description: "",
       status: ["em aberto", "vencido", "pago"],
       minValue: "",
-      maxValue: ""
+      maxValue: "",
     });
     localStorage.removeItem("savedFilters");
   };
-  
-  const filteredData = data.filter((bill) => {
+
+  const filteredData = data.filter((record) => {
     return (
-      (!filters.startDate || new Date(bill.date_due) >= new Date(filters.startDate)) &&
-      (!filters.endDate || new Date(bill.date_due) <= new Date(filters.endDate)) &&
-      (!filters.person || bill.person.toLowerCase().includes(filters.person.toLowerCase())) &&
-      (!filters.description || bill.description.toLowerCase().includes(filters.description.toLowerCase())) &&
-      (filters.status.length === 0 || filters.status.includes(bill.status)) &&  // <-- Ensure this condition is added
-      (!filters.minValue || parseFloat(bill.value) >= parseFloat(filters.minValue)) &&
-      (!filters.maxValue || parseFloat(bill.value) <= parseFloat(filters.maxValue))
+      (!filters.startDate || new Date(record.date_due) >= new Date(filters.startDate)) &&
+      (!filters.endDate || new Date(record.date_due) <= new Date(filters.endDate)) &&
+      (!filters.person || record.person.toLowerCase().includes(filters.person.toLowerCase())) &&
+      (!filters.description || record.description.toLowerCase().includes(filters.description.toLowerCase())) &&
+      (filters.status.length === 0 || filters.status.includes(record.status)) &&
+      (!filters.minValue || parseFloat(record.value) >= parseFloat(filters.minValue)) &&
+      (!filters.maxValue || parseFloat(record.value) <= parseFloat(filters.maxValue))
     );
   });
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const handleEditClick = (bill: Bill) => {
-    setSelectedBill(bill); // Set the selected bill to edit
-    setEditOpen(true); // Open the dialog
+  const handleEditClick = (record: FinanceRecord) => {
+    setSelectedRecord(record);
+    setEditOpen(true);
   };
 
   return (
@@ -96,30 +103,37 @@ const TableComponent: React.FC<{ data: Bill[]; title: string; onBillCreated: () 
         <h2 className="text-xl font-semibold">{title}</h2>
         <div className="flex gap-4">
           <Button onClick={() => setFiltersOpen(true)}>Filtros Avançados</Button>
-          <Button onClick={() => setOpen(true)} className="flex items-center gap-2">
-            <PlusCircle size={18} /> Nova Conta
+          <Button onClick={() => setCreateOpen(true)} className="flex items-center gap-2">
+            <PlusCircle size={18} /> {type === "bill" ? "Nova Conta" : "Novo Recebimento"}
           </Button>
         </div>
       </div>
 
-    {/* Dialogs */}
-      <Filters filters={filters} setFilters={setFilters} open={filtersOpen} onClose={() => setFiltersOpen(false)} applyFilters={applyFilters} clearFilters={clearFilters} />
+      {/* Dialogs */}
+      <Filters
+        filters={filters}
+        setFilters={setFilters}
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        applyFilters={applyFilters}
+        clearFilters={clearFilters}
+      />
 
-      <CreateBillDialog 
-        open={open} 
-        onClose={() => setOpen(false)} 
-        onBillCreated={onBillCreated} 
-        />
-
-        <EditBillDialog 
+      <EditContaDialog 
         open={editOpen} 
         onClose={() => setEditOpen(false)} 
-        onBillUpdated={onBillCreated} 
-        bill={selectedBill}
-        />
+        onRecordUpdated={onRecordUpdated} 
+        record={selectedRecord} 
+        type={type} // ✅ Dynamic for "bill" or "income"
+      />
 
+      <CreateContaDialog 
+        open={createOpen} 
+        onClose={() => setCreateOpen(false)} 
+        onRecordCreated={onRecordUpdated} 
+        type={type} 
+      />
 
-      
       {/* Table with Pagination */}
       <Table>
         <TableHeader>
@@ -130,31 +144,32 @@ const TableComponent: React.FC<{ data: Bill[]; title: string; onBillCreated: () 
             <TableCell>Número do Documento</TableCell>
             <TableCell>Status</TableCell>
             <TableCell>Valor</TableCell>
+            <TableCell>Ações</TableCell>
           </TableRow>
         </TableHeader>
         <tbody>
-          {paginatedData.map((bill) => (
-            <TableRow key={bill.id}>
-              <TableCell>{bill.date_due}</TableCell>
-              <TableCell>{bill.person}</TableCell>
-              <TableCell>{bill.description}</TableCell>
-              <TableCell>{bill.doc_number || "N/A"}</TableCell>
+          {paginatedData.map((record) => (
+            <TableRow key={record.id}>
+              <TableCell>{record.date_due}</TableCell>
+              <TableCell>{record.person}</TableCell>
+              <TableCell>{record.description}</TableCell>
+              <TableCell>{record.doc_number || "N/A"}</TableCell>
               <TableCell>
                 <span
                   className={`px-2 py-1 rounded-lg text-sm font-semibold ${
-                    bill.status === "vencido"
+                    record.status === "vencido"
                       ? "bg-red-100 text-red-600"
-                      : bill.status === "pago"
+                      : record.status === "pago"
                       ? "bg-green-100 text-green-600"
                       : "bg-yellow-100 text-yellow-600"
                   }`}
                 >
-                  {bill.status.charAt(0).toUpperCase() + bill.status.slice(1)}
+                  {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
                 </span>
               </TableCell>
-              <TableCell>R$ {bill.value}</TableCell>
+              <TableCell>R$ {record.value}</TableCell>
               <TableCell>
-                <Button variant="outline" onClick={() => handleEditClick(bill)}>Editar</Button>
+                <Button variant="outline" onClick={() => handleEditClick(record)}>Editar</Button>
               </TableCell>
             </TableRow>
           ))}
