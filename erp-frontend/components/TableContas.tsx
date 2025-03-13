@@ -117,7 +117,10 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
         onClose={() => setFiltersOpen(false)}
         applyFilters={applyFilters}
         clearFilters={clearFilters}
+        filterOptions={["pago", "em aberto", "vencido"]} // Order options
+        filterKey="status" // Tells the component to use 'type'
       />
+
 
       <EditContaDialog 
         open={editOpen} 
