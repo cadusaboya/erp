@@ -21,6 +21,26 @@ def create_payment_order(request):
     
     return Response({"message": "Erro ao criar ordem de pagamento", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(["PUT", "PATCH"])
+@permission_classes([IsAuthenticated])
+def update_order(request, order_id):
+    """
+    Update an existing order (either 'despesa' or 'receita').
+    The user must own the order.
+    Supports both full (PUT) and partial (PATCH) updates.
+    """
+    try:
+        order = PaymentOrder.objects.get(id=order_id, user=request.user)  # Ensure the order belongs to the user
+    except PaymentOrder.DoesNotExist:
+        return Response({"message": "Ordem não encontrada"}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = PaymentOrderSerializer(order, data=request.data, partial=True)  # Allow partial updates
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Ordem atualizada com sucesso", "order": serializer.data}, status=status.HTTP_200_OK)
+    
+    return Response({"message": "Erro ao atualizar ordem", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

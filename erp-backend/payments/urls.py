@@ -1,9 +1,10 @@
 from django.urls import path
-from .views import create_payment_order, list_payment_orders, list_bills, create_bill, create_income, list_incomes, update_bill, update_income
+from .views import create_payment_order, list_payment_orders, list_bills, create_bill, create_income, list_incomes, update_bill, update_income, update_order
 
 urlpatterns = [
     path("", list_payment_orders, name="list-payment-orders"),
     path("create/", create_payment_order, name="create-payment-order"),
+    path("update/<int:order_id>/", update_order, name="update_order"),
     path("bills/", list_bills, name="list-bills"),
     path("bills/create/", create_bill, name="create-bill"),
     path("bills/<int:bill_id>/", update_bill, name="update_bill"),

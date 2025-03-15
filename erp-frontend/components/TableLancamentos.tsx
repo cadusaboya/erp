@@ -5,18 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { PlusCircle } from "lucide-react";
 import CreateLancamentoDialog from "@/components/CreateLancamentoDialog";
+import EditOrderDialog from "./EditOrderDialog";
 import Filters from "./FiltersDialog";
 
 interface Order {
-    id: number;
-    type: string;
-    person: string;
-    description: string;
-    date: string;
-    doc_number: string;
-    value: string;
-    event?: string | null;
-  }
+  id: number;
+  type: string;
+  person: string;
+  description: string;
+  date: string;
+  doc_number: string;
+  value: string;
+  event?: string | null;
+}
   
   type FiltersType = {
     type: string[];
@@ -38,6 +39,8 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
     const [createOpen, setCreateOpen] = useState(false);
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [editOpen, setEditOpen] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [filters, setFilters] = useState<FiltersType>({
         startDate: "",
         endDate: "",
@@ -87,6 +90,11 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
     
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
     const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    const handleEditClick = (order: Order) => {
+      setSelectedOrder(order);
+      setEditOpen(true);
+    };
   
     return (
       <div className="p-6 bg-white shadow-lg rounded-lg">
@@ -119,6 +127,14 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
         onClose={() => setCreateOpen(false)} 
         onOrderCreated={onOrderUpdated} 
       />
+
+        <EditOrderDialog
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          onOrderUpdated={onOrderUpdated} // Function to refresh data
+          order={selectedOrder} // Order object
+        />
+
   
         <Table>
           <TableHeader>
@@ -142,7 +158,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
                 <TableCell>{order.doc_number}</TableCell>
                 <TableCell> R$ {order.value}</TableCell>
                 <TableCell>
-                  <Button variant="outline">Editar</Button>
+                  <Button variant="outline" onClick={() => handleEditClick(order)}>Editar</Button>
                 </TableCell>
               </TableRow>
             ))}
