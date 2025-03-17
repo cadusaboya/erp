@@ -21,6 +21,25 @@ def create_client(request):
     
     return Response({"message": "Erro ao criar cliente", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(["PUT", "PATCH"])
+@permission_classes([IsAuthenticated])
+def update_client(request, client_id):
+    """
+    Update an existing client.
+    Supports both full (PUT) and partial (PATCH) updates.
+    """
+    try:
+        client = Client.objects.get(id=client_id, user=request.user)
+    except Client.DoesNotExist:
+        return Response({"message": "Cliente não encontrado"}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = ClientSerializer(client, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Cliente atualizado com sucesso", "client": serializer.data}, status=status.HTTP_200_OK)
+    
+    return Response({"message": "Erro ao atualizar cliente", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

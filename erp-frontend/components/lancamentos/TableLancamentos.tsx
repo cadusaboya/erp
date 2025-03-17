@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { PlusCircle } from "lucide-react";
-import CreateLancamentoDialog from "@/components/CreateLancamentoDialog";
+import CreateLancamentoDialog from "@/components/lancamentos/CreateLancamentoDialog";
 import EditOrderDialog from "./EditOrderDialog";
-import Filters from "./FiltersDialog";
+import Filters from "@/components/FiltersDialog";
 
 interface Order {
   id: number;

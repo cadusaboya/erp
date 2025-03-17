@@ -46,6 +46,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
         setEventsLoaded(true);
       }
     };
+    
     loadEvents();
   }, [open, eventsLoaded]);
 

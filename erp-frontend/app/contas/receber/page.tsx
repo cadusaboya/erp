@@ -1,13 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Menu, LayoutGrid, User, PlusCircle } from "lucide-react";
-import TableComponent from "@/components/TableContas";
+import TableComponent from "@/components/contas/TableContas";
 import Sidebar from "@/components/Sidebar";
 
 

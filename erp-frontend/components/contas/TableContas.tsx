@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
-import EditContaDialog from "@/components/EditContaDialog"
+import EditContaDialog from "@/components/contas/EditContaDialog"
 import Filters from "@/components/FiltersDialog";
-import CreateContaDialog from "@/components/CreateContaDialog"
+import CreateContaDialog from "@/components/contas/CreateContaDialog"
 import { PlusCircle } from "lucide-react";
 
 interface FinanceRecord {

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { fetchRecords } from "@/services/records"; // ✅ Import generalized fetch
 import Sidebar from "@/components/Sidebar";
-import TableComponent from "@/components/TableContas";
+import TableComponent from "@/components/contas/TableContas";
 
 interface FinanceRecord {
   id: number;
