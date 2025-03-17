@@ -186,6 +186,25 @@ def create_event(request):
     
     return Response({"message": "Erro ao criar evento", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(["PUT", "PATCH"])
+@permission_classes([IsAuthenticated])
+def update_event(request, event_id):
+    """
+    Update an existing client.
+    Supports both full (PUT) and partial (PATCH) updates.
+    """
+    try:
+        event = Event.objects.get(id=event_id, user=request.user)
+    except Event.DoesNotExist:
+        return Response({"message": "Evento não encontrado"}, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = EventSerializer(event, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response({"message": "Evento atualizado com sucesso", "event": serializer.data}, status=status.HTTP_200_OK)
+    
+    return Response({"message": "Erro ao atualizar evento", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

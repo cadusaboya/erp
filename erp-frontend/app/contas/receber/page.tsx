@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import TableComponent from "@/components/contas/TableContas";
 import Sidebar from "@/components/Sidebar";
+import { fetchRecords } from "@/services/records";
 
 
-interface Income {
+interface FinanceRecord {
   id: number;
   person: string;
   description: string;
@@ -16,55 +17,17 @@ interface Income {
   status: "em aberto" | "pago" | "vencido";
 }
 
-type FiltersType = {
-  startDate: string;
-  endDate: string;
-  person: string;
-  description: string;
-  status: string[];
-  minValue: string;
-  maxValue: string;
-};
-
-interface Event {
-  id: number;
-  event_name: string;
-}
-
-const API_BASE_URL = "http://127.0.0.1:8000";
-
 export default function Page() {
-  const [data, setData] = useState<Income[]>([]);
+  const [data, setData] = useState<FinanceRecord[]>([]);
 
-  const fetchIncomes = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("Token não encontrado");
-      }
-
-      const response = await fetch(`${API_BASE_URL}/orders/incomes/`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Erro ao buscar recebimentos");
-      }
-
-      const result = await response.json();
-      setData(result.incomes);
-    } catch (error) {
-      console.error("Erro ao buscar recebimentos:", error);
-    }
+  const loadRecords = async () => {
+    const fetchedData = await fetchRecords("income"); // ✅ Uses generic fetchRecords
+    setData(fetchedData);
   };
 
   useEffect(() => {
-    fetchIncomes();
+    loadRecords();
   }, []);
-
   return (
     <div className="flex">
       <Sidebar />
@@ -73,7 +36,7 @@ export default function Page() {
           title="Contas a Pagar" 
           data={data} 
           type="income" 
-          onRecordUpdated={fetchIncomes} // ✅ Passes the function reference
+          onRecordUpdated={loadRecords} // ✅ Passes the function reference
         />
       </div>
     </div>
