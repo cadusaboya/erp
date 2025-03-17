@@ -1,23 +1,24 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import status  # type: ignore
+from rest_framework import generics, status, viewsets  # type: ignore
 from reportlab.lib.pagesizes import landscape, A4
 from reportlab.pdfgen import canvas
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from .models import Event
 from .serializers import EventSerializer
-from payments.models import Bill, Income, PaymentOrder
-from payments.serializers import BillSerializer, IncomeSerializer, PaymentOrderSerializer
+
+from payments.models import Bill, Income, Entry
+from payments.serializers import BillSerializer, IncomeSerializer, EntrySerializer
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def generate_event_pdf(request, event_id):
     event = get_object_or_404(Event, id=event_id, user=request.user)
 
-    expenses = PaymentOrder.objects.filter(event=event, type="Despesa")
-    incomes = PaymentOrder.objects.filter(event=event, type="Receita")
+    expenses = Entry.objects.filter(event=event, type="Despesa")
+    incomes = Entry.objects.filter(event=event, type="Receita")
 
     total_receitas = sum(order.value for order in incomes)
     total_despesas = sum(bill.value for bill in expenses)
@@ -132,87 +133,53 @@ def generate_event_pdf(request, event_id):
     pdf.save()
     return response
 
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def get_event_details(request, event_id):
-    """
-    Retrieve event details along with related financial summaries.
-    """
-    event = get_object_or_404(Event, id=event_id, user=request.user)
-    
-    # Serialize the event
-    event_data = EventSerializer(event).data
+class EventDetailView(generics.RetrieveAPIView):
+    queryset = Event.objects.all()
+    serializer_class = EventSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
 
-    # Get all incomes (Receitas) from Payment Orders where type="income"
-    income_orders = PaymentOrder.objects.filter(event=event, type="Receita")
-    incomes_data = PaymentOrderSerializer(income_orders, many=True).data
-    total_incomes = sum(order.value for order in income_orders)  
+    def retrieve(self, request, *args, **kwargs):
+        # Retrieve the event instance
+        event = self.get_object()
 
-    # Get related payment orders (Ordens de Pagamento)
-    expense_orders = PaymentOrder.objects.filter(event=event, type="Despesa")
-    expenses_data = PaymentOrderSerializer(expense_orders, many=True).data
-    total_expenses = sum(order.value for order in expense_orders)  # Total Despesas
+        # Serialize the event
+        event_data = self.get_serializer(event).data
 
-    # Calculate financial summaries
-    saldo_evento = total_incomes - total_expenses # Saldo do Evento
-    valor_restante_pagar = event.total_value - total_incomes  # Valor restante a pagar
+        # Get all incomes (Receitas) from Entries where type="Receita"
+        income_entries = Entry.objects.filter(event=event, type="Receita")
+        incomes_data = EntrySerializer(income_entries, many=True).data
+        total_incomes = sum(entry.value for entry in income_entries)
 
-    return Response({
-        "event": event_data,
-        "bills": expenses_data,
-        "incomes": incomes_data,
-        "financial_summary": {
-            "total_receitas": total_incomes,
-            "total_despesas": total_expenses,
-            "saldo_evento": saldo_evento,
-            "valor_restante_pagar": valor_restante_pagar
-        }
-    }, status=200)
+        # Get all expenses (Despesas) from Entries where type="Despesa"
+        expense_entries = Entry.objects.filter(event=event, type="Despesa")
+        expenses_data = EntrySerializer(expense_entries, many=True).data
+        total_expenses = sum(entry.value for entry in expense_entries)
 
+        # Calculate financial summaries
+        saldo_evento = total_incomes - total_expenses  # Event balance
+        valor_restante_pagar = event.total_value - total_incomes  # Remaining amount to be paid
 
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def create_event(request):
-    """
-    Create a new event linked to the logged-in user.
-    """
-    data = request.data.copy()
-    data["user"] = request.user.id  # Link event to logged-in user
+        return Response({
+            "event": event_data,
+            "bills": expenses_data,
+            "incomes": incomes_data,
+            "financial_summary": {
+                "total_receitas": total_incomes,
+                "total_despesas": total_expenses,
+                "saldo_evento": saldo_evento,
+                "valor_restante_pagar": valor_restante_pagar
+            }
+        }, status=status.HTTP_200_OK)
 
-    serializer = EventSerializer(data=data)
-    if serializer.is_valid():
-        serializer.save(user=request.user)
-        return Response({"message": "Evento criado com sucesso", "event": serializer.data}, status=status.HTTP_201_CREATED)
-    
-    return Response({"message": "Erro ao criar evento", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+class EventViewSet(viewsets.ModelViewSet):
+    serializer_class = EventSerializer
+    permission_classes = [IsAuthenticated]
 
-@api_view(["PUT", "PATCH"])
-@permission_classes([IsAuthenticated])
-def update_event(request, event_id):
-    """
-    Update an existing client.
-    Supports both full (PUT) and partial (PATCH) updates.
-    """
-    try:
-        event = Event.objects.get(id=event_id, user=request.user)
-    except Event.DoesNotExist:
-        return Response({"message": "Evento não encontrado"}, status=status.HTTP_404_NOT_FOUND)
+    def get_queryset(self):
+        # Ensure only suppliers associated with the authenticated user are returned
+        return Event.objects.filter(user=self.request.user)
 
-    serializer = EventSerializer(event, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Evento atualizado com sucesso", "event": serializer.data}, status=status.HTTP_200_OK)
-    
-    return Response({"message": "Erro ao atualizar evento", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def list_events(request):
-    """
-    List events belonging to the logged-in user.
-    """
-    events = Event.objects.filter(user=request.user)
-    serializer = EventSerializer(events, many=True)
-    
-    return Response({"message": "Eventos recuperados com sucesso", "events": serializer.data}, status=status.HTTP_200_OK)
+    def perform_create(self, serializer):
+        # Associate the new supplier with the authenticated user
+        serializer.save(user=self.request.user)

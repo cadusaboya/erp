@@ -1,7 +1,16 @@
 from rest_framework import serializers
-from .models import Client
+from .models import Client, Supplier
 
 class ClientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Client
-        fields = ["id", "name", "telephone", "email", "address", "cpf_cnpj"]
+        fields = '__all__'
+        read_only_fields = ('user',)
+
+class SupplierSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Supplier
+        fields = '__all__'
+        read_only_fields = ('user',)
+
+

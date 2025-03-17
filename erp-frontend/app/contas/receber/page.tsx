@@ -28,6 +28,7 @@ export default function Page() {
   useEffect(() => {
     loadRecords();
   }, []);
+  
   return (
     <div className="flex">
       <Sidebar />

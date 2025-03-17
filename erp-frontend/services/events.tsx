@@ -15,7 +15,7 @@ export const fetchEvents = async () => {
     if (!response.ok) throw new Error("Erro ao buscar eventos");
 
     const result = await response.json();
-    return result.events; // Assuming the API returns { events: [...] }
+    return result; // Assuming the API returns { events: [...] }
   } catch (error) {
     console.error("Erro ao buscar eventos:", error);
     return [];
@@ -29,7 +29,7 @@ export const createEvent = async (eventData: any) => {
       throw new Error("Token not found");
     }
 
-    const response = await fetch(`${API_BASE_URL}/events/create/`, {
+    const response = await fetch(`${API_BASE_URL}/events/`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -56,7 +56,7 @@ export const updateEvent = async (eventId: number, updatedData: any) => {
       throw new Error("Token não encontrado");
     }
 
-    const response = await fetch(`${API_BASE_URL}/events/${eventId}/update/`, {
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,

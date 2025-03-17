@@ -7,7 +7,7 @@ export const fetchClients = async () => {
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch(`${API_BASE_URL}/clients/`, {
+      const response = await fetch(`${API_BASE_URL}/clients/clients/`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -19,7 +19,7 @@ export const fetchClients = async () => {
       }
 
       const result = await response.json();
-      return result.clients;
+      return result;
     } catch (error) {
       console.error("Erro ao buscar clientes:", error);
       return [];
@@ -33,7 +33,7 @@ export const updateClient = async (clientId: number, updatedData: any) => {
       throw new Error("Token não encontrado");
     }
 
-    const response = await fetch(`${API_BASE_URL}/clients/${clientId}/update/`, {
+    const response = await fetch(`${API_BASE_URL}/clients/clients/${clientId}/`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -60,7 +60,7 @@ export const createClient = async (clientData: any) => {
       throw new Error("Token não encontrado");
     }
 
-    const response = await fetch(`${API_BASE_URL}/clients/create/`, {
+    const response = await fetch(`${API_BASE_URL}/clients/clients/`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

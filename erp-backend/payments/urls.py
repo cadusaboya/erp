@@ -1,14 +1,12 @@
-from django.urls import path
-from .views import create_payment_order, list_payment_orders, list_bills, create_bill, create_income, list_incomes, update_bill, update_income, update_order
+from rest_framework.routers import DefaultRouter
+from .views import BillViewSet, IncomeViewSet, EntryViewSet
+from django.urls import path, include
+
+router = DefaultRouter()
+router.register(r'bills', BillViewSet, basename='bill')
+router.register(r'incomes', IncomeViewSet, basename='income')
+router.register(r'entries', EntryViewSet, basename='entry')
 
 urlpatterns = [
-    path("", list_payment_orders, name="list-payment-orders"),
-    path("create/", create_payment_order, name="create-payment-order"),
-    path("update/<int:order_id>/", update_order, name="update_order"),
-    path("bills/", list_bills, name="list-bills"),
-    path("bills/create/", create_bill, name="create-bill"),
-    path("bills/<int:bill_id>/", update_bill, name="update_bill"),
-    path("incomes/<int:income_id>/", update_income, name="update_income"),
-    path("incomes/create/", create_income, name="create_income"),
-    path("incomes/", list_incomes, name="list_incomes"),
+    path('', include(router.urls)),
 ]

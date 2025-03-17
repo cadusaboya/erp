@@ -21,6 +21,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),  # Include accounts app URLs
     path('events/', include('events.urls')),  # Inclu   de accounts app URLs
-    path('orders/', include('payments.urls')),  # Include accounts app URLs
+    path('payments/', include('payments.urls')),  # Include accounts app URLs
     path('clients/', include('clients.urls')),  # Include accounts app URLs
 ]

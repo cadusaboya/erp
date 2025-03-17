@@ -1,7 +1,7 @@
 from django.contrib import admin
-from .models import PaymentOrder, Bill
+from .models import Income, Bill
 
-admin.site.register(PaymentOrder)
+admin.site.register(Income)
 
 @admin.register(Bill)
 class BillAdmin(admin.ModelAdmin):

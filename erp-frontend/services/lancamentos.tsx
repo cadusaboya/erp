@@ -6,11 +6,34 @@ const getToken = () => {
   return token;
 };
 
+export const fetchOrders = async () => {
+  try {
+    const token = getToken();
+
+    const response = await fetch(`${API_BASE_URL}/payments/entries/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Erro ao buscar ordens de pagamento");
+    }
+
+    const result = await response.json();
+    return result; // Assuming the API returns { events: [...] }
+  } catch (error) {
+    console.error("Erro ao buscar ordens de pagamento:", error);
+    return [];
+  }
+};
+
 export const createOrder = async (formData: any) => {
   try {
     const token = getToken();
 
-    const response = await fetch(`${API_BASE_URL}/orders/create/`, {
+    const response = await fetch(`${API_BASE_URL}/payments/entries/`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -32,7 +55,7 @@ export const updateOrder = async (orderId: number, updatedData: any) => {
   try {
     const token = getToken();
 
-    const response = await fetch(`${API_BASE_URL}/orders/update/${orderId}/`, {
+    const response = await fetch(`${API_BASE_URL}/payments/entries/${orderId}/`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,

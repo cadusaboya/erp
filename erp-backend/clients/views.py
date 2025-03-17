@@ -1,53 +1,28 @@
-from rest_framework import status  # type: ignore
-from rest_framework.decorators import api_view, permission_classes  # type: ignore
-from rest_framework.response import Response  # type: ignore
-from rest_framework.permissions import IsAuthenticated  # type: ignore
-from .models import Client
-from .serializers import ClientSerializer
+from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated
+from .models import Client, Supplier
+from .serializers import ClientSerializer, SupplierSerializer
 
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def create_client(request):
-    """
-    Create a new client linked to the logged-in user.
-    """
-    data = request.data.copy()
-    data["user"] = request.user.id  # Link client to logged-in user
+class ClientViewSet(viewsets.ModelViewSet):
+    serializer_class = ClientSerializer
+    permission_classes = [IsAuthenticated]
 
-    serializer = ClientSerializer(data=data)
-    if serializer.is_valid():
-        serializer.save(user=request.user)
-        return Response({"message": "Cliente criado com sucesso", "client": serializer.data}, status=status.HTTP_201_CREATED)
-    
-    return Response({"message": "Erro ao criar cliente", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    def get_queryset(self):
+        # Ensure only suppliers associated with the authenticated user are returned
+        return Client.objects.filter(user=self.request.user)
 
-@api_view(["PUT", "PATCH"])
-@permission_classes([IsAuthenticated])
-def update_client(request, client_id):
-    """
-    Update an existing client.
-    Supports both full (PUT) and partial (PATCH) updates.
-    """
-    try:
-        client = Client.objects.get(id=client_id, user=request.user)
-    except Client.DoesNotExist:
-        return Response({"message": "Cliente não encontrado"}, status=status.HTTP_404_NOT_FOUND)
+    def perform_create(self, serializer):
+        # Associate the new supplier with the authenticated user
+        serializer.save(user=self.request.user)
 
-    serializer = ClientSerializer(client, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "Cliente atualizado com sucesso", "client": serializer.data}, status=status.HTTP_200_OK)
-    
-    return Response({"message": "Erro ao atualizar cliente", "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+class SupplierViewSet(viewsets.ModelViewSet):
+    serializer_class = SupplierSerializer
+    permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        # Ensure only suppliers associated with the authenticated user are returned
+        return Supplier.objects.filter(user=self.request.user)
 
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def list_clients(request):
-    """
-    List clients belonging to the logged-in user.
-    """
-    clients = Client.objects.filter(user=request.user)
-    serializer = ClientSerializer(clients, many=True)
-    
-    return Response({"message": "Clientes recuperados com sucesso", "clients": serializer.data}, status=status.HTTP_200_OK)
+    def perform_create(self, serializer):
+        # Associate the new supplier with the authenticated user
+        serializer.save(user=self.request.user)

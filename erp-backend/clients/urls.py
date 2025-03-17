@@ -1,8 +1,12 @@
-from django.urls import path
-from .views import create_client, list_clients, update_client
+from rest_framework.routers import DefaultRouter
+from .views import ClientViewSet, SupplierViewSet
+from django.urls import path, include
+
+router = DefaultRouter()
+router.register(r'clients', ClientViewSet, basename='client')
+router.register(r'suppliers', SupplierViewSet, basename='supplier')
 
 urlpatterns = [
-    path("", list_clients, name="list-clients"),
-    path("create/", create_client, name="create-client"),
-    path("<int:client_id>/update/", update_client, name="update_client"),
+    path('', include(router.urls)),
+    # Other URL patterns can be added here
 ]

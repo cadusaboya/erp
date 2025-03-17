@@ -11,7 +11,7 @@ export const fetchRecords = async (type: "bill" | "income") => {
   try {
     const token = getToken();
 
-    const response = await fetch(`${API_BASE_URL}/orders/${type}s/`, {
+    const response = await fetch(`${API_BASE_URL}/payments/${type}s/`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -21,7 +21,7 @@ export const fetchRecords = async (type: "bill" | "income") => {
     if (!response.ok) throw new Error(`Erro ao buscar ${type}s`);
 
     const result = await response.json();
-    return result[`${type}s`]; // bills or incomes
+    return result; // bills or incomes
   } catch (error) {
     console.error(`Erro ao buscar ${type}s:`, error);
     return [];
@@ -33,7 +33,7 @@ export const createRecord = async (type: "bill" | "income", formData: any) => {
   try {
     const token = getToken();
 
-    const response = await fetch(`${API_BASE_URL}/orders/${type}s/create/`, {
+    const response = await fetch(`${API_BASE_URL}/payments/${type}s/`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -56,7 +56,7 @@ export const updateRecord = async (type: "bill" | "income", recordId: number, up
   try {
     const token = getToken();
 
-    const response = await fetch(`${API_BASE_URL}/orders/${type}s/${recordId}/`, {
+    const response = await fetch(`${API_BASE_URL}/payments/${type}s/${recordId}/`, {
       method: "PUT", // Or "PATCH" if you only want to update specific fields
       headers: {
         Authorization: `Bearer ${token}`,

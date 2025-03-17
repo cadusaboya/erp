@@ -57,7 +57,7 @@ export default function EventDashboard({ params }: { params: { id: string } }) {
           throw new Error("Token não encontrado");
         }
 
-        const response = await fetch(`${API_BASE_URL}/events/${params.id}/`, {
+        const response = await fetch(`${API_BASE_URL}/events/view/${params.id}/`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
