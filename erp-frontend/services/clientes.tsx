@@ -1,81 +1,92 @@
 const API_BASE_URL = "http://127.0.0.1:8000";
 
-export const fetchClients = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("Token não encontrado");
-      }
+type ResourceType = "clients" | "suppliers";
 
-      const response = await fetch(`${API_BASE_URL}/clients/clients/`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+const getToken = () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("Token não encontrado");
+  }
+  return token;
+};
 
-      if (!response.ok) {
-        throw new Error("Erro ao buscar clientes");
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error("Erro ao buscar clientes:", error);
-      return [];
-    }
-  };
-
-export const updateClient = async (clientId: number, updatedData: any) => {
+export const fetchResources = async (resource: ResourceType) => {
   try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      throw new Error("Token não encontrado");
-    }
+    const token = getToken();
 
-    const response = await fetch(`${API_BASE_URL}/clients/clients/${clientId}/`, {
-      method: "PUT",
+    const response = await fetch(`${API_BASE_URL}/clients/${resource}/`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(updatedData),
     });
 
     if (!response.ok) {
-      throw new Error("Erro ao atualizar cliente");
+      throw new Error(`Erro ao buscar ${resource}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error(`Erro ao buscar ${resource}:`, error);
+    return [];
+  }
+};
+
+export const updateResource = async (
+  resource: ResourceType,
+  resourceId: number,
+  updatedData: any
+) => {
+  try {
+    const token = getToken();
+
+    const response = await fetch(
+      `${API_BASE_URL}/clients/${resource}/${resourceId}/`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedData),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Erro ao atualizar ${resource}`);
     }
 
     return true;
   } catch (error) {
-    console.error("Erro ao atualizar cliente:", error);
+    console.error(`Erro ao atualizar ${resource}:`, error);
     return false;
   }
 };
 
-export const createClient = async (clientData: any) => {
+export const createResource = async (
+  resource: ResourceType,
+  resourceData: any
+) => {
   try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      throw new Error("Token não encontrado");
-    }
+    const token = getToken();
 
-    const response = await fetch(`${API_BASE_URL}/clients/clients/`, {
+    const response = await fetch(`${API_BASE_URL}/clients/${resource}/`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(clientData),
+      body: JSON.stringify(resourceData),
     });
 
     if (!response.ok) {
-      throw new Error("Erro ao criar cliente");
+      throw new Error(`Erro ao criar ${resource}`);
     }
 
     return true;
   } catch (error) {
-    console.error("Erro ao criar cliente:", error);
+    console.error(`Erro ao criar ${resource}:`, error);
     return false;
   }
 };

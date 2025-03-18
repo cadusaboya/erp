@@ -4,6 +4,7 @@ const Sidebar: React.FC = () => {
   const menuItems = [
     { name: "Eventos", href: "/dashboard", icon: <LayoutGrid size={20} /> },
     { name: "Clientes", href: "/clientes", icon: <User size={20} /> },
+    { name: "Fornecedores", href: "/fornecedores", icon: <User size={20} /> },
     { name: "Extrato", href: "/lancamentos", icon: <Menu size={20} /> },
     { name: "Contas a Pagar", href: "/contas", icon: <Menu size={20} /> },
     { name: "Contas a Receber", href: "/contas/receber", icon: <Menu size={20} /> },

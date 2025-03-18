@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { fetchClients } from "@/services/clientes";
+import { fetchResources } from "@/services/clientes";
 import { createEvent } from "@/services/events";
 
 interface Event {
@@ -37,7 +37,7 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({ open, onClose, on
   useEffect(() => {
     const loadEvents = async () => {
       if (open && !clientsLoaded) {
-        const eventsData = await fetchClients();
+        const eventsData = await fetchResources("clients");
         setClients(eventsData);
         setClientsLoaded(true);
       }

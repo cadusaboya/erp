@@ -5,51 +5,60 @@ import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { updateClient } from "@/services/clientes"; // Ensure this service function is implemented]
+import { updateResource } from "@/services/clientes";
 
-interface Client {
-    id: number;
-    name: string;
-    email: string;
-    telephone: string;
-    address: string;
-    cpf_cnpj: string;
-  }  
+type ResourceType = "clients" | "suppliers";
 
-interface EditClientDialogProps {
-  open: boolean;
-  onClose: () => void;
-  onClientUpdated: () => void;
-  client: Client | null;
+interface Resource {
+  id: number;
+  name: string;
+  email: string;
+  telephone: string;
+  address: string;
+  cpf_cnpj: string;
 }
 
-const EditClientDialog: React.FC<EditClientDialogProps> = ({ open, onClose, onClientUpdated, client }) => {
-  const { register, handleSubmit, reset } = useForm<Client>();
+interface EditResourceDialogProps {
+  resourceType: ResourceType;
+  open: boolean;
+  onClose: () => void;
+  onResourceUpdated: () => void;
+  resource: Resource | null;
+}
 
-  // Prefill form with selected client data
+const EditResourceDialog: React.FC<EditResourceDialogProps> = ({
+  resourceType,
+  open,
+  onClose,
+  onResourceUpdated,
+  resource,
+}) => {
+  const { register, handleSubmit, reset } = useForm<Resource>();
+
   useEffect(() => {
-    if (client) {
-      reset(client);
+    if (resource) {
+      reset(resource);
     }
-  }, [client, reset]);
+  }, [resource, reset]);
 
-  // Handle form submission
-  const onSubmit = async (formData: Client) => {
-    if (!client?.id) return;
+  const onSubmit = async (formData: Resource) => {
+    if (!resource?.id) return;
 
-    const success = await updateClient(client.id, formData);
+    const success = await updateResource(resourceType, resource.id, formData);
     if (success) {
-      onClientUpdated(); // Refresh client list
+      onResourceUpdated();
       reset();
-      onClose(); // Close dialog
+      onClose();
     }
   };
+
+  const resourceLabel = resourceType === "clients" ? "Cliente" : "Fornecedor";
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Editar Cliente</DialogTitle>
+          <DialogTitle>Editar {resourceLabel}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <Input placeholder="Nome" {...register("name", { required: true })} />
@@ -67,4 +76,4 @@ const EditClientDialog: React.FC<EditClientDialogProps> = ({ open, onClose, onCl
   );
 };
 
-export default EditClientDialog;
+export default EditResourceDialog;

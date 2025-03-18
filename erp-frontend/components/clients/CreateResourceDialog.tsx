@@ -4,10 +4,12 @@ import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/services/clientes";
+import { createResource } from "@/services/clientes"; // assuming you're using the generalized service
 
-interface Client {
-  id: number;
+type ResourceType = "clients" | "suppliers";
+
+interface Resource {
+  id?: number;
   name: string;
   email: string;
   telephone: string;
@@ -15,30 +17,37 @@ interface Client {
   cpf_cnpj: string;
 }
 
-interface CreateClientDialogProps {
+interface CreateResourceDialogProps {
+  resourceType: ResourceType;
   open: boolean;
   onClose: () => void;
-  onClientCreated: () => void;
+  onResourceCreated: () => void;
 }
 
-const CreateClientDialog: React.FC<CreateClientDialogProps> = ({ open, onClose, onClientCreated }) => {
-  const { register, handleSubmit, reset } = useForm<Client>();
+const CreateResourceDialog: React.FC<CreateResourceDialogProps> = ({ 
+  resourceType, 
+  open, 
+  onClose, 
+  onResourceCreated 
+}) => {
+  const { register, handleSubmit, reset } = useForm<Resource>();
 
-  const onSubmit = async (formData: any) => {
-    const success = await createClient(formData); // Dynamically calls for "bill" or "income"
-  
+  const onSubmit = async (formData: Resource) => {
+    const success = await createResource(resourceType, formData);
     if (success) {
-      onClientCreated(); // Refresh table
+      onResourceCreated();
       reset();
-      onClose(); // Close dialog
+      onClose();
     }
   };
+
+  const resourceLabel = resourceType === "clients" ? "Cliente" : "Fornecedor";
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Novo Cliente</DialogTitle>
+          <DialogTitle>Novo {resourceLabel}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <Input placeholder="Nome" {...register("name", { required: true })} />
@@ -47,7 +56,7 @@ const CreateClientDialog: React.FC<CreateClientDialogProps> = ({ open, onClose, 
           <Input placeholder="Endereço" {...register("address", { required: true })} />
           <Input placeholder="CPF/CNPJ" {...register("cpf_cnpj", { required: true })} />
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={onClose} >
+            <Button variant="outline" type="button" onClick={onClose}>
               Cancelar
             </Button>
             <Button type="submit" className="ml-2">
@@ -60,4 +69,4 @@ const CreateClientDialog: React.FC<CreateClientDialogProps> = ({ open, onClose, 
   );
 };
 
-export default CreateClientDialog;
+export default CreateResourceDialog;
