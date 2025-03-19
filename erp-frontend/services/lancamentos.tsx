@@ -10,21 +10,19 @@ export const fetchOrders = async () => {
   try {
     const token = getToken();
 
-    const response = await fetch(`${API_BASE_URL}/payments/entries/`, {
+    const response = await fetch(`${API_BASE_URL}/payments/extract/`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
 
-    if (!response.ok) {
-      throw new Error("Erro ao buscar ordens de pagamento");
-    }
+    if (!response.ok) throw new Error("Erro ao buscar lançamentos");
 
     const result = await response.json();
-    return result; // Assuming the API returns { events: [...] }
+    return result.orders;
   } catch (error) {
-    console.error("Erro ao buscar ordens de pagamento:", error);
+    console.error("Erro ao buscar lançamentos:", error);
     return [];
   }
 };

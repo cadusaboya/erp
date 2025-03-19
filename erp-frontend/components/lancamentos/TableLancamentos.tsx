@@ -4,16 +4,16 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { PlusCircle } from "lucide-react";
-import CreateLancamentoDialog from "@/components/lancamentos/CreateLancamentoDialog";
-import EditOrderDialog from "./EditOrderDialog";
+
 import Filters from "@/components/FiltersDialog";
 
 interface Order {
   id: number;
   type: string;
-  person: string;
+  person: number;
+  person_name: string;
   description: string;
-  date: string;
+  date_due: string;
   doc_number: string;
   value: string;
   event?: string | null;
@@ -36,11 +36,8 @@ interface Order {
   }
 
 const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpdated }) => {
-    const [createOpen, setCreateOpen] = useState(false);
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const [editOpen, setEditOpen] = useState(false);
-    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [filters, setFilters] = useState<FiltersType>({
         startDate: "",
         endDate: "",
@@ -78,9 +75,9 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
       
       const filteredData = (data && data.length > 0) ? data.filter((order) => {
         return (
-          (!filters.startDate || new Date(order.date) >= new Date(filters.startDate)) &&
-          (!filters.endDate || new Date(order.date) <= new Date(filters.endDate)) &&
-          (!filters.person || order.person.toLowerCase().includes(filters.person.toLowerCase())) &&
+          (!filters.startDate || new Date(order.date_due) >= new Date(filters.startDate)) &&
+          (!filters.endDate || new Date(order.date_due) <= new Date(filters.endDate)) &&
+          (!filters.person || order.person_name.toLowerCase().includes(filters.person.toLowerCase())) &&
           (!filters.description || order.description.toLowerCase().includes(filters.description.toLowerCase())) &&
           (filters.type.length === 0 || filters.type.includes(order.type)) &&
           (!filters.minValue || parseFloat(order.value) >= parseFloat(filters.minValue)) &&
@@ -91,10 +88,6 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
     const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-    const handleEditClick = (order: Order) => {
-      setSelectedOrder(order);
-      setEditOpen(true);
-    };
   
     return (
       <div className="p-6 bg-white shadow-lg rounded-lg">
@@ -102,9 +95,6 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
           <h2 className="text-xl font-semibold">{title}</h2>
           <div className="flex gap-4">
             <Button onClick={() => setFiltersOpen(true)}>Filtros Avançados</Button>
-            <Button onClick={() => setCreateOpen(true)} className="flex items-center gap-2">
-              <PlusCircle size={18} /> Novo Lançamento
-            </Button>
           </div>
         </div>
   
@@ -119,22 +109,6 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
         filterOptions={["despesa", "receita"]} // Order options
         filterKey="type" // Tells the component to use 'type'
       />
-
-
-
-        <CreateLancamentoDialog 
-        open={createOpen} 
-        onClose={() => setCreateOpen(false)} 
-        onOrderCreated={onOrderUpdated} 
-      />
-
-        <EditOrderDialog
-          open={editOpen}
-          onClose={() => setEditOpen(false)}
-          onOrderUpdated={onOrderUpdated} // Function to refresh data
-          order={selectedOrder} // Order object
-        />
-
   
         <Table>
           <TableHeader>
@@ -152,14 +126,11 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
             {paginatedData.map((order) => (
               <TableRow key={order.id}>
                 <TableCell>{order.type}</TableCell>
-                <TableCell>{order.date}</TableCell>
-                <TableCell>{order.person}</TableCell>
+                <TableCell>{order.date_due}</TableCell>
+                <TableCell>{order.person_name}</TableCell>
                 <TableCell>{order.description}</TableCell>
                 <TableCell>{order.doc_number}</TableCell>
                 <TableCell> R$ {order.value}</TableCell>
-                <TableCell>
-                  <Button variant="outline" onClick={() => handleEditClick(order)}>Editar</Button>
-                </TableCell>
               </TableRow>
             ))}
           </tbody>

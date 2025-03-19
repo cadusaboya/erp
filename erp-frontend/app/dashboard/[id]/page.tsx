@@ -18,18 +18,20 @@ interface Event {
 interface Bill {
   id: number;
   description: string;
-  person: string;
+  person: number;
+  person_name: string;
   value: number;
-  date: string;
+  date_due: string;
   status: string;
 }
 
 interface Income {
   id: number;
   description: string;
-  person: string;
+  person: number;
+  person_name: string;
   value: number;
-  date: string;
+  date_due: string;
   status: string;
 }
 
@@ -176,8 +178,8 @@ export default function EventDashboard({ params }: { params: { id: string } }) {
               <tbody>
                 {incomes.map((income) => (
                   <TableRow key={income.id}>
-                    <TableCell>{income.date}</TableCell>
-                    <TableCell>{income.person}</TableCell>
+                    <TableCell>{income.date_due}</TableCell>
+                    <TableCell>{income.person_name}</TableCell>
                     <TableCell>{income.description}</TableCell>  
                     <TableCell className="text-green-500">R$ {Number(income.value).toFixed(2)}</TableCell>
                   </TableRow>
@@ -209,8 +211,8 @@ export default function EventDashboard({ params }: { params: { id: string } }) {
               <tbody>
                 {bills.map((bill) => (
                   <TableRow key={bill.id}>
-                    <TableCell>{bill.date}</TableCell>
-                    <TableCell>{bill.person}</TableCell>
+                    <TableCell>{bill.date_due}</TableCell>
+                    <TableCell>{bill.person_name}</TableCell>
                     <TableCell>{bill.description}</TableCell>  
                     <TableCell className="text-red-500">R$ {Number(bill.value).toFixed(2)}</TableCell>
                   </TableRow>

@@ -1,12 +1,6 @@
 from rest_framework import serializers
-from .models import Entry, Bill, Income
+from .models import Bill, Income
 from clients.models import Client, Supplier
-
-class EntrySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Entry
-        fields = '__all__'
-        read_only_fields = ('user',)
 
 # serializers.py
 class BillSerializer(serializers.ModelSerializer):
