@@ -11,8 +11,8 @@ import { updateRecord } from "@/services/records";
 
 interface Conta {
   id?: number;
-  person: string;
-  person_id: number;
+  person_name: string;
+  person: number; // used by the form
   description: string;
   date_due: string;
   value: string;
@@ -45,24 +45,27 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
   const [resources, setResources] = useState<Resource[]>([]);
 
   useEffect(() => {
-    if (open) {
-      const load = async () => {
+    const load = async () => {
+      if (open) {
         const [eventsData, resourcesData] = await Promise.all([
           fetchEvents(),
           fetchResources(type === "bill" ? "suppliers" : "clients")
         ]);
         setEvents(eventsData);
         setResources(resourcesData);
-      };
-      load();
-    }
-  }, [open, type]);
-
-  useEffect(() => {
-    if (record) {
-      reset(record);
-    }
-  }, [record, reset]);
+  
+        // ✅ Reset form AFTER resources are ready
+        if (record) {
+          const normalizedRecord = {
+            ...record,
+          };
+          reset(normalizedRecord);
+        }
+      }
+    };
+    load();
+  }, [open, type, record, reset]);
+  
 
   const onSubmit = async (formData: Conta) => {
     if (!record?.id) return;
@@ -81,7 +84,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
           <DialogTitle>{type === "bill" ? "Editar Conta a Pagar" : "Editar Recebimento"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <select {...register("person_id", { required: true })} className="p-2 border rounded w-full" defaultValue={record?.person_id || ""}>
+          <select {...register("person", { required: true })} className="p-2 border rounded w-full" defaultValue={record?.person || ""}>
             <option value="">Selecione {type === "bill" ? "um Fornecedor" : "um Cliente"}</option>
             {resources.map((res) => (
               <option key={res.id} value={res.id}>{res.name}</option>

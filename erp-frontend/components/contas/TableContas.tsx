@@ -10,8 +10,8 @@ import { PlusCircle } from "lucide-react";
 
 interface FinanceRecord {
   id: number;
-  person: string;
-  person_id: number;
+  person: number;
+  person_name: string;
   description: string;
   date_due: string;
   value: string;
@@ -82,7 +82,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
     return (
       (!filters.startDate || new Date(record.date_due) >= new Date(filters.startDate)) &&
       (!filters.endDate || new Date(record.date_due) <= new Date(filters.endDate)) &&
-      (!filters.person || record.person.toLowerCase().includes(filters.person.toLowerCase())) &&
+      (!filters.person || record.person_name.toLowerCase().includes(filters.person.toLowerCase())) &&
       (!filters.description || record.description.toLowerCase().includes(filters.description.toLowerCase())) &&
       (filters.status.length === 0 || filters.status.includes(record.status)) &&
       (!filters.minValue || parseFloat(record.value) >= parseFloat(filters.minValue)) &&
@@ -155,7 +155,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
           {paginatedData.map((record) => (
             <TableRow key={record.id}>
               <TableCell>{record.date_due}</TableCell>
-              <TableCell>{record.person}</TableCell>
+              <TableCell>{record.person_name}</TableCell>
               <TableCell>{record.description}</TableCell>
               <TableCell>{record.doc_number || "N/A"}</TableCell>
               <TableCell>

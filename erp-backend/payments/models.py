@@ -41,14 +41,14 @@ class Accrual(models.Model):
 
 
 class Income(Accrual):
-    client = models.ForeignKey('clients.Client', on_delete=models.CASCADE, related_name='incomes')
+    person = models.ForeignKey('clients.Client', on_delete=models.CASCADE, related_name='incomes')
 
     def __str__(self):
         return f"Receita de {self.client.name} - {self.value}"
 
 
 class Bill(Accrual):
-    supplier = models.ForeignKey('clients.Supplier', on_delete=models.CASCADE, related_name='bills')
+    person = models.ForeignKey('clients.Supplier', on_delete=models.CASCADE, related_name='bills')
 
     def __str__(self):
         return f"Conta de {self.supplier.name} - {self.value}"

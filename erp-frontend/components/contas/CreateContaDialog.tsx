@@ -10,7 +10,7 @@ import { fetchEvents } from "@/services/events";
 import { fetchResources } from "@/services/resources";
 
 interface Conta {
-  person_id: number;
+  person: number;
   description: string;
   date_due: string;
   value: string;
@@ -74,7 +74,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({ open, onClose, on
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           {/* Dynamic Resource Dropdown */}
-          <select {...register("person_id", { required: true })} className="p-2 border rounded w-full">
+          <select {...register("person", { required: true })} className="p-2 border rounded w-full">
             <option value="">
               Selecione {type === "bill" ? "um Fornecedor" : "um Cliente"}
             </option>

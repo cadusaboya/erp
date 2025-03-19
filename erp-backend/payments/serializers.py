@@ -10,20 +10,20 @@ class EntrySerializer(serializers.ModelSerializer):
 
 # serializers.py
 class BillSerializer(serializers.ModelSerializer):
-    person = serializers.CharField(source="supplier.name", read_only=True)
+    person_name = serializers.CharField(source="person.name", read_only=True)
 
     class Meta:
         model = Bill
         fields = '__all__'
-        read_only_fields = ('user', 'person')
+        read_only_fields = ('user', 'person_name')
 
 class IncomeSerializer(serializers.ModelSerializer):
-    person = serializers.CharField(source="client.name", read_only=True)
+    person_name = serializers.CharField(source="person.name", read_only=True)
 
     class Meta:
         model = Income
         fields = '__all__'
-        read_only_fields = ('user', 'person')
+        read_only_fields = ('user', 'person_name')
 
 
 
