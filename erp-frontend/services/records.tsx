@@ -6,32 +6,39 @@ const getToken = () => {
   return token;
 };
 
-// ✅ Fetch all records (bills or incomes)
+// 🟢 Util to map person_id to correct field
+const mapPersonId = (type: "bill" | "income", data: any) => {
+  const mapped = {
+    ...data,
+    [type === "bill" ? "supplier" : "client"]: data.person_id,
+  };
+  delete mapped.person_id;
+  return mapped;
+};
+
+// ✅ Fetch records (bills or incomes)
 export const fetchRecords = async (type: "bill" | "income") => {
   try {
     const token = getToken();
-
     const response = await fetch(`${API_BASE_URL}/payments/${type}s/`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
-
     if (!response.ok) throw new Error(`Erro ao buscar ${type}s`);
-
-    const result = await response.json();
-    return result; // bills or incomes
+    return await response.json();
   } catch (error) {
     console.error(`Erro ao buscar ${type}s:`, error);
     return [];
   }
 };
 
-// ✅ Create a new record (bill or income)
+// ✅ Create record (bill or income)
 export const createRecord = async (type: "bill" | "income", formData: any) => {
   try {
     const token = getToken();
+    const payload = mapPersonId(type, formData);
 
     const response = await fetch(`${API_BASE_URL}/payments/${type}s/`, {
       method: "POST",
@@ -39,11 +46,10 @@ export const createRecord = async (type: "bill" | "income", formData: any) => {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) throw new Error(`Erro ao criar ${type}`);
-
     return true;
   } catch (error) {
     console.error(`Erro ao criar ${type}:`, error);
@@ -51,22 +57,22 @@ export const createRecord = async (type: "bill" | "income", formData: any) => {
   }
 };
 
-// ✅ Update an existing record (bill or income)
+// ✅ Update record (bill or income)
 export const updateRecord = async (type: "bill" | "income", recordId: number, updatedData: any) => {
   try {
     const token = getToken();
+    const payload = mapPersonId(type, updatedData);
 
     const response = await fetch(`${API_BASE_URL}/payments/${type}s/${recordId}/`, {
-      method: "PUT", // Or "PATCH" if you only want to update specific fields
+      method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(updatedData),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) throw new Error(`Erro ao atualizar ${type}`);
-
     return true;
   } catch (error) {
     console.error(`Erro ao atualizar ${type}:`, error);

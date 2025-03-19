@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { fetchResources } from "@/services/clientes";
+import { fetchResources } from "@/services/resources";
 import { createEvent } from "@/services/events";
 
 interface Event {

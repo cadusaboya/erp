@@ -9,6 +9,7 @@ import { fetchRecords } from "@/services/records";
 interface FinanceRecord {
   id: number;
   person: string;
+  person_id: number;
   description: string;
   date_due: string;
   value: string;

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import TableResources from "@/components/clients/TableResources";
 import Sidebar from "@/components/Sidebar";
-import { fetchResources } from "@/services/clientes";
+import { fetchResources } from "@/services/resources";
 
 interface Supplier {
   id: number;

@@ -7,16 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { createRecord } from "@/services/records";
 import { fetchEvents } from "@/services/events";
+import { fetchResources } from "@/services/resources";
 
 interface Conta {
-  id?: number;
-  person: string;
+  person_id: number;
   description: string;
   date_due: string;
   value: string;
   doc_number?: string;
   event?: string | null;
-  status: "em aberto" | "pago" | "vencido";
+  status: "em aberto" | "pago";
 }
 
 interface Event {
@@ -24,40 +24,45 @@ interface Event {
   event_name: string;
 }
 
+interface Resource {
+  id: number;
+  name: string;
+}
+
 interface CreateContaDialogProps {
   open: boolean;
   onClose: () => void;
   onRecordCreated: () => void;
-  type: "bill" | "income"; // Type to differentiate
+  type: "bill" | "income"; // bill = supplier, income = client
 }
 
 const CreateContaDialog: React.FC<CreateContaDialogProps> = ({ open, onClose, onRecordCreated, type }) => {
   const { register, handleSubmit, reset } = useForm<Conta>();
   const [events, setEvents] = useState<Event[]>([]);
-  const [eventsLoaded, setEventsLoaded] = useState(false);
+  const [resources, setResources] = useState<Resource[]>([]);
 
-  // ✅ Fetch events only when the dialog opens
   useEffect(() => {
-    const loadEvents = async () => {
-      if (open && !eventsLoaded) {
-        const eventsData = await fetchEvents();
+    const loadData = async () => {
+      if (open) {
+        const [eventsData, resourceData] = await Promise.all([
+          fetchEvents(),
+          fetchResources(type === "bill" ? "suppliers" : "clients")
+        ]);
         setEvents(eventsData);
-        setEventsLoaded(true);
+        setResources(resourceData);
       }
     };
-    loadEvents();
-  }, [open, eventsLoaded]);
+    loadData();
+  }, [open, type]);
 
   const onSubmit = async (formData: Conta) => {
-    const success = await createRecord(type, formData); // Dynamically calls for "bill" or "income"
-  
+    const success = await createRecord(type, formData);
     if (success) {
-      onRecordCreated(); // Refresh table
+      onRecordCreated();
       reset();
-      onClose(); // Close dialog
+      onClose();
     }
   };
-  
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -68,30 +73,38 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({ open, onClose, on
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <Input placeholder="Pessoa (Nome)" {...register("person", { required: true })} />
+          {/* Dynamic Resource Dropdown */}
+          <select {...register("person_id", { required: true })} className="p-2 border rounded w-full">
+            <option value="">
+              Selecione {type === "bill" ? "um Fornecedor" : "um Cliente"}
+            </option>
+            {resources.map((r) => (
+              <option key={r.id} value={r.id}>{r.name}</option>
+            ))}
+          </select>
+
           <Input placeholder="Descrição" {...register("description", { required: true })} />
           <Input type="date" {...register("date_due", { required: true })} />
           <Input type="number" placeholder="Valor" {...register("value", { required: true })} />
           <Input placeholder="Número do Documento" {...register("doc_number")} />
+
+          {/* Events Dropdown */}
           <select {...register("event")} className="p-2 border rounded w-full">
             <option value="">Sem Evento</option>
             {events.map((event) => (
-              <option key={event.id} value={event.id}>
-                {event.event_name}
-              </option>
+              <option key={event.id} value={event.id}>{event.event_name}</option>
             ))}
           </select>
-          <select {...register("status")} className="p-2 border rounded w-full">
+
+          {/* Status */}
+          <select {...register("status")} className="p-2 border rounded w-full" defaultValue="em aberto">
             <option value="em aberto">Em Aberto</option>
             <option value="pago">Pago</option>
           </select>
+
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" className="ml-2">
-              Salvar
-            </Button>
+            <Button variant="outline" type="button" onClick={onClose}>Cancelar</Button>
+            <Button type="submit" className="ml-2">Salvar</Button>
           </DialogFooter>
         </form>
       </DialogContent>

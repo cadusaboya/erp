@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { updateResource } from "@/services/clientes";
+import { updateResource } from "@/services/resources";
 
 type ResourceType = "clients" | "suppliers";
 

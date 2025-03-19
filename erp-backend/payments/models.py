@@ -23,13 +23,12 @@ class Entry(models.Model):
     
 class Accrual(models.Model):
     STATUS_CHOICES = [
-        ('em aberto', 'Em Aberto'),  # DB stores 'em aberto', UI displays 'Em Aberto'
+        ('em aberto', 'Em Aberto'),
         ('pago', 'Pago'),
         ('vencido', 'Vencido')
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    person = models.CharField(max_length=255)
     description = models.TextField()
     date_due = models.DateField()
     value = models.DecimalField(max_digits=10, decimal_places=2)
@@ -40,13 +39,17 @@ class Accrual(models.Model):
     class Meta:
         abstract = True
 
-    def __str__(self):
-        return self.name
-    
+
 class Income(Accrual):
-    # Additional fields or methods specific to clients
-    pass
+    client = models.ForeignKey('clients.Client', on_delete=models.CASCADE, related_name='incomes')
+
+    def __str__(self):
+        return f"Receita de {self.client.name} - {self.value}"
+
 
 class Bill(Accrual):
-    # Additional fields or methods specific to suppliers
-    pass
+    supplier = models.ForeignKey('clients.Supplier', on_delete=models.CASCADE, related_name='bills')
+
+    def __str__(self):
+        return f"Conta de {self.supplier.name} - {self.value}"
+

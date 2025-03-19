@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { createResource } from "@/services/clientes"; // assuming you're using the generalized service
+import { createResource } from "@/services/resources"; // assuming you're using the generalized service
 
 type ResourceType = "clients" | "suppliers";
 
