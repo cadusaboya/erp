@@ -106,7 +106,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
         onClose={() => setFiltersOpen(false)}
         applyFilters={applyFilters}
         clearFilters={clearFilters}
-        filterOptions={["despesa", "receita"]} // Order options
+        filterOptions={["Despesa", "Receita"]} // Order options
         filterKey="type" // Tells the component to use 'type'
       />
   
