@@ -4,23 +4,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-
-type FiltersType = {
-  event_name: string;
-  client: string;
-  type: string[];
-  startDate: string;
-  endDate: string;
-  minValue: string;
-  maxValue: string;
-};
+import { FiltersEventType } from "@/types/types";
 
 interface FiltersEventsDialogProps {
-  filters: FiltersType;
-  setFilters: (filters: FiltersType) => void;
+  filters: FiltersEventType;
+  setFilters: (filters: FiltersEventType) => void;
   open: boolean;
   onClose: () => void;
-  applyFilters: (filters: FiltersType) => void;
+  applyFilters: (filters: FiltersEventType) => void;
   clearFilters: () => void;
 }
 

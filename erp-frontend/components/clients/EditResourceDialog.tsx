@@ -6,17 +6,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { updateResource } from "@/services/resources";
+import { Resource } from "@/types/types";
 
 type ResourceType = "clients" | "suppliers";
-
-interface Resource {
-  id: number;
-  name: string;
-  email: string;
-  telephone: string;
-  address: string;
-  cpf_cnpj: string;
-}
 
 interface EditResourceDialogProps {
   resourceType: ResourceType;

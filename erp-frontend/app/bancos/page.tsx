@@ -4,12 +4,7 @@ import { useEffect, useState } from "react";
 import TableBanks from "@/components/banks/TableBanks";
 import { fetchBanks } from "@/services/banks";
 import Sidebar from "@/components/Sidebar"
-
-interface Bank {
-  id: number;
-  name: string;
-  balance: string;
-}
+import { Bank } from "@/types/types"
 
 export default function BanksPage() {
   const [banks, setBanks] = useState<Bank[]>([]);

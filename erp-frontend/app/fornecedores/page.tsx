@@ -4,18 +4,10 @@ import { useState, useEffect } from "react";
 import TableResources from "@/components/clients/TableResources";
 import Sidebar from "@/components/Sidebar";
 import { fetchResources } from "@/services/resources";
-
-interface Supplier {
-  id: number;
-  name: string;
-  email: string;
-  telephone: string;
-  address: string;
-  cpf_cnpj: string;
-}
+import { Resource } from "@/types/types";
 
 export default function SuppliersPage() {
-  const [data, setData] = useState<Supplier[]>([]);
+  const [data, setData] = useState<Resource[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   const loadSuppliers = async () => {

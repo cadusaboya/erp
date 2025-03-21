@@ -4,16 +4,7 @@ import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import TableComponent from "@/components/events/tableEvents";
 import { fetchEvents } from "@/services/events";
-
-interface Event {
-  id: number;
-  type: string;
-  event_name: string;
-  client: number;
-  client_name: string;
-  date: string;
-  total_value: string;
-}
+import { Event } from "@/types/types"
 
 export default function Page() {
   const [data, setData] = useState<Event[]>([]);

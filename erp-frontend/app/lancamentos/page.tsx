@@ -4,21 +4,10 @@ import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import TableComponent from "@/components/lancamentos/TableLancamentos";
 import { fetchOrders } from "@/services/lancamentos";
-
-interface Order {
-  id: number;
-  type: string;
-  person: string;
-  description: string;
-  date: string;
-  doc_number: string;
-  value: string;
-  event?: string | null;
-}
-
+import { FinanceRecord } from "@/types/types";
 
 export default function Page() {
-  const [data, setData] = useState<Order[]>([]);
+  const [data, setData] = useState<FinanceRecord[]>([]);
 
   const loadOrders = async () => {
     const ordersData = await fetchOrders();

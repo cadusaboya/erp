@@ -3,20 +3,14 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-
-interface ClientFilters {
-  name: string;
-  cpf_cnpj: string;
-  email: string;
-  telephone: string;
-}
+import { FiltersClientType } from "@/types/types";
 
 interface FiltersDialogClientProps {
-  filters: ClientFilters;
-  setFilters: (filters: ClientFilters) => void;
+  filters: FiltersClientType;
+  setFilters: (filters: FiltersClientType) => void;
   open: boolean;
   onClose: () => void;
-  applyFilters: (filters: ClientFilters) => void;
+  applyFilters: (filters: FiltersClientType) => void;
   clearFilters: () => void;
 }
 

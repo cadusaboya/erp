@@ -6,23 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { fetchEvents } from "@/services/events";
 import { createOrder } from "@/services/lancamentos"
-
-interface Order {
-    id: number;
-    type: string;
-    person: string;
-    description: string;
-    date: string;
-    doc_number: string;
-    value: string;
-    event?: string | null;
-  }
-
-interface Event {
-    id: number;
-    event_name: string;
-  }
-  
+import { FinanceRecord, Event } from "@/types/types";
 
 interface CreateLancamentoProps {
     open: boolean;
@@ -31,7 +15,7 @@ interface CreateLancamentoProps {
   }
 
 const CreateLancamentoDialog: React.FC<CreateLancamentoProps> = ({ open, onClose, onOrderCreated }) => {
-  const { register, handleSubmit, reset } = useForm<Order>();
+  const { register, handleSubmit, reset } = useForm<FinanceRecord>();
   const [events, setEvents] = useState<Event[]>([]);
   const [eventsLoaded, setEventsLoaded] = useState(false);
 
@@ -47,7 +31,7 @@ const CreateLancamentoDialog: React.FC<CreateLancamentoProps> = ({ open, onClose
     loadEvents();
   }, [open, eventsLoaded]);
 
-  const onSubmit = async (formData: Order) => {
+  const onSubmit = async (formData: FinanceRecord) => {
     const success = await createOrder(formData); // Dynamically calls for "bill" or "income"
   
     if (success) {
@@ -71,7 +55,7 @@ const CreateLancamentoDialog: React.FC<CreateLancamentoProps> = ({ open, onClose
           </select>
           <Input {...register("person")} placeholder="Pessoa" />
           <Input {...register("description")} placeholder="Descrição" />
-          <Input type="date" {...register("date")} />
+          <Input type="date" {...register("date_due")} />
           <Input {...register("doc_number")} placeholder="Número do Documento" />
           <Input type="number" {...register("value")} placeholder="Valor" />
           <select {...register("event")} className="p-2 border rounded w-full">

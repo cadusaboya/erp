@@ -7,31 +7,7 @@ import EditContaDialog from "@/components/contas/EditContaDialog"
 import Filters from "@/components/FiltersAccrualsDialog";
 import CreateContaDialog from "@/components/contas/CreateContaDialog"
 import { PlusCircle } from "lucide-react";
-
-interface FinanceRecord {
-  id?: number;
-  person_name: string;
-  person: number; // used by the form
-  description: string;
-  date_due: string;
-  value: string;
-  doc_number?: string;
-  event?: string | null;
-  status: "em aberto" | "pago" | "vencido";
-  bank?: number;
-  bank_name: string;
-  payment_doc_number?: number;
-}
-
-type FiltersType = {
-  startDate: string;
-  endDate: string;
-  person: string;
-  description: string;
-  status: string[];
-  minValue: string;
-  maxValue: string;
-};
+import { FinanceRecord, FiltersType } from "@/types/types";
 
 interface TableComponentProps {
   data: FinanceRecord[];

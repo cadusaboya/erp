@@ -4,22 +4,7 @@ import { useState, useEffect } from "react";
 import TableComponent from "@/components/contas/TableContas";
 import Sidebar from "@/components/Sidebar";
 import { fetchRecords } from "@/services/records";
-
-
-interface FinanceRecord {
-  id?: number;
-  person_name: string;
-  person: number; // used by the form
-  description: string;
-  date_due: string;
-  value: string;
-  doc_number?: string;
-  event?: string | null;
-  status: "em aberto" | "pago" | "vencido";
-  bank?: number;
-  bank_name: string;
-  payment_doc_number?: number;
-}
+import { FinanceRecord } from "@/types/types";
 
 export default function Page() {
   const [data, setData] = useState<FinanceRecord[]>([]);

@@ -4,37 +4,11 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { PlusCircle } from "lucide-react";
-
+import { FilterFinanceRecordType, FinanceRecord } from "@/types/types"
 import Filters from "@/components/FiltersAccrualsDialog";
 
-interface Order {
-  id?: number;
-  type: string;
-  person_name: string;
-  person: number; // used by the form
-  description: string;
-  date_due: string;
-  value: string;
-  doc_number?: string;
-  event?: string | null;
-  status: "em aberto" | "pago" | "vencido";
-  bank?: number;
-  bank_name: string;
-  payment_doc_number?: number;
-}
-  
-  type FiltersType = {
-    type: string[];
-    startDate: string;
-    endDate: string;
-    person: string;
-    description: string;
-    minValue: string;
-    maxValue: string;
-  };
-
   interface TableComponentProps {
-    data: Order[];
+    data: FinanceRecord[];
     title: string;
     onOrderUpdated: () => void;
   }
@@ -42,7 +16,7 @@ interface Order {
 const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpdated }) => {
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const [filters, setFilters] = useState<FiltersType>({
+    const [filters, setFilters] = useState<FilterFinanceRecordType>({
         startDate: "",
         endDate: "",
         person: "",
@@ -57,7 +31,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
         localStorage.setItem("savedFilters", JSON.stringify(filters));
       }, [filters]);
     
-      const applyFilters = (newFilters: FiltersType) => {
+      const applyFilters = (newFilters: FilterFinanceRecordType) => {
         setFilters(newFilters);
         setFiltersOpen(false);
         setCurrentPage(1);

@@ -6,12 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import CreateBankDialog from "@/components/banks/CreateBankDialog";
 import EditBankDialog from "@/components/banks/EditBankDialog";
-
-interface Bank {
-  id: number;
-  name: string;
-  balance: string;
-}
+import { Bank } from "@/types/types";
 
 interface TableBanksProps {
   banks: Bank[];

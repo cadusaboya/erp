@@ -3,24 +3,14 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-
-type FiltersType = {
-  startDate: string;
-  endDate: string;
-  person: string;
-  description: string;
-  status?: string[]; // Used for Lancamentos
-  type?: string[];   // Used for Order
-  minValue: string;
-  maxValue: string;
-};
+import { FilterFinanceRecordType } from "@/types/types";
 
 interface FiltersDialogProps {
-  filters: FiltersType;
-  setFilters: (filters: FiltersType) => void;
+  filters: FilterFinanceRecordType;
+  setFilters: (filters: FilterFinanceRecordType) => void;
   open: boolean;
   onClose: () => void;
-  applyFilters: (filters: FiltersType) => void;
+  applyFilters: (filters: FilterFinanceRecordType) => void;
   clearFilters: () => void;
   filterOptions: string[]; // e.g., ["em aberto", "pago", "vencido"] or ["despesa", "receita"]
   filterKey: "status" | "type"; // Defines which key to update

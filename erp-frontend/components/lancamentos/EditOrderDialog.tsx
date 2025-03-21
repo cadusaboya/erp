@@ -7,32 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { fetchEvents } from "@/services/events";
 import { updateOrder } from "@/services/lancamentos";
-
-interface Order {
-    id: number;
-    type: string;
-    person: string;
-    description: string;
-    date: string;
-    doc_number: string;
-    value: string;
-    event?: string | null;
-  }
-
-interface Event {
-  id: number;
-  event_name: string;
-}
+import { FinanceRecord, Event } from "@/types/types";
 
 interface EditOrderDialogProps {
   open: boolean;
   onClose: () => void;
   onOrderUpdated: () => void;
-  order: Order | null;
+  order: FinanceRecord | null;
 }
 
 const EditOrderDialog: React.FC<EditOrderDialogProps> = ({ open, onClose, onOrderUpdated, order }) => {
-  const { register, handleSubmit, reset } = useForm<Order>();
+  const { register, handleSubmit, reset } = useForm<FinanceRecord>();
   const [events, setEvents] = useState<Event[]>([]);
   const [eventsLoaded, setEventsLoaded] = useState(false);
 
@@ -56,7 +41,7 @@ const EditOrderDialog: React.FC<EditOrderDialogProps> = ({ open, onClose, onOrde
   }, [order, reset]);
 
   // ✅ Handles update submission
-  const onSubmit = async (formData: Order) => {
+  const onSubmit = async (formData: FinanceRecord) => {
     if (!order?.id) return;
 
     const success = await updateOrder(formData.id, formData);
@@ -76,7 +61,7 @@ const EditOrderDialog: React.FC<EditOrderDialogProps> = ({ open, onClose, onOrde
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
           <Input placeholder="Pessoa (Nome)" {...register("person", { required: true })} defaultValue={order?.person} />
           <Input placeholder="Descrição" {...register("description", { required: true })} defaultValue={order?.description} />
-          <Input type="date" {...register("date", { required: true })} defaultValue={order?.date} />
+          <Input type="date" {...register("date_due", { required: true })} defaultValue={order?.date} />
           <Input type="number" placeholder="Valor" {...register("value", { required: true })} defaultValue={order?.value} />
           <Input placeholder="Número do Documento" {...register("doc_number")} defaultValue={order?.doc_number} />
           <select {...register("event")} className="p-2 border rounded w-full" defaultValue={order?.event || ""}>

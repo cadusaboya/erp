@@ -7,17 +7,9 @@ import { PlusCircle, Filter } from "lucide-react";
 import EditResourceDialog from "@/components/clients/EditResourceDialog";
 import CreateResourceDialog from "./CreateResourceDialog";
 import FiltersDialogClient from "@/components/FiltersResourcesDialog"; // Import your filters dialog
+import { Resource } from "@/types/types";
 
 type ResourceType = "clients" | "suppliers";
-
-interface Resource {
-  id: number;
-  name: string;
-  email: string;
-  telephone: string;
-  address: string;
-  cpf_cnpj: string;
-}
 
 interface TableResourcesProps {
   resourceType: ResourceType;

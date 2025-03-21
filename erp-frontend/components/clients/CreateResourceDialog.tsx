@@ -5,17 +5,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { createResource } from "@/services/resources"; // assuming you're using the generalized service
+import { Resource } from "@/types/types";
 
 type ResourceType = "clients" | "suppliers";
-
-interface Resource {
-  id?: number;
-  name: string;
-  email: string;
-  telephone: string;
-  address: string;
-  cpf_cnpj: string;
-}
 
 interface CreateResourceDialogProps {
   resourceType: ResourceType;

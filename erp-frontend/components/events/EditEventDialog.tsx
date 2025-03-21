@@ -6,16 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { updateEvent } from "@/services/events"; // Ensure this service function is implemented
-
-interface Event {
-  id: number;
-  type: string;
-  event_name: string;
-  client: number;
-  date: string;
-  total_value: string;
-  description?: string; // Optional description field
-}
+import { Event } from "@/types/types";
 
 interface EditEventDialogProps {
   open: boolean;

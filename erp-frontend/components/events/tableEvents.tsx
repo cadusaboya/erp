@@ -8,16 +8,7 @@ import CreateEventDialog from "./CreateEventDialog";
 import EditEventDialog from "./EditEventDialog";
 import Link from "next/link";
 import FiltersEventsDialog from "@/components/FiltersEventsDialog"; // Adjust path as needed
-
-interface Event {
-  id: number;
-  type: string;
-  event_name: string;
-  client: number;
-  client_name: string;
-  date: string;
-  total_value: string;
-}
+import { Event } from "@/types/types";
 
 interface TableComponentProps {
   data: Event[];

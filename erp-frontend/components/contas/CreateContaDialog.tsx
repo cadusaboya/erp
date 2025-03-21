@@ -9,38 +9,7 @@ import { createRecord } from "@/services/records";
 import { fetchEvents } from "@/services/events";
 import { fetchResources } from "@/services/resources";
 import { fetchBanks } from "@/services/banks";
-
-
-interface Conta {
-  id?: number;
-  person_name: string;
-  person: number; // used by the form
-  description: string;
-  date_due: string;
-  value: string;
-  doc_number?: string;
-  event?: string | null;
-  status: "em aberto" | "pago" | "vencido";
-  bank?: number;
-  bank_name: string;
-  payment_doc_number?: number;
-}
-
-interface Event {
-  id: number;
-  event_name: string;
-}
-
-interface Resource {
-  id: number;
-  name: string;
-}
-
-interface Bank {
-  id: number;
-  name: string;
-  balance: number;
-}
+import { FinanceRecord, Event, Resource, Bank } from "@/types/types";
 
 interface CreateContaDialogProps {
   open: boolean;
@@ -50,7 +19,7 @@ interface CreateContaDialogProps {
 }
 
 const CreateContaDialog: React.FC<CreateContaDialogProps> = ({ open, onClose, onRecordCreated, type }) => {
-  const { register, handleSubmit, reset, watch } = useForm<Conta>();
+  const { register, handleSubmit, reset, watch } = useForm<FinanceRecord>();
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [banks, setBanks] = useState<Bank[]>([]);
@@ -82,7 +51,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({ open, onClose, on
     }
   }, [status, reset]);
 
-  const onSubmit = async (formData: Conta) => {
+  const onSubmit = async (formData: FinanceRecord) => {
     const success = await createRecord(type, formData);
     if (success) {
       onRecordCreated();

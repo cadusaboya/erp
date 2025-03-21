@@ -7,20 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { fetchResources } from "@/services/resources";
 import { createEvent } from "@/services/events";
-
-interface Event {
-  id: number;
-  type: string;
-  event_name: string;
-  client: number;
-  date: string;
-  total_value: string;
-}
-
-interface Client {
-  id: number;
-  name: string;
-}
+import { Event, Resource } from "@/types/types";
 
 interface CreateEventDialogProps {
   open: boolean;
@@ -31,7 +18,7 @@ interface CreateEventDialogProps {
 
 const CreateEventDialog: React.FC<CreateEventDialogProps> = ({ open, onClose, onEventCreated }) => {
   const { register, handleSubmit, reset } = useForm<Event>();
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<Resource[]>([]);
   const [clientsLoaded, setClientsLoaded] = useState(false);
 
   useEffect(() => {

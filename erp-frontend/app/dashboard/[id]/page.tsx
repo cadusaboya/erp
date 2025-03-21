@@ -6,48 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { LayoutGrid, ArrowLeft, FileText } from "lucide-react";
-
-interface Event {
-  id: number;
-  event_name: string;
-  date: string;
-  client_name: string;
-  total_value: number;
-}
-
-interface Bill {
-  id: number;
-  description: string;
-  person: number;
-  person_name: string;
-  value: number;
-  date_due: string;
-  status: string;
-}
-
-interface Income {
-  id: number;
-  description: string;
-  person: number;
-  person_name: string;
-  value: number;
-  date_due: string;
-  status: string;
-}
-
-interface FinancialSummary {
-  total_receitas: number;
-  total_despesas: number;
-  saldo_evento: number;
-  valor_restante_pagar: number;
-}
+import { Event, FinanceRecord, FinancialSummary } from "@/types/types"
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
 export default function EventDashboard({ params }: { params: { id: string } }) {
   const [event, setEvent] = useState<Event | null>(null);
-  const [bills, setBills] = useState<Bill[]>([]);
-  const [incomes, setIncomes] = useState<Income[]>([]);
+  const [bills, setBills] = useState<FinanceRecord[]>([]);
+  const [incomes, setIncomes] = useState<FinanceRecord[]>([]);
   const [financialSummary, setFinancialSummary] = useState<FinancialSummary | null>(null);
   const router = useRouter();
 

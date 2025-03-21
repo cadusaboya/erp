@@ -4,18 +4,10 @@ import { useState, useEffect } from "react";
 import TableResources from "@/components/clients/TableResources";
 import Sidebar from "@/components/Sidebar";
 import { fetchResources } from "@/services/resources";
-
-interface Client {
-  id: number;
-  name: string;
-  email: string;
-  telephone: string;
-  address: string;
-  cpf_cnpj: string;
-}
+import { Resource } from "@/types/types"
 
 export default function Page() {
-  const [data, setData] = useState<Client[]>([]);
+  const [data, setData] = useState<Resource[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   const loadClients = async () => {

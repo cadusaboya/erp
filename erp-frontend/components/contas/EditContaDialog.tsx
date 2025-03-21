@@ -9,48 +9,18 @@ import { fetchEvents } from "@/services/events";
 import { fetchResources } from "@/services/resources";
 import { updateRecord } from "@/services/records";
 import { fetchBanks } from "@/services/banks";
-
-interface Conta {
-  id?: number;
-  person_name: string;
-  person: number; // used by the form
-  description: string;
-  date_due: string;
-  value: string;
-  doc_number?: string;
-  event?: string | null;
-  status: "em aberto" | "pago" | "vencido";
-  bank?: number;
-  bank_name: string;
-  payment_doc_number?: number;
-}
-
-interface Event {
-  id: number;
-  event_name: string;
-}
-
-interface Resource {
-  id: number;
-  name: string;
-}
-
-interface Bank {
-  id: number;
-  name: string;
-  balance: number;
-}
+import { FinanceRecord, Event, Resource, Bank } from "@/types/types";
 
 interface EditContaDialogProps {
   open: boolean;
   onClose: () => void;
   onRecordUpdated: () => void;
-  record: Conta | null;
+  record: FinanceRecord | null;
   type: "bill" | "income"; // bill = supplier, income = client
 }
 
 const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onRecordUpdated, record, type }) => {
-  const { register, handleSubmit, reset, watch } = useForm<Conta>();
+  const { register, handleSubmit, reset, watch } = useForm<FinanceRecord>();
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [banks, setBanks] = useState<Bank[]>([]);
@@ -91,7 +61,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
   }, [status, reset]);
   
 
-  const onSubmit = async (formData: Conta) => {
+  const onSubmit = async (formData: FinanceRecord) => {
     if (!record?.id) return;
     const success = await updateRecord(type, record.id, formData);
     if (success) {
