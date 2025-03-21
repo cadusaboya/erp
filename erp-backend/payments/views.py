@@ -2,8 +2,8 @@ from rest_framework import status, viewsets  # type: ignore
 from rest_framework.decorators import api_view, permission_classes  # type: ignore
 from rest_framework.response import Response  # type: ignore
 from rest_framework.permissions import IsAuthenticated  # type: ignore
-from .models import Bill, Income
-from .serializers import BillSerializer, IncomeSerializer
+from .models import Bill, Income, BankAccount
+from .serializers import BillSerializer, IncomeSerializer, BankAccountSerializer
 
 class BillViewSet(viewsets.ModelViewSet):
     serializer_class = BillSerializer
@@ -27,6 +27,18 @@ class IncomeViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         # Associate the new Income with the authenticated user
+        serializer.save(user=self.request.user)
+
+class BankAccountViewSet(viewsets.ModelViewSet):
+    serializer_class = BankAccountSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Ensure only Bank Accounts associated with the authenticated user are returned
+        return BankAccount.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        # Associate the new Bank account with the authenticated user
         serializer.save(user=self.request.user)
         
 @api_view(["GET"])

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { PlusCircle } from "lucide-react";
 
-import Filters from "@/components/FiltersDialog";
+import Filters from "@/components/FiltersAccrualsDialog";
 
 interface Order {
   id: number;

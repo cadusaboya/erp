@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import EditContaDialog from "@/components/contas/EditContaDialog"
-import Filters from "@/components/FiltersDialog";
+import Filters from "@/components/FiltersAccrualsDialog";
 import CreateContaDialog from "@/components/contas/CreateContaDialog"
 import { PlusCircle } from "lucide-react";
 

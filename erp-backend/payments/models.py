@@ -35,3 +35,13 @@ class Bill(Accrual):
     def __str__(self):
         return f"Conta de {self.supplier.name} - {self.value}"
 
+
+class BankAccount(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bank_accounts")
+    name = models.CharField(max_length=255)
+    balance = models.DecimalField(max_digits=12, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.name} - R$ {self.balance:.2f}"
+
+
