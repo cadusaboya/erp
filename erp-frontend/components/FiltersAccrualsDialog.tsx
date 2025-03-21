@@ -16,17 +16,25 @@ interface FiltersDialogProps {
   filterKey: "status" | "type"; // Defines which key to update
 }
 
+import { useEffect, useState } from "react";
+
 const FiltersDialog: React.FC<FiltersDialogProps> = ({
-  filters, setFilters, open, onClose, applyFilters, clearFilters, filterOptions, filterKey
+  filters, setFilters, open, onClose, applyFilters, clearFilters
 }) => {
-  
-  // Função para lidar com a seleção do status ou tipo
-  const handleFilterChange = (value: string) => {
-    setFilters((prevFilters) => ({
-      ...prevFilters,
-      [filterKey]: prevFilters[filterKey]?.includes(value)
-        ? prevFilters[filterKey]?.filter((s) => s !== value)
-        : [...(prevFilters[filterKey] || []), value],
+  const [draftFilters, setDraftFilters] = useState(filters);
+
+  useEffect(() => {
+    if (open) {
+      setDraftFilters(filters); // Sync with parent when dialog opens
+    }
+  }, [open, filters]);
+
+  const handleStatusChange = (value: string) => {
+    setDraftFilters((prev) => ({
+      ...prev,
+      status: prev.status?.includes(value)
+        ? prev.status.filter((s) => s !== value)
+        : [...(prev.status || []), value],
     }));
   };
 
@@ -37,34 +45,32 @@ const FiltersDialog: React.FC<FiltersDialogProps> = ({
           <DialogTitle>Filtros Avançados</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          {/* Inputs Reutilizáveis */}
           {[
-            { type: "date", placeholder: "Data Inicial", value: filters.startDate, key: "startDate" },
-            { type: "date", placeholder: "Data Final", value: filters.endDate, key: "endDate" },
-            { type: "text", placeholder: "Pessoa", value: filters.person, key: "person" },
-            { type: "text", placeholder: "Descrição", value: filters.description, key: "description" },
-            { type: "number", placeholder: "Valor Mínimo", value: filters.minValue, key: "minValue" },
-            { type: "number", placeholder: "Valor Máximo", value: filters.maxValue, key: "maxValue" },
+            { type: "date", placeholder: "Data Inicial", value: draftFilters.startDate, key: "startDate" },
+            { type: "date", placeholder: "Data Final", value: draftFilters.endDate, key: "endDate" },
+            { type: "text", placeholder: "Pessoa", value: draftFilters.person, key: "person" },
+            { type: "text", placeholder: "Descrição", value: draftFilters.description, key: "description" },
+            { type: "number", placeholder: "Valor Mínimo", value: draftFilters.minValue, key: "minValue" },
+            { type: "number", placeholder: "Valor Máximo", value: draftFilters.maxValue, key: "maxValue" },
           ].map(({ type, placeholder, value, key }) => (
             <Input
               key={key}
               type={type}
               placeholder={placeholder}
               value={value}
-              onChange={(e) => setFilters({ ...filters, [key]: e.target.value })}
+              onChange={(e) => setDraftFilters({ ...draftFilters, [key]: e.target.value })}
             />
           ))}
 
-          {/* Filtro Dinâmico (Status ou Tipo) */}
           <div className="border p-2 rounded-md bg-white shadow-md">
-            <label className="block font-semibold mb-2">{filterKey === "status" ? "Status" : "Tipo"}</label>
+            <label className="block font-semibold mb-2">Status</label>
             <div className="flex flex-row">
-              {filterOptions.map((option) => (
+              {["em aberto", "vencido", "pago"].map((option) => (
                 <label key={option} className="flex items-center space-x-2 cursor-pointer mr-5">
                   <input
                     type="checkbox"
-                    checked={filters[filterKey]?.includes(option) ?? false}
-                    onChange={() => handleFilterChange(option)}
+                    checked={draftFilters.status?.includes(option) ?? false}
+                    onChange={() => handleStatusChange(option)}
                   />
                   <span>{option.charAt(0).toUpperCase() + option.slice(1)}</span>
                 </label>
@@ -72,13 +78,19 @@ const FiltersDialog: React.FC<FiltersDialogProps> = ({
             </div>
           </div>
         </div>
-        
-        {/* Botões de Ação */}
+
+        {/* Actions */}
         <DialogFooter>
-          <Button onClick={clearFilters} variant="outline">
+          <Button onClick={() => { clearFilters(); onClose(); }} variant="outline">
             Limpar Filtros
           </Button>
-          <Button onClick={() => { applyFilters(filters); onClose(); }}>
+          <Button
+            onClick={() => {
+              applyFilters(draftFilters);
+              setFilters(draftFilters); // sync with parent
+              onClose();
+            }}
+          >
             Aplicar Filtros
           </Button>
         </DialogFooter>

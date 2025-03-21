@@ -11,15 +11,32 @@ class BillViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Bill.objects.filter(user=self.request.user)
+        user = self.request.user
+        queryset = Income.objects.filter(user=user)
+        params = self.request.query_params
 
-        # Check if ?show_paid=true is in the query params
-        show_paid = self.request.query_params.get('show_paid', 'false').lower()
-
-        if show_paid != 'true':
-            # By default exclude "pago"
-            queryset = queryset.exclude(status='pago')
-
+        # Filters
+        start_date = params.get("start_date")
+        end_date = params.get("end_date")
+        status = params.getlist("status")  # ["pago", "vencido", "em aberto"]
+        description = params.get("description")
+        person_name = params.get("person")
+        doc_number = params.get("doc_number")
+        
+        # Apply filters dynamically
+        if start_date:
+            queryset = queryset.filter(date_due__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(date_due__lte=end_date)
+        if status:
+            queryset = queryset.filter(status__in=status)
+        if description:
+            queryset = queryset.filter(description__icontains=description)
+        if person_name:
+            queryset = queryset.filter(person__name__icontains=person_name)
+        if doc_number:
+            queryset = queryset.filter(doc_number=doc_number)
+        
         return queryset
 
     @transaction.atomic
@@ -59,17 +76,33 @@ class IncomeViewSet(viewsets.ModelViewSet):
     serializer_class = IncomeSerializer
     permission_classes = [IsAuthenticated]
 
-class IncomeViewSet(viewsets.ModelViewSet):
-    serializer_class = IncomeSerializer
-    permission_classes = [IsAuthenticated]
-
     def get_queryset(self):
-        queryset = Income.objects.filter(user=self.request.user)
+        user = self.request.user
+        queryset = Income.objects.filter(user=user)
+        params = self.request.query_params
 
-        show_paid = self.request.query_params.get('show_paid', 'false').lower()
-        if show_paid != 'true':
-            queryset = queryset.exclude(status='pago')
-
+        # Filters
+        start_date = params.get("start_date")
+        end_date = params.get("end_date")
+        status = params.getlist("status")  # ["pago", "vencido", "em aberto"]
+        description = params.get("description")
+        person_name = params.get("person")
+        doc_number = params.get("doc_number")
+        
+        # Apply filters dynamically
+        if start_date:
+            queryset = queryset.filter(date_due__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(date_due__lte=end_date)
+        if status:
+            queryset = queryset.filter(status__in=status)
+        if description:
+            queryset = queryset.filter(description__icontains=description)
+        if person_name:
+            queryset = queryset.filter(person__name__icontains=person_name)
+        if doc_number:
+            queryset = queryset.filter(doc_number=doc_number)
+        
         return queryset
 
     @transaction.atomic

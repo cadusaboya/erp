@@ -1,80 +1,46 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
-import EditContaDialog from "@/components/contas/EditContaDialog"
+import EditContaDialog from "@/components/contas/EditContaDialog";
 import Filters from "@/components/FiltersAccrualsDialog";
-import CreateContaDialog from "@/components/contas/CreateContaDialog"
+import CreateContaDialog from "@/components/contas/CreateContaDialog";
 import { PlusCircle } from "lucide-react";
-import { FinanceRecord, FiltersType } from "@/types/types";
+import { FinanceRecord, FilterFinanceRecordType } from "@/types/types";
 
 interface TableComponentProps {
   data: FinanceRecord[];
   title: string;
-  type: "bill" | "income"; // Determines if it's for Bills or Incomes
+  type: "bill" | "income"; 
   onRecordUpdated: () => void;
+  filters: FilterFinanceRecordType;
+  setFilters: (filters: FilterFinanceRecordType) => void; // ✅ Receive filters from parent
 }
 
-const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRecordUpdated }) => {
+const TableComponent: React.FC<TableComponentProps> = ({ 
+  data, title, type, onRecordUpdated, filters, setFilters 
+}) => {
   const [createOpen, setCreateOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<FinanceRecord | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [filters, setFilters] = useState<FiltersType>({
-    startDate: "",
-    endDate: "",
-    person: "",
-    description: "",
-    status: ["em aberto", "vencido", "pago"],
-    minValue: "",
-    maxValue: "",
-  });
 
   const itemsPerPage = 13;
 
-  useEffect(() => {
-    localStorage.setItem("savedFilters", JSON.stringify(filters));
-  }, [filters]);
-
-  const applyFilters = (newFilters: FiltersType) => {
-    setFilters(newFilters);
-    setFiltersOpen(false);
-    setCurrentPage(1);
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      startDate: "",
-      endDate: "",
-      person: "",
-      description: "",
-      status: ["em aberto", "vencido", "pago"],
-      minValue: "",
-      maxValue: "",
-    });
-    localStorage.removeItem("savedFilters");
-  };
-
-  const filteredData = data.filter((record) => {
-    return (
-      (!filters.startDate || new Date(record.date_due) >= new Date(filters.startDate)) &&
-      (!filters.endDate || new Date(record.date_due) <= new Date(filters.endDate)) &&
-      (!filters.person || record.person_name.toLowerCase().includes(filters.person.toLowerCase())) &&
-      (!filters.description || record.description.toLowerCase().includes(filters.description.toLowerCase())) &&
-      (filters.status.length === 0 || filters.status.includes(record.status)) &&
-      (!filters.minValue || parseFloat(record.value) >= parseFloat(filters.minValue)) &&
-      (!filters.maxValue || parseFloat(record.value) <= parseFloat(filters.maxValue))
-    );
-  });
-
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(data.length / itemsPerPage);
+  const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleEditClick = (record: FinanceRecord) => {
     setSelectedRecord(record);
     setEditOpen(true);
+  };
+
+  const applyFilters = (newFilters: FilterFinanceRecordType) => {
+    setFilters(newFilters);
+    setFiltersOpen(false);
+    setCurrentPage(1);
   };
 
   return (
@@ -89,25 +55,31 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
         </div>
       </div>
 
-      {/* Dialogs */}
       <Filters
         filters={filters}
         setFilters={setFilters}
         open={filtersOpen}
         onClose={() => setFiltersOpen(false)}
         applyFilters={applyFilters}
-        clearFilters={clearFilters}
-        filterOptions={["pago", "em aberto", "vencido"]} // Order options
-        filterKey="status" // Tells the component to use 'type'
+        clearFilters={() => setFilters({
+          startDate: "",
+          endDate: "",
+          person: "",
+          description: "",
+          status: ["em aberto", "vencido", "pago"],
+          minValue: "",
+          maxValue: "",
+        })}
+        filterOptions={["pago", "em aberto", "vencido"]}
+        filterKey="status"
       />
-
 
       <EditContaDialog 
         open={editOpen} 
         onClose={() => setEditOpen(false)} 
         onRecordUpdated={onRecordUpdated} 
         record={selectedRecord} 
-        type={type} // ✅ Dynamic for "bill" or "income"
+        type={type} 
       />
 
       <CreateContaDialog 
@@ -117,7 +89,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
         type={type} 
       />
 
-      {/* Table with Pagination */}
+      {/* Table */}
       <Table>
         <TableHeader>
           <TableRow>
@@ -132,7 +104,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
         </TableHeader>
         <tbody>
           {paginatedData.map((record) => (
-            <TableRow key={record.id}>
+            <TableRow key={`${record.id}-${record.status}`}>
               <TableCell>{record.date_due}</TableCell>
               <TableCell>{record.person_name}</TableCell>
               <TableCell>{record.description}</TableCell>
@@ -159,11 +131,12 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
         </tbody>
       </Table>
 
+      {/* Pagination */}
       <div className="flex justify-center mt-4 gap-4">
         <button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
           ⬅️
         </button>
-        <span>Página {currentPage} de {totalPages}</span>
+        <span>Página {currentPage} de {Math.ceil(data.length / itemsPerPage)}</span>
         <button onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>
           ➡️
         </button>

@@ -1,5 +1,7 @@
 const API_BASE_URL = "http://127.0.0.1:8000";
 
+import { FiltersRecordsParams } from "@/types/types";
+
 const getToken = () => {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Token não encontrado");
@@ -16,16 +18,31 @@ const mapPersonId = (type: "bill" | "income", data: any) => {
   return mapped;
 };
 
-// ✅ Fetch records (bills or incomes)
-export const fetchRecords = async (type: "bill" | "income") => {
+export const fetchRecords = async (type: "bill" | "income", filters: FiltersRecordsParams = {}) => {
   try {
     const token = getToken();
-    const response = await fetch(`${API_BASE_URL}/payments/${type}s/`, {
+
+    // Build query params dynamically
+    const params = new URLSearchParams();
+
+    if (filters.startDate) params.append("start_date", filters.startDate);
+    if (filters.endDate) params.append("end_date", filters.endDate);
+    if (filters.description) params.append("description", filters.description);
+    if (filters.person) params.append("person", filters.person);
+    if (filters.docNumber) params.append("doc_number", filters.docNumber);
+    if (filters.status && filters.status.length > 0) {
+      filters.status.forEach((s) => params.append("status", s));
+    }
+
+    const queryString = params.toString() ? `?${params.toString()}` : "";
+
+    const response = await fetch(`${API_BASE_URL}/payments/${type}s/${queryString}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
+
     if (!response.ok) throw new Error(`Erro ao buscar ${type}s`);
     return await response.json();
   } catch (error) {
