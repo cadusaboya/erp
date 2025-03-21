@@ -21,6 +21,7 @@ interface Conta {
   event?: string | null;
   status: "em aberto" | "pago" | "vencido";
   bank?: number;
+  bank_name: string;
   payment_doc_number?: number;
 }
 

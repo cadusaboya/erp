@@ -7,15 +7,18 @@ import { fetchRecords } from "@/services/records";
 
 
 interface FinanceRecord {
-  id: number;
-  person: string;
-  person_id: number;
+  id?: number;
+  person_name: string;
+  person: number; // used by the form
   description: string;
   date_due: string;
   value: string;
   doc_number?: string;
   event?: string | null;
   status: "em aberto" | "pago" | "vencido";
+  bank?: number;
+  bank_name: string;
+  payment_doc_number?: number;
 }
 
 export default function Page() {
@@ -35,7 +38,7 @@ export default function Page() {
       <Sidebar />
       <div className="flex-1 p-6">
         <TableComponent
-          title="Contas a Pagar" 
+          title="Contas a Receber" 
           data={data} 
           type="income" 
           onRecordUpdated={loadRecords} // ✅ Passes the function reference

@@ -9,15 +9,18 @@ import CreateContaDialog from "@/components/contas/CreateContaDialog"
 import { PlusCircle } from "lucide-react";
 
 interface FinanceRecord {
-  id: number;
-  person: number;
+  id?: number;
   person_name: string;
+  person: number; // used by the form
   description: string;
   date_due: string;
   value: string;
   doc_number?: string;
   event?: string | null;
   status: "em aberto" | "pago" | "vencido";
+  bank?: number;
+  bank_name: string;
+  payment_doc_number?: number;
 }
 
 type FiltersType = {
@@ -145,7 +148,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
             <TableCell>Data de Vencimento</TableCell>
             <TableCell>Pessoa</TableCell>
             <TableCell>Descrição</TableCell>
-            <TableCell>Número do Documento</TableCell>
+            <TableCell>Número do Doc.</TableCell>
             <TableCell>Status</TableCell>
             <TableCell>Valor</TableCell>
             <TableCell>Ações</TableCell>

@@ -6,15 +6,18 @@ import Sidebar from "@/components/Sidebar";
 import TableComponent from "@/components/contas/TableContas";
 
 interface FinanceRecord {
-  id: number;
-  person: string;
-  person_id: number;
+  id?: number;
+  person_name: string;
+  person: number; // used by the form
   description: string;
   date_due: string;
   value: string;
   doc_number?: string;
   event?: string | null;
   status: "em aberto" | "pago" | "vencido";
+  bank?: number;
+  bank_name: string;
+  payment_doc_number?: number;
 }
 
 export default function Page() {

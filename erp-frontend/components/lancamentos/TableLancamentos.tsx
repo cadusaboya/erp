@@ -8,15 +8,19 @@ import { PlusCircle } from "lucide-react";
 import Filters from "@/components/FiltersAccrualsDialog";
 
 interface Order {
-  id: number;
+  id?: number;
   type: string;
-  person: number;
   person_name: string;
+  person: number; // used by the form
   description: string;
   date_due: string;
-  doc_number: string;
   value: string;
+  doc_number?: string;
   event?: string | null;
+  status: "em aberto" | "pago" | "vencido";
+  bank?: number;
+  bank_name: string;
+  payment_doc_number?: number;
 }
   
   type FiltersType = {
@@ -117,19 +121,22 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
               <TableCell>Data</TableCell>
               <TableCell>Pessoa</TableCell>
               <TableCell>Descrição</TableCell>
-              <TableCell>Número do Documento</TableCell>
+              <TableCell>Número do Doc.</TableCell>
+              <TableCell>Doc. de Pgto</TableCell>
+              <TableCell>Banco</TableCell>
               <TableCell>Valor</TableCell>
-              <TableCell>Ações</TableCell>
             </TableRow>
           </TableHeader>
           <tbody>
             {paginatedData.map((order) => (
-              <TableRow key={order.id}>
+              <TableRow key={`${order.type}-${order.id}`}>
                 <TableCell>{order.type}</TableCell>
                 <TableCell>{order.date_due}</TableCell>
                 <TableCell>{order.person_name}</TableCell>
                 <TableCell>{order.description}</TableCell>
                 <TableCell>{order.doc_number}</TableCell>
+                <TableCell>{order.payment_doc_number}</TableCell>
+                <TableCell>{order.bank_name}</TableCell>
                 <TableCell> R$ {order.value}</TableCell>
               </TableRow>
             ))}

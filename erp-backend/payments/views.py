@@ -11,8 +11,16 @@ class BillViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Ensure only Bills associated with the authenticated user are returned
-        return Bill.objects.filter(user=self.request.user)
+        queryset = Bill.objects.filter(user=self.request.user)
+
+        # Check if ?show_paid=true is in the query params
+        show_paid = self.request.query_params.get('show_paid', 'false').lower()
+
+        if show_paid != 'true':
+            # By default exclude "pago"
+            queryset = queryset.exclude(status='pago')
+
+        return queryset
 
     @transaction.atomic
     def perform_create(self, serializer):
@@ -51,9 +59,18 @@ class IncomeViewSet(viewsets.ModelViewSet):
     serializer_class = IncomeSerializer
     permission_classes = [IsAuthenticated]
 
+class IncomeViewSet(viewsets.ModelViewSet):
+    serializer_class = IncomeSerializer
+    permission_classes = [IsAuthenticated]
+
     def get_queryset(self):
-        # Ensure only Incomes associated with the authenticated user are returned
-        return Income.objects.filter(user=self.request.user)
+        queryset = Income.objects.filter(user=self.request.user)
+
+        show_paid = self.request.query_params.get('show_paid', 'false').lower()
+        if show_paid != 'true':
+            queryset = queryset.exclude(status='pago')
+
+        return queryset
 
     @transaction.atomic
     def perform_create(self, serializer):
@@ -104,9 +121,9 @@ class BankViewSet(viewsets.ModelViewSet):
 @permission_classes([IsAuthenticated])
 def combined_extract(request):
     # Fetch paid Bills
-    bills = Bill.objects.filter(user=request.user, status="pago")
+    bills = Bill.objects.filter(user=request.user, status="pago").select_related('person', 'bank')
     # Fetch paid Incomes
-    incomes = Income.objects.filter(user=request.user, status="pago")
+    incomes = Income.objects.filter(user=request.user, status="pago").select_related('person', 'bank')
 
     # Serialize both
     bills_data = BillSerializer(bills, many=True).data
