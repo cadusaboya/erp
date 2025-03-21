@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { fetchEvents } from "@/services/events";
 import { fetchResources } from "@/services/resources";
 import { updateRecord } from "@/services/records";
+import { fetchBanks } from "@/services/banks";
 
 interface Conta {
   id?: number;
@@ -19,6 +20,8 @@ interface Conta {
   doc_number?: string;
   event?: string | null;
   status: "em aberto" | "pago" | "vencido";
+  bank?: number;
+  payment_doc_number?: number;
 }
 
 interface Event {
@@ -31,6 +34,12 @@ interface Resource {
   name: string;
 }
 
+interface Bank {
+  id: number;
+  name: string;
+  balance: number;
+}
+
 interface EditContaDialogProps {
   open: boolean;
   onClose: () => void;
@@ -40,19 +49,22 @@ interface EditContaDialogProps {
 }
 
 const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onRecordUpdated, record, type }) => {
-  const { register, handleSubmit, reset } = useForm<Conta>();
+  const { register, handleSubmit, reset, watch } = useForm<Conta>();
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
+  const [banks, setBanks] = useState<Bank[]>([]);
 
   useEffect(() => {
     const load = async () => {
       if (open) {
-        const [eventsData, resourcesData] = await Promise.all([
+        const [eventsData, resourcesData, banksData] = await Promise.all([
           fetchEvents(),
-          fetchResources(type === "bill" ? "suppliers" : "clients")
+          fetchResources(type === "bill" ? "suppliers" : "clients"),
+          fetchBanks()
         ]);
         setEvents(eventsData);
         setResources(resourcesData);
+        setBanks(banksData);
   
         // ✅ Reset form AFTER resources are ready
         if (record) {
@@ -65,6 +77,17 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
     };
     load();
   }, [open, type, record, reset]);
+
+  const status = watch("status");
+  useEffect(() => {
+    if (status !== "pago") {
+      reset((prev) => ({
+        ...prev,
+        bank: undefined,
+        payment_doc_number: undefined,
+      }));
+    }
+  }, [status, reset]);
   
 
   const onSubmit = async (formData: Conta) => {
@@ -108,6 +131,18 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
             <option value="pago">Pago</option>
             <option value="vencido">Vencido</option>
           </select>
+
+          {watch("status") === "pago" && (
+            <>
+              <select {...register("bank")} className="p-2 border rounded w-full">
+                <option value="">Selecione uma Conta Bancária</option>
+                {banks.map((bank) => (
+                  <option key={bank.id} value={bank.id}>{bank.name}</option>
+                ))}
+              </select>
+              <Input placeholder="Número do Documento de Pagamento" {...register("payment_doc_number")} />
+            </>
+          )}
 
           <DialogFooter>
             <Button variant="outline" type="button" onClick={onClose}>Cancelar</Button>

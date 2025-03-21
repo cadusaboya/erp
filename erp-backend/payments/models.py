@@ -17,6 +17,8 @@ class Accrual(models.Model):
     doc_number = models.CharField(max_length=50, blank=True, null=True, unique=True)
     event = models.ForeignKey('events.Event', on_delete=models.SET_NULL, blank=True, null=True, related_name="%(class)s")
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='em aberto')
+    bank = models.ForeignKey('Bank', on_delete=models.SET_NULL, null=True, blank=True)
+    payment_doc_number = models.CharField(max_length=50, blank=True, null=True)
 
     class Meta:
         abstract = True
@@ -36,7 +38,7 @@ class Bill(Accrual):
         return f"Conta de {self.supplier.name} - {self.value}"
 
 
-class BankAccount(models.Model):
+class Bank(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bank_accounts")
     name = models.CharField(max_length=255)
     balance = models.DecimalField(max_digits=12, decimal_places=2)

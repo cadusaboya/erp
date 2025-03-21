@@ -2,8 +2,9 @@ from rest_framework import status, viewsets  # type: ignore
 from rest_framework.decorators import api_view, permission_classes  # type: ignore
 from rest_framework.response import Response  # type: ignore
 from rest_framework.permissions import IsAuthenticated  # type: ignore
-from .models import Bill, Income, BankAccount
-from .serializers import BillSerializer, IncomeSerializer, BankAccountSerializer
+from django.db import transaction # type: ignore
+from .models import Bill, Income, Bank
+from .serializers import BillSerializer, IncomeSerializer, BankSerializer
 
 class BillViewSet(viewsets.ModelViewSet):
     serializer_class = BillSerializer
@@ -13,9 +14,38 @@ class BillViewSet(viewsets.ModelViewSet):
         # Ensure only Bills associated with the authenticated user are returned
         return Bill.objects.filter(user=self.request.user)
 
+    @transaction.atomic
     def perform_create(self, serializer):
-        # Associate the new Bill with the authenticated user
-        serializer.save(user=self.request.user)
+        # Save instance
+        instance = serializer.save(user=self.request.user)
+
+        # If created as "pago", increase balance immediately
+        if instance.status == "pago" and instance.bank:
+            instance.bank.balance -= instance.value
+            instance.bank.save()
+
+    @transaction.atomic
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        old_status = instance.status
+        old_bank = instance.bank
+        old_value = instance.value
+
+        # Save new data
+        updated_instance = serializer.save(user=self.request.user)
+
+        # If marked as 'pago'
+        if updated_instance.status == "pago" and old_status != "pago":
+            # Increase bank balance
+            updated_instance.bank.balance -= updated_instance.value
+            updated_instance.bank.save()
+
+        # If UNDO from 'pago' to another status
+        elif old_status == "pago" and updated_instance.status != "pago":
+            # Reverse balance
+            if old_bank:
+                old_bank.balance += old_value
+                old_bank.save()
 
 class IncomeViewSet(viewsets.ModelViewSet):
     serializer_class = IncomeSerializer
@@ -25,17 +55,46 @@ class IncomeViewSet(viewsets.ModelViewSet):
         # Ensure only Incomes associated with the authenticated user are returned
         return Income.objects.filter(user=self.request.user)
 
+    @transaction.atomic
     def perform_create(self, serializer):
-        # Associate the new Income with the authenticated user
-        serializer.save(user=self.request.user)
+        # Save instance
+        instance = serializer.save(user=self.request.user)
 
-class BankAccountViewSet(viewsets.ModelViewSet):
-    serializer_class = BankAccountSerializer
+        # If created as "pago", increase balance immediately
+        if instance.status == "pago" and instance.bank:
+            instance.bank.balance += instance.value
+            instance.bank.save()
+
+    @transaction.atomic
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        old_status = instance.status
+        old_bank = instance.bank
+        old_value = instance.value
+
+        # Save new data
+        updated_instance = serializer.save(user=self.request.user)
+
+        # If marked as 'pago'
+        if updated_instance.status == "pago" and old_status != "pago":
+            # Increase bank balance
+            updated_instance.bank.balance += updated_instance.value
+            updated_instance.bank.save()
+
+        # If UNDO from 'pago' to another status
+        elif old_status == "pago" and updated_instance.status != "pago":
+            # Reverse balance
+            if old_bank:
+                old_bank.balance -= old_value
+                old_bank.save()
+
+class BankViewSet(viewsets.ModelViewSet):
+    serializer_class = BankSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         # Ensure only Bank Accounts associated with the authenticated user are returned
-        return BankAccount.objects.filter(user=self.request.user)
+        return Bank.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         # Associate the new Bank account with the authenticated user

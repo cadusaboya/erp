@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Bill, Income, BankAccount
+from .models import Bill, Income, Bank
 
 # serializers.py
 class BillSerializer(serializers.ModelSerializer):
@@ -18,10 +18,10 @@ class IncomeSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('user', 'person_name')
 
-class BankAccountSerializer(serializers.ModelSerializer):
+class BankSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = BankAccount
+        model = Bank
         fields = '__all__'
         read_only_fields = ('user',)
 

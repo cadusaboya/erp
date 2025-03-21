@@ -8,15 +8,21 @@ import { Button } from "@/components/ui/button";
 import { createRecord } from "@/services/records";
 import { fetchEvents } from "@/services/events";
 import { fetchResources } from "@/services/resources";
+import { fetchBanks } from "@/services/banks";
+
 
 interface Conta {
-  person: number;
+  id?: number;
+  person_name: string;
+  person: number; // used by the form
   description: string;
   date_due: string;
   value: string;
   doc_number?: string;
   event?: string | null;
-  status: "em aberto" | "pago";
+  status: "em aberto" | "pago" | "vencido";
+  bank?: number;
+  payment_doc_number?: number;
 }
 
 interface Event {
@@ -29,6 +35,12 @@ interface Resource {
   name: string;
 }
 
+interface Bank {
+  id: number;
+  name: string;
+  balance: number;
+}
+
 interface CreateContaDialogProps {
   open: boolean;
   onClose: () => void;
@@ -37,23 +49,37 @@ interface CreateContaDialogProps {
 }
 
 const CreateContaDialog: React.FC<CreateContaDialogProps> = ({ open, onClose, onRecordCreated, type }) => {
-  const { register, handleSubmit, reset } = useForm<Conta>();
+  const { register, handleSubmit, reset, watch } = useForm<Conta>();
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
+  const [banks, setBanks] = useState<Bank[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
       if (open) {
-        const [eventsData, resourceData] = await Promise.all([
+        const [eventsData, resourceData, banksData] = await Promise.all([
           fetchEvents(),
-          fetchResources(type === "bill" ? "suppliers" : "clients")
+          fetchResources(type === "bill" ? "suppliers" : "clients"),
+          fetchBanks()
         ]);
         setEvents(eventsData);
         setResources(resourceData);
+        setBanks(banksData)
       }
     };
     loadData();
   }, [open, type]);
+
+  const status = watch("status");
+  useEffect(() => {
+    if (status !== "pago") {
+      reset((prev) => ({
+        ...prev,
+        bank: undefined,
+        payment_doc_number: undefined,
+      }));
+    }
+  }, [status, reset]);
 
   const onSubmit = async (formData: Conta) => {
     const success = await createRecord(type, formData);
@@ -101,6 +127,21 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({ open, onClose, on
             <option value="em aberto">Em Aberto</option>
             <option value="pago">Pago</option>
           </select>
+
+          {status === "pago" && (
+            <>
+              <select {...register("bank", { required: true })} className="p-2 border rounded w-full">
+                <option value="">Selecione uma Conta Bancária</option>
+                {banks.map((bank) => (
+                  <option key={bank.id} value={bank.id}>{bank.name}</option>
+                ))}
+              </select>
+              <Input
+                placeholder="Número do Documento de Pagamento"
+                {...register("payment_doc_number", { required: true })}
+              />
+            </>
+          )}
 
           <DialogFooter>
             <Button variant="outline" type="button" onClick={onClose}>Cancelar</Button>
