@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import TableComponent from "@/components/lancamentos/TableLancamentos";
 import { fetchOrders } from "@/services/lancamentos";
+import { fetchBanks } from "@/services/banks";
 import { FinanceRecord, FilterFinanceRecordType } from "@/types/types";
 
 export default function Page() {
   const [data, setData] = useState<FinanceRecord[]>([]);
+  const [bankOptions, setBankOptions] = useState<string[]>([]);
   const [filters, setFilters] = useState<FilterFinanceRecordType>({
     startDate: "",
     endDate: "",
@@ -16,7 +18,7 @@ export default function Page() {
     minValue: "",
     maxValue: "",
     type: ["Despesa", "Receita"],
-    bank_name: ["Bradesco", "Itau", "Caixa"], // 👈 Add the bank filter here
+    bank_name: [], // ⬅️ initially empty
   });
 
   const loadOrders = async (appliedFilters: FilterFinanceRecordType = filters) => {
@@ -24,6 +26,16 @@ export default function Page() {
     setData(ordersData);
   };
 
+  const loadBanks = async () => {
+    const banks = await fetchBanks();
+    const bankNames = banks.map((b: any) => b.name);
+    setBankOptions(bankNames);
+  };
+
+  useEffect(() => {
+    loadBanks();
+  }, []);
+  
   useEffect(() => {
     loadOrders(filters);
   }, [filters]);
@@ -37,7 +49,8 @@ export default function Page() {
           title="Lançamentos" 
           onOrderUpdated={() => loadOrders(filters)} 
           filters={filters} 
-          setFilters={setFilters} 
+          setFilters={setFilters}
+          bankOptions={bankOptions}
         />
       </div>
     </div>

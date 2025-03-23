@@ -13,9 +13,10 @@ import Filters from "@/components/Filters";
     onOrderUpdated: () => void;
     filters: FilterFinanceRecordType;
     setFilters: (filters: FilterFinanceRecordType) => void; // ✅ Receive filters from parent
+    bankOptions: string[];
   }
 
-const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpdated, filters, setFilters }) => {
+const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpdated, filters, setFilters, bankOptions }) => {
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -55,7 +56,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
             type: ["Despesa", "Receita"],
             minValue: "",
             maxValue: "",
-            bank_name: ["Bradesco", "Caixa", "Itau"]
+            bank_name: []
           })}
           filterFields={[
             { key: "startDate", type: "date", label: "Data Inicial", placeholder: "Data Inicial" },
@@ -64,7 +65,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
             { key: "description", type: "text", label: "Descrição", placeholder: "Descrição" },
             { key: "minValue", type: "number", label: "Valor Mínimo", placeholder: "Valor Mínimo" },
             { key: "maxValue", type: "number", label: "Valor Máximo", placeholder: "Valor Máximo" },
-            { key: "bank_name", type: "checkboxes", label: "Banco", options: ["Bradesco", "Caixa", "Itau"] },
+            { key: "bank_name", type: "checkboxes", label: "Banco", options: bankOptions },
             { key: "type", type: "checkboxes", label: "Tipo", options: ["Despesa", "Receita"] },
           ]}
         />
