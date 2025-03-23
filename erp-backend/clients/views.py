@@ -8,8 +8,26 @@ class ClientViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Ensure only suppliers associated with the authenticated user are returned
-        return Client.objects.filter(user=self.request.user)
+        user = self.request.user
+        params = self.request.query_params
+
+        queryset = Client.objects.filter(user=user)
+
+        name = params.get("name")
+        cpf_cnpj = params.get("cpf_cnpj")
+        email = params.get("email")
+        telephone = params.get("telephone")
+
+        if name:
+            queryset = queryset.filter(name__icontains=name)
+        if cpf_cnpj:
+            queryset = queryset.filter(cpf_cnpj__icontains=cpf_cnpj)
+        if email:
+            queryset = queryset.filter(email__icontains=email)
+        if telephone:
+            queryset = queryset.filter(telephone__icontains=telephone)
+
+        return queryset
 
     def perform_create(self, serializer):
         # Associate the new supplier with the authenticated user
@@ -20,8 +38,26 @@ class SupplierViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Ensure only suppliers associated with the authenticated user are returned
-        return Supplier.objects.filter(user=self.request.user)
+        user = self.request.user
+        params = self.request.query_params
+
+        queryset = Supplier.objects.filter(user=user)
+
+        name = params.get("name")
+        cpf_cnpj = params.get("cpf_cnpj")
+        email = params.get("email")
+        telephone = params.get("telephone")
+
+        if name:
+            queryset = queryset.filter(name__icontains=name)
+        if cpf_cnpj:
+            queryset = queryset.filter(cpf_cnpj__icontains=cpf_cnpj)
+        if email:
+            queryset = queryset.filter(email__icontains=email)
+        if telephone:
+            queryset = queryset.filter(telephone__icontains=telephone)
+
+        return queryset
 
     def perform_create(self, serializer):
         # Associate the new supplier with the authenticated user

@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view, permission_classes  # type: igno
 from rest_framework.response import Response  # type: ignore
 from rest_framework.permissions import IsAuthenticated  # type: ignore
 from django.db import transaction # type: ignore
+from django.db.models import Q # type: ignore
 from .models import Bill, Income, Bank
 from .serializers import BillSerializer, IncomeSerializer, BankSerializer
 
@@ -12,7 +13,7 @@ class BillViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Income.objects.filter(user=user)
+        queryset = Bill.objects.filter(user=user)
         params = self.request.query_params
 
         # Filters
@@ -153,23 +154,64 @@ class BankViewSet(viewsets.ModelViewSet):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def combined_extract(request):
-    # Fetch paid Bills
-    bills = Bill.objects.filter(user=request.user, status="pago").select_related('person', 'bank')
-    # Fetch paid Incomes
-    incomes = Income.objects.filter(user=request.user, status="pago").select_related('person', 'bank')
+    user = request.user
+
+    # Filters from query params
+    start_date = request.GET.get("start_date")
+    end_date = request.GET.get("end_date")
+    person = request.GET.get("person")
+    description = request.GET.get("description")
+    min_value = request.GET.get("min_value")
+    max_value = request.GET.get("max_value")
+    bank_names = request.GET.getlist("bank_name")
+    types = request.GET.getlist("type")  # e.g. ?type=Despesa&type=Receita
+
+    # Base filters
+    filters = Q(user=user, status="pago")
+
+    # Apply queryset filters
+    if start_date and end_date:
+        filters &= Q(date_due__range=[start_date, end_date])
+    elif start_date:
+        filters &= Q(date_due__gte=start_date)
+    elif end_date:
+        filters &= Q(date_due__lte=end_date)
+
+    if person:
+        filters &= Q(person__name__icontains=person)
+    if description:
+        filters &= Q(description__icontains=description)
+    if min_value and max_value:
+        filters &= Q(value__range=[min_value, max_value])
+    elif min_value:
+        filters &= Q(value__gte=min_value)
+    elif max_value:
+        filters &= Q(value__lte=max_value)
+    if bank_names:
+        filters &= Q(bank__name__in=bank_names)
+
+    # Fetch Bills & Incomes separately
+    bills = Bill.objects.filter(filters).select_related('person', 'bank')
+    incomes = Income.objects.filter(filters).select_related('person', 'bank')
 
     # Serialize both
     bills_data = BillSerializer(bills, many=True).data
     incomes_data = IncomeSerializer(incomes, many=True).data
 
-    # Add "type" field to differentiate
+    # Add type field inline
     for b in bills_data:
         b["type"] = "Despesa"
     for i in incomes_data:
         i["type"] = "Receita"
 
-    # Combine and sort by date (optional)
+    # Combine
     combined = bills_data + incomes_data
-    combined.sort(key=lambda x: x["date_due"])  # Or "date"
+
+    # Python-side filter for "type"
+    if types:
+        combined = [c for c in combined if c["type"] in types]
+
+    # Sort by due date
+    combined.sort(key=lambda x: x["date_due"])
 
     return Response({"orders": combined})

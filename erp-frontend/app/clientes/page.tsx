@@ -4,31 +4,38 @@ import { useState, useEffect } from "react";
 import TableResources from "@/components/clients/TableResources";
 import Sidebar from "@/components/Sidebar";
 import { fetchResources } from "@/services/resources";
-import { Resource } from "@/types/types"
+import { Resource, FiltersClientType } from "@/types/types";
 
-export default function Page() {
+export default function ClientsPage() {
   const [data, setData] = useState<Resource[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [filters, setFilters] = useState<FiltersClientType>({
+    name: "",
+    cpf_cnpj: "",
+    email: "",
+    telephone: "",
+  });
 
-  const loadClients = async () => {
-    const clientsData = await fetchResources("clients");
+  const loadClients = async (activeFilters: FiltersClientType) => {
+    const clientsData = await fetchResources("clients", activeFilters);
     setData(clientsData);
-    setLoading(false);
   };
 
   useEffect(() => {
-    loadClients();
-  }, []);
+    loadClients(filters);
+  }, [filters]);
 
   return (
     <div className="flex">
       <Sidebar />
       <div className="flex-1 p-6">
-        {loading ? (
-          <p>Carregando clientes...</p>
-        ) : (
-          <TableResources resourceType="clients" data={data} title="Clientes" onResourceCreated={loadClients} />
-        )}
+        <TableResources
+          resourceType="clients"
+          data={data}
+          title="Clientes"
+          filters={filters}
+          setFilters={setFilters}
+          onResourceCreated={() => loadClients(filters)}
+        />
       </div>
     </div>
   );

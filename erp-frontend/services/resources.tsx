@@ -1,6 +1,7 @@
 const API_BASE_URL = "http://127.0.0.1:8000";
 
 type ResourceType = "clients" | "suppliers";
+import { FiltersClientType } from "@/types/types";
 
 const getToken = () => {
   const token = localStorage.getItem("token");
@@ -10,11 +11,19 @@ const getToken = () => {
   return token;
 };
 
-export const fetchResources = async (resource: ResourceType) => {
+export const fetchResources = async (resource: ResourceType, filters: FiltersClientType = {}) => {
   try {
     const token = getToken();
+    const params = new URLSearchParams();
 
-    const response = await fetch(`${API_BASE_URL}/clients/${resource}/`, {
+    if (filters.name) params.append("name", filters.name);
+    if (filters.cpf_cnpj) params.append("cpf_cnpj", filters.cpf_cnpj);
+    if (filters.email) params.append("email", filters.email);
+    if (filters.telephone) params.append("telephone", filters.telephone);
+
+    const queryString = params.toString() ? `?${params.toString()}` : "";
+
+    const response = await fetch(`${API_BASE_URL}/clients/${resource}/${queryString}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",

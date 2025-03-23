@@ -5,18 +5,11 @@
     description: string;
     status?: string[];
     type?: string[];
+    bank_name?: string[];
+    docNumber?: string;
     minValue: string;
     maxValue: string;
   };
-
-  export interface FiltersRecordsParams {
-    startDate?: string;
-    endDate?: string;
-    status?: string[]; 
-    person?: string;
-    description?: string;
-    docNumber?: string;
-  }
 
   export type FiltersEventType = {
     event_name: string;

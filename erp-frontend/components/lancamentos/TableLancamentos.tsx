@@ -5,66 +5,31 @@ import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { PlusCircle } from "lucide-react";
 import { FilterFinanceRecordType, FinanceRecord } from "@/types/types"
-import Filters from "@/components/FiltersAccrualsDialog";
+import Filters from "@/components/Filters";
 
   interface TableComponentProps {
     data: FinanceRecord[];
     title: string;
     onOrderUpdated: () => void;
+    filters: FilterFinanceRecordType;
+    setFilters: (filters: FilterFinanceRecordType) => void; // ✅ Receive filters from parent
   }
 
-const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpdated }) => {
+const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpdated, filters, setFilters }) => {
     const [filtersOpen, setFiltersOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const [filters, setFilters] = useState<FilterFinanceRecordType>({
-        startDate: "",
-        endDate: "",
-        person: "",
-        description: "",
-        type: ["Despesa", "Receita"],
-        minValue: "",
-        maxValue: ""
-      });
+
     const itemsPerPage = 13;
-    
-      useEffect(() => {
-        localStorage.setItem("savedFilters", JSON.stringify(filters));
-      }, [filters]);
     
       const applyFilters = (newFilters: FilterFinanceRecordType) => {
         setFilters(newFilters);
         setFiltersOpen(false);
         setCurrentPage(1);
       };
-    
-    
-      const clearFilters = () => {
-        setFilters({
-          startDate: "",
-          endDate: "",
-          person: "",
-          description: "",
-          type: ["Despesa", "Receita"],
-          minValue: "",
-          maxValue: ""
-        });
-        localStorage.removeItem("savedFilters");
-      };
+  
       
-      const filteredData = (data && data.length > 0) ? data.filter((order) => {
-        return (
-          (!filters.startDate || new Date(order.date_due) >= new Date(filters.startDate)) &&
-          (!filters.endDate || new Date(order.date_due) <= new Date(filters.endDate)) &&
-          (!filters.person || order.person_name.toLowerCase().includes(filters.person.toLowerCase())) &&
-          (!filters.description || order.description.toLowerCase().includes(filters.description.toLowerCase())) &&
-          (filters.type.length === 0 || filters.type.includes(order.type)) &&
-          (!filters.minValue || parseFloat(order.value) >= parseFloat(filters.minValue)) &&
-          (!filters.maxValue || parseFloat(order.value) <= parseFloat(filters.maxValue))
-        );
-      }) : []; // 👈 Returns an empty array instead of undefined
-    
-    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-    const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    const totalPages = Math.ceil(data.length / itemsPerPage);
+    const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   
     return (
@@ -76,17 +41,33 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
           </div>
         </div>
   
-        {/* Dialog for Advanced Filters */}
-      <Filters
-        filters={filters}
-        setFilters={setFilters}
-        open={filtersOpen}
-        onClose={() => setFiltersOpen(false)}
-        applyFilters={applyFilters}
-        clearFilters={clearFilters}
-        filterOptions={["Despesa", "Receita"]} // Order options
-        filterKey="type" // Tells the component to use 'type'
-      />
+        <Filters<FilterFinanceRecordType>
+          filters={filters}
+          setFilters={setFilters}
+          open={filtersOpen}
+          onClose={() => setFiltersOpen(false)}
+          applyFilters={applyFilters}
+          clearFilters={() => setFilters({
+            startDate: "",
+            endDate: "",
+            person: "",
+            description: "",
+            type: ["Despesa", "Receita"],
+            minValue: "",
+            maxValue: "",
+            bank_name: ["Bradesco", "Caixa", "Itau"]
+          })}
+          filterFields={[
+            { key: "startDate", type: "date", label: "Data Inicial", placeholder: "Data Inicial" },
+            { key: "endDate", type: "date", label: "Data Final", placeholder: "Data Final" },
+            { key: "person", type: "text", label: "Pessoa", placeholder: "Pessoa" },
+            { key: "description", type: "text", label: "Descrição", placeholder: "Descrição" },
+            { key: "minValue", type: "number", label: "Valor Mínimo", placeholder: "Valor Mínimo" },
+            { key: "maxValue", type: "number", label: "Valor Máximo", placeholder: "Valor Máximo" },
+            { key: "bank_name", type: "checkboxes", label: "Banco", options: ["Bradesco", "Caixa", "Itau"] },
+            { key: "type", type: "checkboxes", label: "Tipo", options: ["Despesa", "Receita"] },
+          ]}
+        />
   
         <Table>
           <TableHeader>

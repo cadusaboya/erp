@@ -169,8 +169,36 @@ class EventViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Ensure only suppliers associated with the authenticated user are returned
-        return Event.objects.filter(user=self.request.user)
+        user = self.request.user
+        queryset = Event.objects.filter(user=user)
+        params = self.request.query_params
+
+        # Filters from query params
+        event_name = params.get("event_name")
+        client = params.get("client")
+        start_date = params.get("start_date")
+        end_date = params.get("end_date")
+        min_value = params.get("min_value")
+        max_value = params.get("max_value")
+        event_types = params.getlist("type")  # Example: ?type=casamento&type=formatura
+
+        # Apply filters dynamically
+        if event_name:
+            queryset = queryset.filter(name__icontains=event_name)
+        if client:
+            queryset = queryset.filter(client__name__icontains=client)
+        if start_date:
+            queryset = queryset.filter(date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(date__lte=end_date)
+        if min_value:
+            queryset = queryset.filter(value__gte=min_value)
+        if max_value:
+            queryset = queryset.filter(value__lte=max_value)
+        if event_types:
+            queryset = queryset.filter(type__in=event_types)
+
+        return queryset
 
     def perform_create(self, serializer):
         # Associate the new supplier with the authenticated user

@@ -1,3 +1,5 @@
+import { FilterFinanceRecordType } from "@/types/types";
+
 const API_BASE_URL = "http://127.0.0.1:8000";
 
 const getToken = () => {
@@ -6,16 +8,33 @@ const getToken = () => {
   return token;
 };
 
-export const fetchOrders = async () => {
+export const fetchOrders = async (filters: FilterFinanceRecordType = {}) => {
   try {
     const token = getToken();
+    const queryParams = new URLSearchParams();
 
-    const response = await fetch(`${API_BASE_URL}/payments/extract/`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
+    if (filters.startDate) queryParams.append("start_date", filters.startDate);
+    if (filters.endDate) queryParams.append("end_date", filters.endDate);
+    if (filters.person) queryParams.append("person", filters.person);
+    if (filters.description) queryParams.append("description", filters.description);
+    if (filters.minValue) queryParams.append("min_value", filters.minValue);
+    if (filters.maxValue) queryParams.append("max_value", filters.maxValue);
+    if (filters.bank_name && filters.bank_name.length > 0) {
+      filters.bank_name.forEach((s) => queryParams.append("bank_name", s)); // ✅ Append each status
+    }
+    if (filters.type && filters.type.length > 0) {
+      filters.type.forEach((s) => queryParams.append("type", s)); // ✅ Append each status
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/payments/extract/?${queryParams.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     if (!response.ok) throw new Error("Erro ao buscar lançamentos");
 
@@ -24,49 +43,5 @@ export const fetchOrders = async () => {
   } catch (error) {
     console.error("Erro ao buscar lançamentos:", error);
     return [];
-  }
-};
-
-export const createOrder = async (formData: any) => {
-  try {
-    const token = getToken();
-
-    const response = await fetch(`${API_BASE_URL}/payments/entries/`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    });
-
-    if (!response.ok) throw new Error(`Erro ao criar lançamento`);
-
-    return true;
-  } catch (error) {
-    console.error(`Erro ao criar lançamento:`, error);
-    return false;
-  }
-};
-
-export const updateOrder = async (orderId: number, updatedData: any) => {
-  try {
-    const token = getToken();
-
-    const response = await fetch(`${API_BASE_URL}/payments/entries/${orderId}/`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(updatedData),
-    });
-
-    if (!response.ok) throw new Error(`Erro ao atualizar ordem`);
-
-    return true;
-  } catch (error) {
-    console.error("Erro ao atualizar ordem:", error);
-    return false;
   }
 };

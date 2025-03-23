@@ -6,8 +6,8 @@ import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { PlusCircle, Filter } from "lucide-react";
 import EditResourceDialog from "@/components/clients/EditResourceDialog";
 import CreateResourceDialog from "./CreateResourceDialog";
-import FiltersDialogClient from "@/components/FiltersResourcesDialog"; // Import your filters dialog
-import { Resource } from "@/types/types";
+import FiltersDialog from "@/components/Filters"; // generic filters dialog
+import { Resource, FiltersClientType } from "@/types/types";
 
 type ResourceType = "clients" | "suppliers";
 
@@ -15,6 +15,8 @@ interface TableResourcesProps {
   resourceType: ResourceType;
   data: Resource[];
   title: string;
+  filters: FiltersClientType;
+  setFilters: (filters: FiltersClientType) => void;
   onResourceCreated: () => void;
 }
 
@@ -22,35 +24,26 @@ const TableResources: React.FC<TableResourcesProps> = ({
   resourceType,
   data,
   title,
+  filters,
+  setFilters,
   onResourceCreated,
 }) => {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
-
-  const [filters, setFilters] = useState({
-    name: "",
-    cpf_cnpj: "",
-    email: "",
-    telephone: "",
-  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 13;
 
   const handleEditClick = (resource: Resource) => {
     setSelectedResource(resource);
     setEditOpen(true);
   };
 
-  const filteredData = data.filter((resource) => {
-    return (
-      (!filters.name || resource.name.toLowerCase().includes(filters.name.toLowerCase())) &&
-      (!filters.cpf_cnpj || resource.cpf_cnpj.includes(filters.cpf_cnpj)) &&
-      (!filters.email || resource.email.toLowerCase().includes(filters.email.toLowerCase())) &&
-      (!filters.telephone || resource.telephone.includes(filters.telephone))
-    );
-  });
-
   const resourceLabel = resourceType === "clients" ? "Cliente" : "Fornecedor";
+
+  const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(data.length / itemsPerPage);
 
   return (
     <div className="p-6 bg-white shadow-lg rounded-lg">
@@ -66,8 +59,7 @@ const TableResources: React.FC<TableResourcesProps> = ({
         </div>
       </div>
 
-      {/* Filters Dialog */}
-      <FiltersDialogClient
+      <FiltersDialog<FiltersClientType>
         filters={filters}
         setFilters={setFilters}
         open={filtersOpen}
@@ -76,6 +68,12 @@ const TableResources: React.FC<TableResourcesProps> = ({
         clearFilters={() =>
           setFilters({ name: "", cpf_cnpj: "", email: "", telephone: "" })
         }
+        filterFields={[
+          { key: "name", type: "text", label: "Nome", placeholder: "Nome" },
+          { key: "cpf_cnpj", type: "text", label: "CPF/CNPJ", placeholder: "CPF ou CNPJ" },
+          { key: "email", type: "text", label: "Email", placeholder: "Email" },
+          { key: "telephone", type: "text", label: "Telefone", placeholder: "Telefone" },
+        ]}
       />
 
       {/* Create / Edit Dialogs */}
@@ -107,7 +105,7 @@ const TableResources: React.FC<TableResourcesProps> = ({
           </TableRow>
         </TableHeader>
         <tbody>
-          {filteredData.map((resource) => (
+          {paginatedData.map((resource) => (
             <TableRow key={resource.id}>
               <TableCell>{resource.id}</TableCell>
               <TableCell>{resource.name}</TableCell>
@@ -124,6 +122,17 @@ const TableResources: React.FC<TableResourcesProps> = ({
           ))}
         </tbody>
       </Table>
+
+      {/* Pagination */}
+      <div className="flex justify-center mt-4">
+        <button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
+          ⬅️
+        </button>
+        <span className="mx-2">Página {currentPage} de {totalPages}</span>
+        <button onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>
+          ➡️
+        </button>
+      </div>
     </div>
   );
 };

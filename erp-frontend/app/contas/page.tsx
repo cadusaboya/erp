@@ -5,19 +5,11 @@ import TableComponent from "@/components/contas/TableContas";
 import Sidebar from "@/components/Sidebar";
 import { fetchRecords } from "@/services/records";
 import { FinanceRecord } from "@/types/types";
-
-export type FiltersParams = {
-  startDate?: string;
-  endDate?: string;
-  status?: string[];
-  person?: string;
-  description?: string;
-  docNumber?: string;
-};
+import { FilterFinanceRecordType } from "@/types/types";
 
 export default function Page() {
   const [data, setData] = useState<FinanceRecord[]>([]);
-  const [filters, setFilters] = useState<FiltersParams>({
+  const [filters, setFilters] = useState<FilterFinanceRecordType>({
     startDate: "",
     endDate: "",
     status: ["em aberto", "vencido"],
@@ -26,7 +18,7 @@ export default function Page() {
     docNumber: "",
   });
 
-  const loadRecords = async (activeFilters: FiltersParams) => {
+  const loadRecords = async (activeFilters: FilterFinanceRecordType) => {
     const fetchedData = await fetchRecords("bill", activeFilters);
     setData(fetchedData);
   };

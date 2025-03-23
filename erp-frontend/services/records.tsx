@@ -1,6 +1,6 @@
 const API_BASE_URL = "http://127.0.0.1:8000";
 
-import { FiltersRecordsParams } from "@/types/types";
+import { FilterFinanceRecordType } from "@/types/types";
 
 const getToken = () => {
   const token = localStorage.getItem("token");
@@ -18,7 +18,7 @@ const mapPersonId = (type: "bill" | "income", data: any) => {
   return mapped;
 };
 
-export const fetchRecords = async (type: "bill" | "income", filters: FiltersRecordsParams = {}) => {
+export const fetchRecords = async (type: "bill" | "income", filters: FilterFinanceRecordType = {}) => {
   try {
     const token = getToken();
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import EditContaDialog from "@/components/contas/EditContaDialog";
-import Filters from "@/components/FiltersAccrualsDialog";
+import Filters from "@/components/Filters";
 import CreateContaDialog from "@/components/contas/CreateContaDialog";
 import { PlusCircle } from "lucide-react";
 import { FinanceRecord, FilterFinanceRecordType } from "@/types/types";
@@ -55,24 +55,31 @@ const TableComponent: React.FC<TableComponentProps> = ({
         </div>
       </div>
 
-      <Filters
-        filters={filters}
-        setFilters={setFilters}
-        open={filtersOpen}
-        onClose={() => setFiltersOpen(false)}
-        applyFilters={applyFilters}
-        clearFilters={() => setFilters({
-          startDate: "",
-          endDate: "",
-          person: "",
-          description: "",
-          status: ["em aberto", "vencido", "pago"],
-          minValue: "",
-          maxValue: "",
-        })}
-        filterOptions={["pago", "em aberto", "vencido"]}
-        filterKey="status"
-      />
+      <Filters<FilterFinanceRecordType>
+                filters={filters}
+                setFilters={setFilters}
+                open={filtersOpen}
+                onClose={() => setFiltersOpen(false)}
+                applyFilters={applyFilters}
+                clearFilters={() => setFilters({
+                  startDate: "",
+                  endDate: "",
+                  person: "",
+                  description: "",
+                  status: ["em aberto", "vencido"],
+                  minValue: "",
+                  maxValue: "",
+                })}
+                filterFields={[
+                  { key: "startDate", type: "date", label: "Data Inicial", placeholder: "Data Inicial" },
+                  { key: "endDate", type: "date", label: "Data Final", placeholder: "Data Final" },
+                  { key: "person", type: "text", label: "Pessoa", placeholder: "Pessoa" },
+                  { key: "description", type: "text", label: "Descrição", placeholder: "Descrição" },
+                  { key: "minValue", type: "number", label: "Valor Mínimo", placeholder: "Valor Mínimo" },
+                  { key: "maxValue", type: "number", label: "Valor Máximo", placeholder: "Valor Máximo" },
+                  { key: "status", type: "checkboxes", label: "Tipo", options: ["em aberto", "vencido", "pago"] },
+                ]}
+              />
 
       <EditContaDialog 
         open={editOpen} 
