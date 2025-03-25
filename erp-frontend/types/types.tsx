@@ -1,3 +1,29 @@
+export interface PaymentRecord {
+  id: number;
+  content_type: "bill" | "income";
+  description?: string;
+  object_id: number;
+  date: string;
+  value: string;
+  bank?: number;
+  bank_name?: number;
+  doc_number: string;
+  person_name: string | null;
+  person_type: "supplier" | "client" | null;
+}
+
+export interface FilterPaymentType {
+  startDate?: string;
+  endDate?: string;
+  person?: string;
+  minValue?: string;
+  maxValue?: string;
+  type?: ("Despesa" | "Receita")[];
+  bank_name?: string[];
+  content_type?: "bill" | "income"; // ✅ NEW
+  object_id?: number; // ✅ NEW
+}
+  
   export type FilterFinanceRecordType = {
     startDate: string;
     endDate: string;

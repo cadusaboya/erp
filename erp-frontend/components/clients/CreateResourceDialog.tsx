@@ -37,7 +37,7 @@ const CreateResourceDialog: React.FC<CreateResourceDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Novo {resourceLabel}</DialogTitle>
         </DialogHeader>

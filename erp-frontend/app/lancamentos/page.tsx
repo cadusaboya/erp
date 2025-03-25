@@ -3,14 +3,14 @@
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import TableComponent from "@/components/lancamentos/TableLancamentos";
-import { fetchOrders } from "@/services/lancamentos";
+import { fetchPayments } from "@/services/lancamentos"; // updated to use fetchPayments
 import { fetchBanks } from "@/services/banks";
-import { FinanceRecord, FilterFinanceRecordType } from "@/types/types";
+import { PaymentRecord, FilterPaymentType } from "@/types/types"; // assuming you'll have a new type for payments
 
 export default function Page() {
-  const [data, setData] = useState<FinanceRecord[]>([]);
+  const [data, setData] = useState<PaymentRecord[]>([]);
   const [bankOptions, setBankOptions] = useState<string[]>([]);
-  const [filters, setFilters] = useState<FilterFinanceRecordType>({
+  const [filters, setFilters] = useState<FilterPaymentType>({
     startDate: "",
     endDate: "",
     person: "",
@@ -21,9 +21,9 @@ export default function Page() {
     bank_name: [], // ⬅️ initially empty
   });
 
-  const loadOrders = async (appliedFilters: FilterFinanceRecordType = filters) => {
-    const ordersData = await fetchOrders(appliedFilters);
-    setData(ordersData);
+  const loadPayments = async (appliedFilters: FilterPaymentType = filters) => {
+    const paymentsData = await fetchPayments(appliedFilters);
+    setData(paymentsData);
   };
 
   const loadBanks = async () => {
@@ -37,7 +37,7 @@ export default function Page() {
   }, []);
   
   useEffect(() => {
-    loadOrders(filters);
+    loadPayments(filters);
   }, [filters]);
 
   return (
@@ -46,8 +46,8 @@ export default function Page() {
       <div className="flex-1 p-6">
         <TableComponent 
           data={data} 
-          title="Lançamentos" 
-          onOrderUpdated={() => loadOrders(filters)} 
+          title="Pagamentos" 
+          onOrderUpdated={() => loadPayments(filters)} 
           filters={filters} 
           setFilters={setFilters}
           bankOptions={bankOptions}

@@ -40,17 +40,6 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({ open, onClose, on
     loadData();
   }, [open, type]);
 
-  const status = watch("status");
-  useEffect(() => {
-    if (status !== "pago") {
-      reset((prev) => ({
-        ...prev,
-        bank: undefined,
-        payment_doc_number: undefined,
-      }));
-    }
-  }, [status, reset]);
-
   const onSubmit = async (formData: FinanceRecord) => {
     const success = await createRecord(type, formData);
     if (success) {
@@ -62,7 +51,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({ open, onClose, on
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>
             {type === "bill" ? "Nova Conta a Pagar" : "Novo Recebimento"}
@@ -95,23 +84,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({ open, onClose, on
           {/* Status */}
           <select {...register("status")} className="p-2 border rounded w-full" defaultValue="em aberto">
             <option value="em aberto">Em Aberto</option>
-            <option value="pago">Pago</option>
           </select>
-
-          {status === "pago" && (
-            <>
-              <select {...register("bank", { required: true })} className="p-2 border rounded w-full">
-                <option value="">Selecione uma Conta Bancária</option>
-                {banks.map((bank) => (
-                  <option key={bank.id} value={bank.id}>{bank.name}</option>
-                ))}
-              </select>
-              <Input
-                placeholder="Número do Documento de Pagamento"
-                {...register("payment_doc_number", { required: true })}
-              />
-            </>
-          )}
 
           <DialogFooter>
             <Button variant="outline" type="button" onClick={onClose}>Cancelar</Button>

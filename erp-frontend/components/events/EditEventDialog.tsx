@@ -39,7 +39,7 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({ open, onClose, onEven
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Editar Evento</DialogTitle>
         </DialogHeader>

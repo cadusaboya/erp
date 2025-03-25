@@ -48,7 +48,7 @@ const EditResourceDialog: React.FC<EditResourceDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Editar {resourceLabel}</DialogTitle>
         </DialogHeader>

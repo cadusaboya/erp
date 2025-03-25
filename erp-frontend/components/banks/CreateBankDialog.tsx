@@ -26,7 +26,7 @@ const CreateBankDialog: React.FC<CreateBankDialogProps> = ({ open, onClose, onBa
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Nova Conta Bancária</DialogTitle>
         </DialogHeader>

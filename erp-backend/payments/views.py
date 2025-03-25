@@ -4,8 +4,9 @@ from rest_framework.response import Response  # type: ignore
 from rest_framework.permissions import IsAuthenticated  # type: ignore
 from django.db import transaction # type: ignore
 from django.db.models import Q # type: ignore
-from .models import Bill, Income, Bank
-from .serializers import BillSerializer, IncomeSerializer, BankSerializer
+from .models import Bill, Income, Bank, Payment
+from django.contrib.contenttypes.models import ContentType
+from .serializers import BillSerializer, IncomeSerializer, BankSerializer, PaymentSerializer
 
 class BillViewSet(viewsets.ModelViewSet):
     serializer_class = BillSerializer
@@ -40,38 +41,11 @@ class BillViewSet(viewsets.ModelViewSet):
         
         return queryset
 
-    @transaction.atomic
     def perform_create(self, serializer):
-        # Save instance
-        instance = serializer.save(user=self.request.user)
+        serializer.save(user=self.request.user)
 
-        # If created as "pago", increase balance immediately
-        if instance.status == "pago" and instance.bank:
-            instance.bank.balance -= instance.value
-            instance.bank.save()
-
-    @transaction.atomic
     def perform_update(self, serializer):
-        instance = self.get_object()
-        old_status = instance.status
-        old_bank = instance.bank
-        old_value = instance.value
-
-        # Save new data
-        updated_instance = serializer.save(user=self.request.user)
-
-        # If marked as 'pago'
-        if updated_instance.status == "pago" and old_status != "pago":
-            # Increase bank balance
-            updated_instance.bank.balance -= updated_instance.value
-            updated_instance.bank.save()
-
-        # If UNDO from 'pago' to another status
-        elif old_status == "pago" and updated_instance.status != "pago":
-            # Reverse balance
-            if old_bank:
-                old_bank.balance += old_value
-                old_bank.save()
+        serializer.save(user=self.request.user)
 
 class IncomeViewSet(viewsets.ModelViewSet):
     serializer_class = IncomeSerializer
@@ -106,38 +80,61 @@ class IncomeViewSet(viewsets.ModelViewSet):
         
         return queryset
 
-    @transaction.atomic
     def perform_create(self, serializer):
-        # Save instance
-        instance = serializer.save(user=self.request.user)
+        serializer.save(user=self.request.user)
 
-        # If created as "pago", increase balance immediately
-        if instance.status == "pago" and instance.bank:
-            instance.bank.balance += instance.value
-            instance.bank.save()
-
-    @transaction.atomic
     def perform_update(self, serializer):
-        instance = self.get_object()
-        old_status = instance.status
-        old_bank = instance.bank
-        old_value = instance.value
+        serializer.save(user=self.request.user)
 
-        # Save new data
-        updated_instance = serializer.save(user=self.request.user)
+class PaymentViewSet(viewsets.ModelViewSet):
+    queryset = Payment.objects.all()
+    serializer_class = PaymentSerializer
+    permission_classes = [IsAuthenticated]
 
-        # If marked as 'pago'
-        if updated_instance.status == "pago" and old_status != "pago":
-            # Increase bank balance
-            updated_instance.bank.balance += updated_instance.value
-            updated_instance.bank.save()
+    def get_queryset(self):
+        user = self.request.user
+        params = self.request.query_params
 
-        # If UNDO from 'pago' to another status
-        elif old_status == "pago" and updated_instance.status != "pago":
-            # Reverse balance
-            if old_bank:
-                old_bank.balance -= old_value
-                old_bank.save()
+        qs = Payment.objects.filter(user=user)
+
+        # Filters
+        start_date = params.get("startDate")
+        end_date = params.get("endDate")
+        min_value = params.get("minValue")
+        max_value = params.get("maxValue")
+        bank_name = params.getlist("bank_name")
+        person = params.get("person")
+        type_filter = params.getlist("type")
+        content_type_param = params.get("content_type")  # "bill" or "income"
+        object_id_param = params.get("object_id")
+
+        if content_type_param and object_id_param:
+            target_ct = ContentType.objects.get(model=content_type_param)
+            qs = qs.filter(content_type=target_ct, object_id=object_id_param)
+
+        if start_date:
+            qs = qs.filter(date__gte=start_date)
+        if end_date:
+            qs = qs.filter(date__lte=end_date)
+        if min_value:
+            qs = qs.filter(value__gte=min_value)
+        if max_value:
+            qs = qs.filter(value__lte=max_value)
+        if bank_name:
+            qs = qs.filter(bank__name__in=bank_name)
+
+        if person:
+            qs = qs.filter(person__name__icontains=person)
+
+        if type_filter:
+            type_map = {"Despesa": "bill", "Receita": "income"}
+            content_type_names = [type_map[t] for t in type_filter]
+            qs = qs.filter(content_type__model__in=content_type_names)
+
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 class BankViewSet(viewsets.ModelViewSet):
     serializer_class = BankSerializer

@@ -39,7 +39,7 @@ const EditBankDialog: React.FC<EditBankDialogProps> = ({ open, onClose, onBankUp
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Editar Conta Bancária</DialogTitle>
         </DialogHeader>

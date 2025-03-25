@@ -44,7 +44,7 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({ open, onClose, on
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Novo Evento</DialogTitle>
         </DialogHeader>
