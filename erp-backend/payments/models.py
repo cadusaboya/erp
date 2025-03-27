@@ -45,9 +45,8 @@ class Payment(models.Model):
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, related_name="payment_target")
     object_id = models.PositiveIntegerField()
     payable = GenericForeignKey('content_type', 'object_id')
-    description = models.TextField(blank=True, null=True)  # ✅ NEW FIELD
 
-    date = models.DateField(auto_now_add=True)
+    date = models.DateField()
     value = models.DecimalField(max_digits=10, decimal_places=2)
     bank = models.ForeignKey('Bank', on_delete=models.CASCADE)  # ✅ NEW FK to Bank model
     doc_number = models.CharField(max_length=100, blank=True)

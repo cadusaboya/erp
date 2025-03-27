@@ -44,7 +44,7 @@ export const fetchPayments = async (filters: FilterPaymentType = {}) => {
 export const createPayment = async (payment: PaymentRecord) => {
   const token = getToken();
 
-  const response = await fetch(`${API_BASE_URL}/payments/`, {
+  const response = await fetch(`${API_BASE_URL}/payments/payments/`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -61,7 +61,7 @@ export const createPayment = async (payment: PaymentRecord) => {
 export const updatePayment = async (id: number, payment: Partial<PaymentRecord>) => {
   const token = getToken();
 
-  const response = await fetch(`${API_BASE_URL}/payments/${id}/`, {
+  const response = await fetch(`${API_BASE_URL}/payments/payments/${id}/`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,

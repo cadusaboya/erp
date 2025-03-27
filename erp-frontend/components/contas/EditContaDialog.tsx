@@ -86,6 +86,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
           <select {...register("status")} className="p-2 border rounded w-full" defaultValue={record?.status}>
             <option value="em aberto">Em Aberto</option>
             <option value="vencido">Vencido</option>
+            <option value="pago">Pago</option>
           </select>
 
           <DialogFooter>

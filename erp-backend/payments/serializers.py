@@ -30,12 +30,15 @@ class PaymentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Payment
-        fields = ['id', 'content_type', 'object_id', 'value', 'bank', 'doc_number', 'date', 'description']
+        fields = ['id', 'content_type', 'object_id', 'value', 'bank', 'doc_number', 'date']
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
+
         if instance.payable:
             data['person_name'] = instance.payable.person.name
+            data['description'] = instance.payable.description  # 👈 Add this line
+
         if instance.bank:
             data['bank_name'] = instance.bank.name
 

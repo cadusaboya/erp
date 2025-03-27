@@ -7,6 +7,7 @@ from django.db.models import Q # type: ignore
 from .models import Bill, Income, Bank, Payment
 from django.contrib.contenttypes.models import ContentType
 from .serializers import BillSerializer, IncomeSerializer, BankSerializer, PaymentSerializer
+from django.core.exceptions import ValidationError
 
 class BillViewSet(viewsets.ModelViewSet):
     serializer_class = BillSerializer
@@ -133,8 +134,37 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
         return qs
 
+    @transaction.atomic
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        user = self.request.user
+        payment = serializer.save(user=user)
+
+        parent = payment.payable
+        if not parent:
+            raise ValidationError("Pagamento inválido: objeto relacionado não encontrado.")
+
+        # Get all existing payments for this bill/income
+        existing_payments = Payment.objects.filter(
+            content_type=payment.content_type,
+            object_id=payment.object_id
+        )
+
+        total_paid = sum(p.value for p in existing_payments)
+
+        if total_paid > parent.value:
+            raise ValidationError("Total pago excede o valor da conta/receita. Pagamento não registrado.")
+
+        elif total_paid == parent.value:
+            parent.status = "pago"
+            parent.save()
+
+        # Update bank balance (subtract if Bill, add if Income)
+        if payment.bank:
+            if payment.content_type.model == "bill":
+                payment.bank.balance -= payment.value
+            elif payment.content_type.model == "income":
+                payment.bank.balance += payment.value
+            payment.bank.save()
 
 class BankViewSet(viewsets.ModelViewSet):
     serializer_class = BankSerializer

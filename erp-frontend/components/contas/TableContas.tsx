@@ -6,8 +6,10 @@ import Filters from "@/components/Filters";
 import CreateContaDialog from "@/components/contas/CreateContaDialog";
 import { PlusCircle } from "lucide-react";
 import { FinanceRecord, FilterFinanceRecordType } from "@/types/types";
-import { PaymentsDialog } from "@/components/lancamentos/ViewMoreDialog"; // 👈 new import
-import { fetchPayments } from "@/services/lancamentos"; // 👈 assuming you have this service
+import { PaymentsDialog } from "@/components/lancamentos/ViewMoreDialog";
+import { fetchPayments } from "@/services/lancamentos";
+import CreateDialog from "@/components/CreateDialog"; // 👈 new import
+import { createPayment } from "@/services/lancamentos"; // 👈 your service to create a payment
 
 interface TableComponentProps {
   data: FinanceRecord[];
@@ -26,6 +28,8 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
   const [paymentsDialogOpen, setPaymentsDialogOpen] = useState(false);
   const [payments, setPayments] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [createPaymentOpen, setCreatePaymentOpen] = useState(false); // 👈 new state
+  const [recordToPay, setRecordToPay] = useState<FinanceRecord | null>(null); // 👈 new state
 
   const itemsPerPage = 13;
   const totalPages = Math.ceil(data.length / itemsPerPage);
@@ -44,10 +48,25 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
     setPaymentsDialogOpen(true);
   };
 
+  const handleNewPayment = (record: FinanceRecord) => {
+    setRecordToPay(record);
+    setCreatePaymentOpen(true);
+  };
+
   const applyFilters = (newFilters: FilterFinanceRecordType) => {
     setFilters(newFilters);
     setFiltersOpen(false);
     setCurrentPage(1);
+  };
+
+  const handleSubmitPayment = async (formData: Record<string, string>) => {
+    if (!recordToPay) return;
+    await createPayment({
+      ...formData,
+      content_type: type,
+      object_id: recordToPay.id,
+    });
+    onRecordUpdated();
   };
 
   return (
@@ -111,6 +130,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
               <TableCell className="space-y-2">
                 <Button variant="outline" onClick={() => handleEditClick(record)}>Editar</Button>
                 <Button variant="outline" onClick={() => handlePaymentsClick(record)}>Pagamentos</Button>
+                <Button variant="outline" onClick={() => handleNewPayment(record)}>Pagar</Button>
               </TableCell>
             </TableRow>
           ))}
@@ -128,6 +148,24 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
       <EditContaDialog open={editOpen} onClose={() => setEditOpen(false)} onRecordUpdated={onRecordUpdated} record={selectedRecord} type={type} />
       <CreateContaDialog open={createOpen} onClose={() => setCreateOpen(false)} onRecordCreated={onRecordUpdated} type={type} />
       <PaymentsDialog open={paymentsDialogOpen} onClose={() => setPaymentsDialogOpen(false)} payments={payments} totalValue={selectedRecord?.value || "0.00"} />
+
+      <CreateDialog
+        open={createPaymentOpen}
+        onClose={() => setCreatePaymentOpen(false)}
+        title="Registrar Pagamento"
+        fields={[
+          { key: "date", type: "date", label: "Data", placeholder: "" },
+          { key: "value", type: "number", label: "Valor", placeholder: "R$ 0.00" },
+          { key: "description", type: "text", label: "Descrição", placeholder: "Motivo do pagamento" },
+          { key: "bank", type: "select", label: "Banco", options: [
+            { label: "Bradesco", value: "1" },
+            { label: "Caixa", value: "2" },
+            { label: "Nubank", value: "3" }
+          ] },
+          { key: "doc_number", type: "text", label: "Documento", placeholder: "Nº do comprovante" }
+        ]}
+        onSubmit={handleSubmitPayment}
+      />
     </div>
   );
 };
