@@ -12,7 +12,7 @@ export default function Page() {
   const [filters, setFilters] = useState<FilterFinanceRecordType>({
     startDate: "",
     endDate: "",
-    status: ["em aberto", "vencido"],
+    status: ["em aberto", "vencido", "parcial"],
     person: "",
     description: "",
     docNumber: "",

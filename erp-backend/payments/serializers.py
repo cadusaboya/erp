@@ -7,20 +7,34 @@ from .models import Bill, Income, Bank, Payment
 class BillSerializer(serializers.ModelSerializer):
     person_name = serializers.CharField(source="person.name", read_only=True)
     bank_name = serializers.CharField(source="bank.name", read_only=True)
+    remaining_value = serializers.SerializerMethodField()
 
     class Meta:
         model = Bill
         fields = '__all__'
         read_only_fields = ('user', 'person_name', 'bank_name')
 
+    def get_remaining_value(self, obj):
+        if obj.status != "parcial":
+            return None
+        total_paid = sum(p.value for p in obj.payments.all())
+        return obj.value - total_paid
+
 class IncomeSerializer(serializers.ModelSerializer):
     person_name = serializers.CharField(source="person.name", read_only=True)
     bank_name = serializers.CharField(source="bank.name", read_only=True)
+    remaining_value = serializers.SerializerMethodField()
 
     class Meta:
         model = Income
         fields = '__all__'
         read_only_fields = ('user', 'person_name', 'bank_name')
+
+    def get_remaining_value(self, obj):
+        if obj.status != "parcial":
+            return None
+        total_paid = sum(p.value for p in obj.payments.all())
+        return obj.value - total_paid
 
 class PaymentSerializer(serializers.ModelSerializer):
     content_type = serializers.SlugRelatedField(
@@ -37,17 +51,20 @@ class PaymentSerializer(serializers.ModelSerializer):
 
         if instance.payable:
             data['person_name'] = instance.payable.person.name
-            data['description'] = instance.payable.description  # 👈 Add this line
+            data['description'] = instance.payable.description
 
         if instance.bank:
             data['bank_name'] = instance.bank.name
 
         return data
 
-
     def validate(self, attrs):
-        content_type = attrs.get('content_type')
-        object_id = attrs.get('object_id')
+        # Get from attrs if present, or fallback to instance (on updates)
+        content_type = attrs.get('content_type') or getattr(self.instance, 'content_type', None)
+        object_id = attrs.get('object_id') or getattr(self.instance, 'object_id', None)
+
+        if not content_type or not object_id:
+            raise serializers.ValidationError("É necessário informar 'content_type' e 'object_id'.")
 
         ModelClass = content_type.model_class()
 

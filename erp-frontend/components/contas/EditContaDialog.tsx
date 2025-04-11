@@ -87,6 +87,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
             <option value="em aberto">Em Aberto</option>
             <option value="vencido">Vencido</option>
             <option value="pago">Pago</option>
+            <option value="parcial">Parcial</option>
           </select>
 
           <DialogFooter>

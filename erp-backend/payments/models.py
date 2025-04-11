@@ -10,7 +10,8 @@ class Accrual(models.Model):
     STATUS_CHOICES = [
         ('em aberto', 'Em Aberto'),
         ('pago', 'Pago'),
-        ('vencido', 'Vencido')
+        ('vencido', 'Vencido'),
+        ('parcial', 'Parcial')
     ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

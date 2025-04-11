@@ -89,7 +89,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
         open={filtersOpen}
         onClose={() => setFiltersOpen(false)}
         applyFilters={applyFilters}
-        clearFilters={() => setFilters({ startDate: "", endDate: "", person: "", description: "", status: ["em aberto", "vencido"], minValue: "", maxValue: "" })}
+        clearFilters={() => setFilters({ startDate: "", endDate: "", person: "", description: "", status: ["em aberto", "vencido", "parcial"], minValue: "", maxValue: "" })}
         filterFields={[
           { key: "startDate", type: "date", label: "Data Inicial", placeholder: "Data Inicial" },
           { key: "endDate", type: "date", label: "Data Final", placeholder: "Data Final" },
@@ -97,7 +97,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
           { key: "description", type: "text", label: "Descrição", placeholder: "Descrição" },
           { key: "minValue", type: "number", label: "Valor Mínimo", placeholder: "Valor Mínimo" },
           { key: "maxValue", type: "number", label: "Valor Máximo", placeholder: "Valor Máximo" },
-          { key: "status", type: "checkboxes", label: "Tipo", options: ["em aberto", "vencido", "pago"] },
+          { key: "status", type: "checkboxes", label: "Tipo", options: ["em aberto", "vencido", "parcial", "pago"] },
         ]}
       />
 
@@ -126,7 +126,9 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
                   {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
                 </span>
               </TableCell>
-              <TableCell>R$ {record.value}</TableCell>
+              <TableCell>
+                {record.status === "parcial" ? `R$ ${Number(record.remaining_value).toFixed(2)}` : `R$ ${Number(record.value).toFixed(2)}`}
+              </TableCell>
               <TableCell className="space-y-2">
                 <Button variant="outline" onClick={() => handleEditClick(record)}>Editar</Button>
                 <Button variant="outline" onClick={() => handlePaymentsClick(record)}>Pagamentos</Button>

@@ -62,9 +62,10 @@ export interface FilterPaymentType {
     description: string;
     date_due: string;
     value: string;
+    remaining_value?: string;
     doc_number?: string;
     event?: string | null;
-    status: "em aberto" | "pago" | "vencido";
+    status: "em aberto" | "pago" | "vencido" | "parcial";
     bank?: number;
     bank_name: string;
     payment_doc_number?: number;

@@ -158,6 +158,10 @@ class PaymentViewSet(viewsets.ModelViewSet):
             parent.status = "pago"
             parent.save()
 
+        elif total_paid > 0:
+            parent.status = "parcial"
+            parent.save()
+
         # Update bank balance (subtract if Bill, add if Income)
         if payment.bank:
             if payment.content_type.model == "bill":
