@@ -4,9 +4,9 @@ from rest_framework.response import Response  # type: ignore
 from rest_framework.permissions import IsAuthenticated  # type: ignore
 from django.db import transaction # type: ignore
 from django.db.models import Q # type: ignore
-from .models import Bill, Income, Bank, Payment
+from .models import Bill, Income, Bank, Payment, CostCenter
 from django.contrib.contenttypes.models import ContentType
-from .serializers import BillSerializer, IncomeSerializer, BankSerializer, PaymentSerializer
+from .serializers import BillSerializer, IncomeSerializer, BankSerializer, PaymentSerializer, CostCenterSerializer
 from django.core.exceptions import ValidationError
 
 class BillViewSet(viewsets.ModelViewSet):
@@ -241,6 +241,18 @@ class BankViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # Ensure only Bank Accounts associated with the authenticated user are returned
         return Bank.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        # Associate the new Bank account with the authenticated user
+        serializer.save(user=self.request.user)
+
+class CostCenterViewSet(viewsets.ModelViewSet):
+    serializer_class = CostCenterSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Ensure only Bank Accounts associated with the authenticated user are returned
+        return CostCenter.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
         # Associate the new Bank account with the authenticated user

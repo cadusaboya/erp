@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
-from .models import Bill, Income, Bank, Payment
+from .models import Bill, Income, Bank, Payment, CostCenter
 
 # serializers.py
 class BillSerializer(serializers.ModelSerializer):
@@ -81,6 +81,13 @@ class BankSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Bank
+        fields = '__all__'
+        read_only_fields = ('user',)
+
+class CostCenterSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = CostCenter
         fields = '__all__'
         read_only_fields = ('user',)
 

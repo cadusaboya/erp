@@ -9,7 +9,7 @@ from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
 from django.contrib.auth import authenticate # type: ignore
 from rest_framework_simplejwt.tokens import RefreshToken # type: ignore
-from rest_framework.permissions import IsAuthenticated # type: ignore
+from rest_framework.permissions import AllowAny # type: ignore
 from django.utils.encoding import force_str  # type: ignore
 from django.shortcuts import redirect # type: ignore
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode # type: ignore

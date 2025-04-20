@@ -5,6 +5,13 @@ from django.utils.timezone import now
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericRelation
+
+class CostCenter(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
     
 class Accrual(models.Model):
     STATUS_CHOICES = [
@@ -22,9 +29,7 @@ class Accrual(models.Model):
     event = models.ForeignKey('events.Event', on_delete=models.SET_NULL, blank=True, null=True, related_name="%(class)s")
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='em aberto')
     payments = GenericRelation('payments.Payment', content_type_field='content_type', object_id_field='object_id')
-
-    class Meta:
-        abstract = True
+    cost_center = models.ForeignKey(CostCenter, on_delete=models.SET_NULL, null=True, blank=True)
 
 
 class Income(Accrual):
@@ -63,5 +68,22 @@ class Bank(models.Model):
 
     def __str__(self):
         return f"{self.name} - R$ {self.balance:.2f}"
+    
+class ChartAccount(models.Model):
+    code = models.CharField(max_length=20)  # e.g., "20425"
+    description = models.CharField(max_length=200)
+
+    def __str__(self):
+        return f"{self.code} - {self.description}"
+    
+class AccountAllocation(models.Model):
+    accrual = models.ForeignKey(Accrual, on_delete=models.CASCADE, related_name="allocations")  # bill or income
+    chart_account = models.ForeignKey(ChartAccount, on_delete=models.CASCADE)
+    value = models.DecimalField(max_digits=10, decimal_places=2)
+
+class EventAllocation(models.Model):
+    accrual = models.ForeignKey(Accrual, on_delete=models.CASCADE, related_name="event_allocations")
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    value = models.DecimalField(max_digits=10, decimal_places=2)
 
 

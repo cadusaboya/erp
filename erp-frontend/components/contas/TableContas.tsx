@@ -164,7 +164,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
             { label: "Itau", value: "3" },
             { label: "Nubank", value: "2" }
           ] },
-          { key: "doc_number", type: "text", label: "Documento", placeholder: "Nº do comprovante" }
+          { key: "doc_number", type: "text", label: "Documento", placeholder: "Nº do comprovante" },
         ]}
         onSubmit={handleSubmitPayment}
       />
