@@ -170,6 +170,70 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 payment.bank.balance += payment.value
             payment.bank.save()
 
+    @transaction.atomic
+    def perform_update(self, serializer):
+        user = self.request.user
+        old_instance = self.get_object()
+        old_value = old_instance.value
+        old_bank = old_instance.bank
+        old_content_type = old_instance.content_type.model
+
+        payment = serializer.save(user=user)
+        parent = payment.payable
+
+        if not parent:
+            raise ValidationError("Pagamento inválido: objeto relacionado não encontrado.")
+
+        # Recalculate total paid after the update
+        existing_payments = Payment.objects.filter(
+            content_type=payment.content_type,
+            object_id=payment.object_id
+        )
+
+        total_paid = sum(p.value for p in existing_payments)
+
+        if total_paid > parent.value:
+            raise ValidationError("Total pago excede o valor da conta/receita. Pagamento não atualizado.")
+
+        elif total_paid == parent.value:
+            parent.status = "pago"
+            parent.save()
+
+        elif total_paid > 0:
+            parent.status = "parcial"
+            parent.save()
+        else:
+            parent.status = "em aberto"
+            parent.save()
+
+        # Adjust bank balance (consider value difference and model type)
+        if payment.bank:
+            value_diff = payment.value - old_value
+
+            if old_bank == payment.bank and old_content_type == payment.content_type.model:
+                # Same bank & type, adjust difference
+                if payment.content_type.model == "bill":
+                    payment.bank.balance -= value_diff
+                elif payment.content_type.model == "income":
+                    payment.bank.balance += value_diff
+
+            else:
+                # Revert old bank
+                if old_bank:
+                    if old_content_type == "bill":
+                        old_bank.balance += old_value
+                    elif old_content_type == "income":
+                        old_bank.balance -= old_value
+                    old_bank.save()
+
+                # Apply to new bank
+                if payment.content_type.model == "bill":
+                    payment.bank.balance -= payment.value
+                elif payment.content_type.model == "income":
+                    payment.bank.balance += payment.value
+
+            payment.bank.save()
+
 class BankViewSet(viewsets.ModelViewSet):
     serializer_class = BankSerializer
     permission_classes = [IsAuthenticated]

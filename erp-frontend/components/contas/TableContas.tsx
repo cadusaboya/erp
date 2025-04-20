@@ -161,8 +161,8 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
           { key: "description", type: "text", label: "Descrição", placeholder: "Motivo do pagamento" },
           { key: "bank", type: "select", label: "Banco", options: [
             { label: "Bradesco", value: "1" },
-            { label: "Caixa", value: "2" },
-            { label: "Nubank", value: "3" }
+            { label: "Itau", value: "3" },
+            { label: "Nubank", value: "2" }
           ] },
           { key: "doc_number", type: "text", label: "Documento", placeholder: "Nº do comprovante" }
         ]}

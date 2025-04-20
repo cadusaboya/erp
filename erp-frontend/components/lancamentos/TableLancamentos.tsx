@@ -8,13 +8,18 @@ import Filters from "@/components/Filters";
 import EditDialog from "../EditDialog";
 import { updatePayment } from "@/services/lancamentos";
 
+interface BankOption {
+  id: number;
+  name: string;
+}
+
 interface TableComponentProps {
   data: PaymentRecord[];
   title: string;
   onOrderUpdated: () => void;
   filters: FilterPaymentType;
   setFilters: (filters: FilterPaymentType) => void;
-  bankOptions: string[];
+  bankOptions: BankOption[];
 }
 
 const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpdated, filters, setFilters, bankOptions }) => {
@@ -74,7 +79,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
           { key: "person", type: "text", label: "Pessoa", placeholder: "Pessoa" },
           { key: "minValue", type: "number", label: "Valor Mínimo", placeholder: "Valor Mínimo" },
           { key: "maxValue", type: "number", label: "Valor Máximo", placeholder: "Valor Máximo" },
-          { key: "bank_name", type: "checkboxes", label: "Banco", options: bankOptions },
+          { key: "bank_name", type: "checkboxes", label: "Banco", options: bankOptions.map(bank => bank.name)},
           { key: "type", type: "checkboxes", label: "Tipo", options: ["Despesa", "Receita"] },
         ]}
       />
@@ -137,7 +142,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
             date: selectedPayment.date,
             description: selectedPayment.description || "",
             doc_number: selectedPayment.doc_number,
-            bank: selectedPayment.bank?.toString() || "",
+            bank: String(selectedPayment.bank || ""), // ✅ bank ID as string
           }}
           fields={[
             { key: "value", type: "number", label: "Valor", placeholder: "R$ 0,00" },
@@ -148,7 +153,10 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
               key: "bank",
               type: "select",
               label: "Banco",
-              options: bankOptions.map((bank, idx) => ({ label: bank, value: String(idx + 1) })),
+              options: bankOptions.map((bank) => ({
+                label: bank.name,
+                value: String(bank.id), // ✅ using real ID here
+              })),
             },
           ]}
           onSubmit={async (formData) => {

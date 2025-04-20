@@ -7,9 +7,14 @@ import { fetchPayments } from "@/services/lancamentos"; // updated to use fetchP
 import { fetchBanks } from "@/services/banks";
 import { PaymentRecord, FilterPaymentType } from "@/types/types"; // assuming you'll have a new type for payments
 
+interface BankOption {
+  id: number;
+  name: string;
+}
+
 export default function Page() {
   const [data, setData] = useState<PaymentRecord[]>([]);
-  const [bankOptions, setBankOptions] = useState<string[]>([]);
+  const [bankOptions, setBankOptions] = useState<BankOption[]>([]);
   const [filters, setFilters] = useState<FilterPaymentType>({
     startDate: "",
     endDate: "",
@@ -28,8 +33,7 @@ export default function Page() {
 
   const loadBanks = async () => {
     const banks = await fetchBanks();
-    const bankNames = banks.map((b: any) => b.name);
-    setBankOptions(bankNames);
+    setBankOptions(banks); // Don't map to just names
   };
 
   useEffect(() => {
