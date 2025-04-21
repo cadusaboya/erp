@@ -1,12 +1,12 @@
-from rest_framework import status, viewsets  # type: ignore
+from rest_framework import status, filters, viewsets  # type: ignore
 from rest_framework.decorators import api_view, permission_classes  # type: ignore
 from rest_framework.response import Response  # type: ignore
 from rest_framework.permissions import IsAuthenticated  # type: ignore
 from django.db import transaction # type: ignore
 from django.db.models import Q # type: ignore
-from .models import Bill, Income, Bank, Payment, CostCenter, EventAllocation
+from .models import Bill, Income, Bank, Payment, CostCenter, EventAllocation, ChartAccount
 from django.contrib.contenttypes.models import ContentType
-from .serializers import BillSerializer, IncomeSerializer, BankSerializer, PaymentSerializer, CostCenterSerializer
+from .serializers import BillSerializer, IncomeSerializer, BankSerializer, PaymentSerializer, CostCenterSerializer, ChartAccountSerializer
 from django.core.exceptions import ValidationError
 
 class BillViewSet(viewsets.ModelViewSet):
@@ -257,6 +257,15 @@ class CostCenterViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # Associate the new Bank account with the authenticated user
         serializer.save(user=self.request.user)
+
+class ChartAccountViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = ChartAccountSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['code', 'description']
+
+    def get_queryset(self):
+        return ChartAccount.objects.all()
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
