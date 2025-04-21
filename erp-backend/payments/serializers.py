@@ -1,13 +1,18 @@
 from rest_framework import serializers
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
-from .models import Bill, Income, Bank, Payment, CostCenter
+from .models import Bill, Income, Bank, Payment, CostCenter, EventAllocation
 
-# serializers.py
+class EventAllocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EventAllocation
+        fields = ['event', 'value']
+
 class BillSerializer(serializers.ModelSerializer):
     person_name = serializers.CharField(source="person.name", read_only=True)
     bank_name = serializers.CharField(source="bank.name", read_only=True)
     remaining_value = serializers.SerializerMethodField()
+    event_allocations = EventAllocationSerializer(many=True, required=False)
 
     class Meta:
         model = Bill
@@ -20,10 +25,26 @@ class BillSerializer(serializers.ModelSerializer):
         total_paid = sum(p.value for p in obj.payments.all())
         return obj.value - total_paid
 
+    def create(self, validated_data):
+        event_allocations_data = validated_data.pop('event_allocations', [])
+        bill = super().create(validated_data)
+        for allocation in event_allocations_data:
+            EventAllocation.objects.create(accrual=bill, **allocation)
+        return bill
+
+    def update(self, instance, validated_data):
+        event_allocations_data = validated_data.pop('event_allocations', [])
+        instance = super().update(instance, validated_data)
+        instance.event_allocations.all().delete()
+        for allocation in event_allocations_data:
+            EventAllocation.objects.create(accrual=instance, **allocation)
+        return instance
+
 class IncomeSerializer(serializers.ModelSerializer):
     person_name = serializers.CharField(source="person.name", read_only=True)
     bank_name = serializers.CharField(source="bank.name", read_only=True)
     remaining_value = serializers.SerializerMethodField()
+    event_allocations = EventAllocationSerializer(many=True, required=False)
 
     class Meta:
         model = Income
@@ -35,6 +56,21 @@ class IncomeSerializer(serializers.ModelSerializer):
             return None
         total_paid = sum(p.value for p in obj.payments.all())
         return obj.value - total_paid
+
+    def create(self, validated_data):
+        event_allocations_data = validated_data.pop('event_allocations', [])
+        income = super().create(validated_data)
+        for allocation in event_allocations_data:
+            EventAllocation.objects.create(accrual=income, **allocation)
+        return income
+
+    def update(self, instance, validated_data):
+        event_allocations_data = validated_data.pop('event_allocations', [])
+        instance = super().update(instance, validated_data)
+        instance.event_allocations.all().delete()
+        for allocation in event_allocations_data:
+            EventAllocation.objects.create(accrual=instance, **allocation)
+        return instance
 
 class PaymentSerializer(serializers.ModelSerializer):
     content_type = serializers.SlugRelatedField(
@@ -59,7 +95,6 @@ class PaymentSerializer(serializers.ModelSerializer):
         return data
 
     def validate(self, attrs):
-        # Get from attrs if present, or fallback to instance (on updates)
         content_type = attrs.get('content_type') or getattr(self.instance, 'content_type', None)
         object_id = attrs.get('object_id') or getattr(self.instance, 'object_id', None)
 
@@ -78,18 +113,13 @@ class PaymentSerializer(serializers.ModelSerializer):
         return attrs
 
 class BankSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Bank
         fields = '__all__'
         read_only_fields = ('user',)
 
 class CostCenterSerializer(serializers.ModelSerializer):
-    
     class Meta:
         model = CostCenter
         fields = '__all__'
         read_only_fields = ('user',)
-
-
-

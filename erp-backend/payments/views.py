@@ -4,7 +4,7 @@ from rest_framework.response import Response  # type: ignore
 from rest_framework.permissions import IsAuthenticated  # type: ignore
 from django.db import transaction # type: ignore
 from django.db.models import Q # type: ignore
-from .models import Bill, Income, Bank, Payment, CostCenter
+from .models import Bill, Income, Bank, Payment, CostCenter, EventAllocation
 from django.contrib.contenttypes.models import ContentType
 from .serializers import BillSerializer, IncomeSerializer, BankSerializer, PaymentSerializer, CostCenterSerializer
 from django.core.exceptions import ValidationError
@@ -257,6 +257,21 @@ class CostCenterViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # Associate the new Bank account with the authenticated user
         serializer.save(user=self.request.user)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def event_accruals_view(request, event_id):
+    # Get all allocations for the event
+    allocation_ids = EventAllocation.objects.filter(event_id=event_id).values_list('accrual_id', flat=True)
+
+    # Separate Bills and Incomes
+    bills = Bill.objects.filter(id__in=allocation_ids, user=request.user)
+    incomes = Income.objects.filter(id__in=allocation_ids, user=request.user)
+
+    return Response({
+        "bills": BillSerializer(bills, many=True).data,
+        "incomes": IncomeSerializer(incomes, many=True).data
+    })
         
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

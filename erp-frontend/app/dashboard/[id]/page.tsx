@@ -21,28 +21,43 @@ export default function EventDashboard({ params }: { params: { id: string } }) {
     const fetchEventData = async () => {
       try {
         const token = localStorage.getItem("token");
-        if (!token) {
-          throw new Error("Token não encontrado");
-        }
+        if (!token) throw new Error("Token não encontrado");
 
-        const response = await fetch(`${API_BASE_URL}/events/view/${params.id}/`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+        const eventRes = await fetch(`${API_BASE_URL}/events/view/${params.id}/`, {
+          headers: { Authorization: `Bearer ${token}` }
         });
+        if (!eventRes.ok) throw new Error("Erro ao buscar evento");
+        const eventData = await eventRes.json();
+        setEvent(eventData);
 
-        if (!response.ok) {
-          throw new Error("Erro ao buscar evento");
-        }
+        const allocRes = await fetch(`${API_BASE_URL}/payments/event-allocations/${params.id}/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!allocRes.ok) throw new Error("Erro ao buscar rateios");
+        const allocData = await allocRes.json();
 
-        const result = await response.json();
-        setEvent(result.event);
-        setBills(result.bills);
-        setIncomes(result.incomes);
-        setFinancialSummary(result.financial_summary);
+        // ✅ Filter value based on event_allocations
+        const filteredBills = allocData.bills.map((bill: any) => {
+          const allocation = bill.event_allocations.find((ea: any) => ea.event === Number(params.id));
+          return allocation ? { ...bill, value: allocation.value } : null;
+        }).filter(Boolean);
+
+        const filteredIncomes = allocData.incomes.map((income: any) => {
+          const allocation = income.event_allocations.find((ea: any) => ea.event === Number(params.id));
+          return allocation ? { ...income, value: allocation.value } : null;
+        }).filter(Boolean);
+
+        setBills(filteredBills);
+        setIncomes(filteredIncomes);
+
+        const summaryRes = await fetch(`${API_BASE_URL}/events/${params.id}/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!summaryRes.ok) throw new Error("Erro ao buscar resumo financeiro");
+        const summary = await summaryRes.json();
+        setFinancialSummary(summary);
       } catch (error) {
-        console.error("Erro ao buscar evento:", error);
+        console.error("Erro ao buscar dados do evento:", error);
       }
     };
 
@@ -51,19 +66,14 @@ export default function EventDashboard({ params }: { params: { id: string } }) {
 
   const handleDownloadPDF = async () => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      alert("Token não encontrado");
-      return;
-    }
+    if (!token) return alert("Token não encontrado");
 
     try {
       const response = await fetch(`${API_BASE_URL}/events/${params.id}/pdf/`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (!response.ok) {
-        throw new Error("Erro ao gerar o PDF");
-      }
+      if (!response.ok) throw new Error("Erro ao gerar o PDF");
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -78,13 +88,10 @@ export default function EventDashboard({ params }: { params: { id: string } }) {
     }
   };
 
-  if (!event || !financialSummary) {
-    return <p>Carregando...</p>;
-  }
+  if (!event || !financialSummary) return <p>Carregando...</p>;
 
   return (
     <div className="p-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <LayoutGrid size={24} /> {event.event_name}
@@ -93,13 +100,12 @@ export default function EventDashboard({ params }: { params: { id: string } }) {
           <Button variant="outline" onClick={handleDownloadPDF}>
             <FileText size={18} className="mr-2" /> Baixar PDF
           </Button>
-          <Button variant="outline" onClick={() => router.push("/dashboard")}>
+          <Button variant="outline" onClick={() => router.push("/dashboard")}> 
             <ArrowLeft size={18} className="mr-2" /> Voltar
           </Button>
         </div>
       </div>
 
-      {/* Event Details */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Detalhes do Evento</CardTitle>
@@ -112,7 +118,6 @@ export default function EventDashboard({ params }: { params: { id: string } }) {
         </CardContent>
       </Card>
 
-      {/* Financial Summary */}
       <Card className="mb-6">
         <CardHeader>
           <CardTitle>Resumo Financeiro</CardTitle>
@@ -125,7 +130,6 @@ export default function EventDashboard({ params }: { params: { id: string } }) {
         </CardContent>
       </Card>
 
-      {/* Receitas (Contas a Receber) */}
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>Receitas</CardTitle>
@@ -137,7 +141,7 @@ export default function EventDashboard({ params }: { params: { id: string } }) {
                 <TableRow>
                   <TableCell>Data</TableCell>
                   <TableCell>Pessoa</TableCell>
-                  <TableCell>Descrição</TableCell>     
+                  <TableCell>Descrição</TableCell>
                   <TableCell>Valor</TableCell>
                 </TableRow>
               </TableHeader>
@@ -146,7 +150,7 @@ export default function EventDashboard({ params }: { params: { id: string } }) {
                   <TableRow key={income.id}>
                     <TableCell>{income.date_due}</TableCell>
                     <TableCell>{income.person_name}</TableCell>
-                    <TableCell>{income.description}</TableCell>  
+                    <TableCell>{income.description}</TableCell>
                     <TableCell className="text-green-500">R$ {Number(income.value).toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
@@ -158,7 +162,6 @@ export default function EventDashboard({ params }: { params: { id: string } }) {
         </CardContent>
       </Card>
 
-      {/* Despesas (Contas a Pagar) */}
       <Card className="mt-6">
         <CardHeader>
           <CardTitle>Despesas</CardTitle>
@@ -170,7 +173,7 @@ export default function EventDashboard({ params }: { params: { id: string } }) {
                 <TableRow>
                   <TableCell>Data</TableCell>
                   <TableCell>Pessoa</TableCell>
-                  <TableCell>Descrição</TableCell>     
+                  <TableCell>Descrição</TableCell>
                   <TableCell>Valor</TableCell>
                 </TableRow>
               </TableHeader>
@@ -179,7 +182,7 @@ export default function EventDashboard({ params }: { params: { id: string } }) {
                   <TableRow key={bill.id}>
                     <TableCell>{bill.date_due}</TableCell>
                     <TableCell>{bill.person_name}</TableCell>
-                    <TableCell>{bill.description}</TableCell>  
+                    <TableCell>{bill.description}</TableCell>
                     <TableCell className="text-red-500">R$ {Number(bill.value).toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
