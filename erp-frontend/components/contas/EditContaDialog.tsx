@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { fetchEvents } from "@/services/events";
 import { fetchResources } from "@/services/resources";
 import { updateRecord } from "@/services/records";
+import RatioTable from "@/components/RatioTable";
 
-import { FinanceRecord, Event, Resource, Bank } from "@/types/types";
+import { FinanceRecord, Event, Resource } from "@/types/types";
 
 interface EditContaDialogProps {
   open: boolean;
@@ -23,6 +24,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
   const { register, handleSubmit, reset } = useForm<FinanceRecord>();
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
+  const [eventAllocations, setEventAllocations] = useState<{ event: string; value: string }[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -33,23 +35,31 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
         ]);
         setEvents(eventsData);
         setResources(resourcesData);
-  
-        // ✅ Reset form AFTER resources are ready
+
         if (record) {
           const normalizedRecord = {
             ...record,
           };
           reset(normalizedRecord);
+
+          if (record.event_allocations) {
+            setEventAllocations(record.event_allocations.map((ea) => ({
+              event: String(ea.event),
+              value: String(ea.value),
+            })));
+          }
         }
       }
     };
     load();
   }, [open, type, record, reset]);
-  
 
   const onSubmit = async (formData: FinanceRecord) => {
     if (!record?.id) return;
-    const success = await updateRecord(type, record.id, formData);
+    const success = await updateRecord(type, record.id, {
+      ...formData,
+      event_allocations: eventAllocations,
+    });
     if (success) {
       onRecordUpdated();
       reset();
@@ -76,14 +86,19 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
           <Input type="number" placeholder="Valor" {...register("value", { required: true })} defaultValue={record?.value} />
           <Input placeholder="Número do Documento" {...register("doc_number")} defaultValue={record?.doc_number} />
 
-          <select {...register("event")} className="p-2 border rounded w-full" defaultValue={record?.event || ""}>
-            <option value="">Sem Evento</option>
-            {events.map((event) => (
-              <option key={event.id} value={event.id}>{event.event_name}</option>
-            ))}
-          </select>
+          <div>
+            <label className="text-sm font-medium block mb-1">Rateio de Eventos</label>
+            <RatioTable
+              allocations={eventAllocations}
+              setAllocations={setEventAllocations}
+              events={events}
+            />
+          </div>
 
-          <select {...register("status")} className="p-2 border rounded w-full" defaultValue={record?.status}>
+          <select {...register("status")}
+            className="p-2 border rounded w-full"
+            defaultValue={record?.status}
+          >
             <option value="em aberto">Em Aberto</option>
             <option value="vencido">Vencido</option>
             <option value="pago">Pago</option>
