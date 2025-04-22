@@ -4,12 +4,27 @@ import { useState, useEffect } from "react";
 import TableComponent from "@/components/contas/TableContas";
 import Sidebar from "@/components/Sidebar";
 import { fetchRecords } from "@/services/records";
+import { fetchBanks } from "@/services/banks";
 import { FinanceRecord } from "@/types/types";
-import { FilterFinanceRecordType } from "@/types/types";
+
+interface BankOption {
+  id: number;
+  name: string;
+}
+
+export type FiltersParams = {
+  startDate?: string;
+  endDate?: string;
+  status?: string[];
+  person?: string;
+  description?: string;
+  docNumber?: string;
+};
 
 export default function Page() {
   const [data, setData] = useState<FinanceRecord[]>([]);
-  const [filters, setFilters] = useState<FilterFinanceRecordType>({
+  const [bankOptions, setBankOptions] = useState<BankOption[]>([]);
+  const [filters, setFilters] = useState<FiltersParams>({
     startDate: "",
     endDate: "",
     status: ["em aberto", "vencido", "parcial"],
@@ -18,10 +33,19 @@ export default function Page() {
     docNumber: "",
   });
 
-  const loadRecords = async (activeFilters: FilterFinanceRecordType) => {
+  const loadBanks = async () => {
+    const banks = await fetchBanks();
+    setBankOptions(banks); // Don't map to just names
+  };
+
+  const loadRecords = async (activeFilters: FiltersParams) => {
     const fetchedData = await fetchRecords("bill", activeFilters);
     setData(fetchedData);
   };
+
+  useEffect(() => {
+    loadBanks();
+  }, []);
 
   useEffect(() => {
     loadRecords(filters);
@@ -38,6 +62,7 @@ export default function Page() {
           filters={filters}                // ✅ Pass current filters
           setFilters={setFilters}          // ✅ Pass setter to child
           onRecordUpdated={() => loadRecords(filters)} // Refresh records when something changes
+          bankOptions={bankOptions}
         />
       </div>
     </div>

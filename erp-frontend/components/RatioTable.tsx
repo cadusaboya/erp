@@ -1,3 +1,6 @@
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+
 interface RateioItem {
   id?: number;
   event?: string;
@@ -79,9 +82,17 @@ const RatioTable: React.FC<RateioTableProps> = ({
           </button>
         </div>
       ))}
-      <button type="button" onClick={addRow} className="text-blue-600 mt-1 underline">
-        Adicionar Rateio
-      </button>
+      <div className="flex justify-start mt-2">
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        onClick={addRow}
+        title="Adicionar Rateio"
+      >
+        <Plus className="w-4 h-4" />
+      </Button>
+      </div>
     </div>
   );
 };

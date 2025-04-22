@@ -11,6 +11,11 @@ import { fetchPayments } from "@/services/lancamentos";
 import CreateDialog from "@/components/CreateDialog"; // 👈 new import
 import { createPayment } from "@/services/lancamentos"; // 👈 your service to create a payment
 
+interface BankOption {
+  id: number;
+  name: string;
+}
+
 interface TableComponentProps {
   data: FinanceRecord[];
   title: string;
@@ -18,9 +23,10 @@ interface TableComponentProps {
   onRecordUpdated: () => void;
   filters: FilterFinanceRecordType;
   setFilters: (filters: FilterFinanceRecordType) => void;
+  bankOptions: BankOption[];
 }
 
-const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRecordUpdated, filters, setFilters }) => {
+const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRecordUpdated, filters, setFilters, bankOptions }) => {
   const [createOpen, setCreateOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -159,11 +165,15 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
           { key: "date", type: "date", label: "Data", placeholder: "" },
           { key: "value", type: "number", label: "Valor", placeholder: "R$ 0.00" },
           { key: "description", type: "text", label: "Descrição", placeholder: "Motivo do pagamento" },
-          { key: "bank", type: "select", label: "Banco", options: [
-            { label: "Bradesco", value: "1" },
-            { label: "Itau", value: "3" },
-            { label: "Nubank", value: "2" }
-          ] },
+          {
+            key: "bank",
+            type: "select",
+            label: "Banco",
+            options: bankOptions.map((bank) => ({
+              label: bank.name,
+              value: String(bank.id), // ✅ using real ID here
+            })),
+          },
           { key: "doc_number", type: "text", label: "Documento", placeholder: "Nº do comprovante" },
         ]}
         onSubmit={handleSubmitPayment}
