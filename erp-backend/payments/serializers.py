@@ -14,9 +14,14 @@ class AccountAllocationSerializer(serializers.ModelSerializer):
         fields = ['chart_account', 'value']
 
 class ChartAccountSerializer(serializers.ModelSerializer):
+    children = serializers.SerializerMethodField()
+
     class Meta:
         model = ChartAccount
-        fields = ['id', 'code', 'description']
+        fields = ['id', 'code', 'description', 'parent', 'children']
+
+    def get_children(self, obj):
+        return ChartAccountSerializer(obj.children.all(), many=True).data
 
 class BillSerializer(serializers.ModelSerializer):
     person_name = serializers.CharField(source="person.name", read_only=True)

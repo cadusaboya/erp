@@ -70,11 +70,19 @@ class Bank(models.Model):
         return f"{self.name} - R$ {self.balance:.2f}"
     
 class ChartAccount(models.Model):
-    code = models.CharField(max_length=20)  # e.g., "20425"
+    code = models.CharField(max_length=20)
     description = models.CharField(max_length=200)
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="children"
+    )
 
     def __str__(self):
         return f"{self.code} - {self.description}"
+
     
 class AccountAllocation(models.Model):
     accrual = models.ForeignKey(Accrual, on_delete=models.CASCADE, related_name="allocations")  # bill or income
