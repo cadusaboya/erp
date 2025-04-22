@@ -1,6 +1,7 @@
 interface RateioItem {
   id?: number;
-  event: string;
+  event?: string;
+  chart_account?: string;
   value: string;
 }
 
@@ -8,31 +9,59 @@ interface RateioTableProps {
   allocations: RateioItem[];
   setAllocations: (data: RateioItem[]) => void;
   events?: { id: number; event_name: string }[];
+  chartAccounts?: { id: number; name: string }[];
+  label: string;
 }
 
-const RatioTable: React.FC<RateioTableProps> = ({ allocations = [], setAllocations, events = [] }) => {
+const RatioTable: React.FC<RateioTableProps> = ({
+  allocations = [],
+  setAllocations,
+  events = [],
+  chartAccounts = [],
+  label
+}) => {
+  const isEvent = events && events.length > 0;
+
   const handleChange = (index: number, field: keyof RateioItem, value: string) => {
     const updated = [...allocations];
     updated[index][field] = value;
     setAllocations(updated);
   };
 
-  const addRow = () => setAllocations([...allocations, { event: "", value: "" }]);
-  const removeRow = (index: number) => setAllocations(allocations.filter((_, i) => i !== index));
+  const addRow = () => {
+    const emptyItem = isEvent
+      ? { event: "", value: "" }
+      : { chart_account: "", value: "" };
+    setAllocations([...allocations, emptyItem]);
+  };
+
+  const removeRow = (index: number) => {
+    setAllocations(allocations.filter((_, i) => i !== index));
+  };
 
   return (
     <div className="space-y-2">
-      {(allocations || []).map((item, index) => (
+      {allocations.map((item, index) => (
         <div key={index} className="flex gap-2 items-center">
           <select
-            value={item.event}
-            onChange={(e) => handleChange(index, "event", e.target.value)}
+            value={isEvent ? item.event : item.chart_account}
+            onChange={(e) =>
+              handleChange(index, isEvent ? "event" : "chart_account", e.target.value)
+            }
             className="p-2 border rounded w-1/2"
           >
             <option value="">Selecione</option>
-            {(events || []).map((ev) => (
-              <option key={ev.id} value={String(ev.id)}>{ev.event_name}</option>
-            ))}
+            {isEvent
+              ? events.map((ev) => (
+                  <option key={ev.id} value={String(ev.id)}>
+                    {ev.event_name}
+                  </option>
+                ))
+              : chartAccounts.map((acc) => (
+                  <option key={acc.id} value={String(acc.id)}>
+                    {acc.name}
+                  </option>
+                ))}
           </select>
           <input
             type="number"
@@ -41,10 +70,18 @@ const RatioTable: React.FC<RateioTableProps> = ({ allocations = [], setAllocatio
             placeholder="Valor"
             className="p-2 border rounded w-1/3"
           />
-          <button onClick={() => removeRow(index)} className="text-red-500">✕</button>
+          <button
+            type="button"
+            onClick={() => removeRow(index)}
+            className="text-red-500"
+          >
+            ✕
+          </button>
         </div>
       ))}
-      <button onClick={addRow} className="text-blue-600 mt-1 underline">Adicionar Rateio</button>
+      <button type="button" onClick={addRow} className="text-blue-600 mt-1 underline">
+        Adicionar Rateio
+      </button>
     </div>
   );
 };

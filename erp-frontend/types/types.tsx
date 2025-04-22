@@ -103,3 +103,9 @@ export interface FilterPaymentType {
     saldo_evento: number;
     valor_restante_pagar: number;
   };
+
+  export interface ChartAccount {
+    id: number;
+    code: string;
+    description: string;
+  }

@@ -10,7 +10,8 @@ import { createRecord } from "@/services/records";
 import { fetchEvents } from "@/services/events";
 import { fetchResources } from "@/services/resources";
 import { fetchBanks } from "@/services/banks";
-import { FinanceRecord, Event, Resource, Bank } from "@/types/types";
+import { fetchChartAccounts } from "@/services/chartaccounts";
+import { FinanceRecord, Event, Resource, Bank, ChartAccount } from "@/types/types";
 import RatioTable from "@/components/RatioTable";
 
 interface CreateContaDialogProps {
@@ -25,30 +26,35 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({ open, onClose, on
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [banks, setBanks] = useState<Bank[]>([]);
+  const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([]);
 
   const [costCenter, setCostCenter] = useState("1");
   const [person, setPerson] = useState("");
   const [status, setStatus] = useState("em aberto");
 
   const [eventAllocations, setEventAllocations] = useState<{ event: string; value: string }[]>([]);
+  const [accountAllocations, setAccountAllocations] = useState<{ chart_account: string; value: string }[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
       if (open) {
         try {
-          const [eventsData, resourceData, banksData] = await Promise.all([
+          const [eventsData, resourceData, banksData, chartAccountsData] = await Promise.all([
             fetchEvents(),
             fetchResources(type === "bill" ? "suppliers" : "clients"),
-            fetchBanks()
+            fetchBanks(),
+            fetchChartAccounts()
           ]);
           setEvents(eventsData || []);
           setResources(resourceData || []);
           setBanks(banksData || []);
+          setChartAccounts(chartAccountsData || []);
         } catch (error) {
           console.error("Failed to load initial data:", error);
           setEvents([]);
           setResources([]);
           setBanks([]);
+          setChartAccounts([]);
         }
       }
     };
@@ -61,7 +67,8 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({ open, onClose, on
       person,
       cost_center: costCenter,
       status,
-      event_allocations: eventAllocations
+      event_allocations: eventAllocations,
+      account_allocations: accountAllocations
     });
     if (success) {
       onRecordCreated();
@@ -119,6 +126,18 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({ open, onClose, on
               allocations={eventAllocations}
               setAllocations={setEventAllocations}
               events={events || []}
+              label="Rateio de Eventos"
+            />
+          </div>
+
+          {/* Rateio por Plano de Contas */}
+          <div>
+            <label className="text-sm font-medium block mb-1">Rateio por Plano de Contas</label>
+            <RatioTable
+              allocations={accountAllocations}
+              setAllocations={setAccountAllocations}
+              chartAccounts={chartAccounts.map((acc) => ({ id: acc.id, name: acc.description }))}
+              label="Rateio por Conta"
             />
           </div>
 

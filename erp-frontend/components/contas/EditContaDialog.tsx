@@ -7,34 +7,39 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { fetchEvents } from "@/services/events";
 import { fetchResources } from "@/services/resources";
+import { fetchChartAccounts } from "@/services/chartaccounts";
 import { updateRecord } from "@/services/records";
 import RatioTable from "@/components/RatioTable";
 
-import { FinanceRecord, Event, Resource } from "@/types/types";
+import { FinanceRecord, Event, Resource, ChartAccount } from "@/types/types";
 
 interface EditContaDialogProps {
   open: boolean;
   onClose: () => void;
   onRecordUpdated: () => void;
   record: FinanceRecord | null;
-  type: "bill" | "income"; // bill = supplier, income = client
+  type: "bill" | "income";
 }
 
 const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onRecordUpdated, record, type }) => {
   const { register, handleSubmit, reset } = useForm<FinanceRecord>();
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
+  const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([]);
   const [eventAllocations, setEventAllocations] = useState<{ event: string; value: string }[]>([]);
+  const [accountAllocations, setAccountAllocations] = useState<{ chart_account: string; value: string }[]>([]);
 
   useEffect(() => {
     const load = async () => {
       if (open) {
-        const [eventsData, resourcesData] = await Promise.all([
+        const [eventsData, resourcesData, chartAccountData] = await Promise.all([
           fetchEvents(),
           fetchResources(type === "bill" ? "suppliers" : "clients"),
+          fetchChartAccounts()
         ]);
         setEvents(eventsData);
         setResources(resourcesData);
+        setChartAccounts(chartAccountData);
 
         if (record) {
           const normalizedRecord = {
@@ -48,6 +53,13 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
               value: String(ea.value),
             })));
           }
+
+          if (record.account_allocations) {
+            setAccountAllocations(record.account_allocations.map((aa) => ({
+              chart_account: String(aa.chart_account),
+              value: String(aa.value),
+            })));
+          }
         }
       }
     };
@@ -59,6 +71,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
     const success = await updateRecord(type, record.id, {
       ...formData,
       event_allocations: eventAllocations,
+      account_allocations: accountAllocations,
     });
     if (success) {
       onRecordUpdated();
@@ -92,6 +105,17 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
               allocations={eventAllocations}
               setAllocations={setEventAllocations}
               events={events}
+              label="Rateio de Eventos"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium block mb-1">Rateio por Plano de Contas</label>
+            <RatioTable
+              allocations={accountAllocations}
+              setAllocations={setAccountAllocations}
+              chartAccounts={chartAccounts.map((acc) => ({ id: acc.id, name: acc.description }))}
+              label="Rateio por Conta"
             />
           </div>
 

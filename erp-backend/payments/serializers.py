@@ -22,8 +22,10 @@ class BillSerializer(serializers.ModelSerializer):
     person_name = serializers.CharField(source="person.name", read_only=True)
     bank_name = serializers.CharField(source="bank.name", read_only=True)
     remaining_value = serializers.SerializerMethodField()
-    event_allocations = EventAllocationSerializer(many=True, required=False)
-    account_allocations = AccountAllocationSerializer(many=True, required=False)
+
+    # Apenas para escrita
+    event_allocations = EventAllocationSerializer(many=True, required=False, write_only=True)
+    account_allocations = AccountAllocationSerializer(many=True, required=False, write_only=True)
 
     class Meta:
         model = Bill
@@ -35,6 +37,13 @@ class BillSerializer(serializers.ModelSerializer):
             return None
         total_paid = sum(p.value for p in obj.payments.all())
         return obj.value - total_paid
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # ✅ Reinsere os rateios no retorno final
+        data["event_allocations"] = EventAllocationSerializer(instance.event_allocations.all(), many=True).data
+        data["account_allocations"] = AccountAllocationSerializer(instance.allocations.all(), many=True).data
+        return data
 
     def create(self, validated_data):
         event_allocations_data = validated_data.pop('event_allocations', [])
@@ -65,13 +74,14 @@ class BillSerializer(serializers.ModelSerializer):
 
         return instance
 
-
 class IncomeSerializer(serializers.ModelSerializer):
     person_name = serializers.CharField(source="person.name", read_only=True)
     bank_name = serializers.CharField(source="bank.name", read_only=True)
     remaining_value = serializers.SerializerMethodField()
-    event_allocations = EventAllocationSerializer(many=True, required=False)
-    account_allocations = AccountAllocationSerializer(many=True, required=False)
+
+    # Writable via create/update
+    event_allocations = EventAllocationSerializer(many=True, required=False, write_only=True)
+    account_allocations = AccountAllocationSerializer(many=True, required=False, write_only=True)
 
     class Meta:
         model = Income
@@ -83,6 +93,13 @@ class IncomeSerializer(serializers.ModelSerializer):
             return None
         total_paid = sum(p.value for p in obj.payments.all())
         return obj.value - total_paid
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # 👇 Here we re-add the allocations in the final response
+        data["event_allocations"] = EventAllocationSerializer(instance.event_allocations.all(), many=True).data
+        data["account_allocations"] = AccountAllocationSerializer(instance.allocations.all(), many=True).data
+        return data
 
     def create(self, validated_data):
         event_allocations_data = validated_data.pop('event_allocations', [])
@@ -112,6 +129,7 @@ class IncomeSerializer(serializers.ModelSerializer):
             AccountAllocation.objects.create(accrual=instance, **allocation)
 
         return instance
+
 
 
 class PaymentSerializer(serializers.ModelSerializer):
