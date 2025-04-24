@@ -270,17 +270,63 @@ class ChartAccountViewSet(viewsets.ReadOnlyModelViewSet):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def event_accruals_view(request, event_id):
-    # Get all allocations for the event
-    allocation_ids = EventAllocation.objects.filter(event_id=event_id).values_list('accrual_id', flat=True)
+    event_id = int(event_id)
+    user = request.user
 
-    # Separate Bills and Incomes
-    bills = Bill.objects.filter(id__in=allocation_ids, user=request.user)
-    incomes = Income.objects.filter(id__in=allocation_ids, user=request.user)
+    payments_bills = []
+    payments_incomes = []
+
+    total_despesas = 0
+    total_receitas = 0
+
+    # Buscar contas com rateio para esse evento
+    bills = Bill.objects.filter(user=user, event_allocations__event_id=event_id).distinct()
+    incomes = Income.objects.filter(user=user, event_allocations__event_id=event_id).distinct()
+
+    for bill in bills:
+        bill_total = bill.value
+        allocation = bill.event_allocations.filter(event_id=event_id).first()
+        if not allocation:
+            continue
+
+        ratio = allocation.value / bill_total if bill_total else 0
+
+        for payment in bill.payments.all():
+            valor = round(payment.value * ratio, 2)
+            total_despesas += valor
+            payments_bills.append({
+                "id": payment.id,
+                "date": payment.date,
+                "description": bill.description,
+                "value": valor,
+            })
+
+    for income in incomes:
+        income_total = income.value
+        allocation = income.event_allocations.filter(event_id=event_id).first()
+        if not allocation:
+            continue
+
+        ratio = allocation.value / income_total if income_total else 0
+
+        for payment in income.payments.all():
+            valor = round(payment.value * ratio, 2)
+            total_receitas += valor
+            payments_incomes.append({
+                "id": payment.id,
+                "date": payment.date,
+                "description": income.description,
+                "value": valor,
+            })
 
     return Response({
-        "bills": BillSerializer(bills, many=True).data,
-        "incomes": IncomeSerializer(incomes, many=True).data
+        "payments_bills": payments_bills,
+        "payments_incomes": payments_incomes,
+        "total_despesas": round(total_despesas, 2),
+        "total_receitas": round(total_receitas, 2),
+        "saldo_evento": round(total_receitas - total_despesas, 2)
     })
+
         
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

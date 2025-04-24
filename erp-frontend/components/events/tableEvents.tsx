@@ -10,6 +10,7 @@ import Link from "next/link";
 import Filters from "@/components/Filters"; // Adjust path as needed
 import { Event } from "@/types/types";
 import { FiltersEventType } from "@/types/types";
+import EventDetailsDialog from "./EventDetailsDialog";
 
 interface TableComponentProps {
   data: Event[];
@@ -21,6 +22,8 @@ interface TableComponentProps {
 
 const TableComponent: React.FC<TableComponentProps> = ({ data, title, onEventCreated, filters, setFilters }) => {
   const [createOpen, setCreateOpen] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -34,6 +37,11 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onEventCre
   const handleEditClick = (event: Event) => {
     setSelectedEvent(event);
     setEditOpen(true);
+  };
+
+  const handleViewClick = (id: string) => {
+    setSelectedEventId(id);
+    setDialogOpen(true);
   };
 
   const applyFilters = (newFilters: typeof filters) => {
@@ -54,6 +62,12 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onEventCre
           </Button>
         </div>
       </div>
+
+      <EventDetailsDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        eventId={selectedEventId ?? ""}
+      />
 
       <CreateEventDialog
         open={createOpen}
@@ -115,9 +129,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onEventCre
               <TableCell>{event.type.charAt(0).toUpperCase() + event.type.slice(1)}</TableCell>
               <TableCell>R$ {event.total_value}</TableCell>
               <TableCell>
-                <Link href={`/dashboard/${event.id}`}>
-                  <Button className="mr-2" variant="outline">Ver Mais</Button>
-                </Link>
+                <Button className="mr-2" onClick={() => handleViewClick(event.id)} variant="outline">Ver Mais</Button>
                 <Button variant="outline" onClick={() => handleEditClick(event)}>Editar</Button>
               </TableCell>
             </TableRow>

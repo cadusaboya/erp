@@ -10,123 +10,113 @@ from .models import Event
 from .serializers import EventSerializer
 from payments.models import Bill, Income
 from payments.serializers import BillSerializer, IncomeSerializer
+from decimal import Decimal
+from events.utils.pdffunctions import (
+    get_event_rows,
+    draw_header,
+    draw_rows,
+    check_page_break,
+)
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def generate_event_pdf(request, event_id):
     event = get_object_or_404(Event, id=event_id, user=request.user)
 
-    expenses = Bill.objects.filter(event=event, status="pago")
-    incomes = Income.objects.filter(event=event, status="pago")
+    payment_bills = get_event_rows(event, Bill, request.user, "payments")
+    payment_incomes = get_event_rows(event, Income, request.user, "payments")
 
-    total_receitas = sum(order.value for order in incomes)
-    total_despesas = sum(bill.value for bill in expenses)
+    total_despesas = sum(p["value"] for p in payment_bills)
+    total_receitas = sum(p["value"] for p in payment_incomes)
     saldo_evento = total_receitas - total_despesas
     saldo_restante = event.total_value - total_receitas
 
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename="evento_{event.id}_report.pdf"'
+    response["Content-Disposition"] = f'attachment; filename=\"evento_{event.id}_report.pdf\"'
 
     pdf = canvas.Canvas(response, pagesize=landscape(A4))
     width, height = landscape(A4)
-    pdf.setFont("Helvetica-Bold", 12)
+    cols = [50, width * 0.15, width * 0.3, width * 0.5, width * 0.75, width * 0.9]
 
-    col_positions = [
-        50, width * 0.15, width * 0.3, width * 0.5, width * 0.75, width * 0.9
-    ]
+    y = draw_header(pdf, width, height, event.event_name, event.id, "Contas Pagas e Recebidas")
+    y, _ = draw_rows(pdf, payment_bills, y, width, height, "Despesas", cols, event.event_name, event.id, "Contas Pagas", is_income=False, total_label="Total Pago")
+    y, _ = draw_rows(pdf, payment_incomes, y, width, height, "Receitas", cols, event.event_name, event.id, "Contas Recebidas", is_income=True, total_label="Total Recebido")
 
-    def draw_header(pdf, y_position):
-        pdf.setFont("Helvetica-Bold", 12)
-        pdf.drawString(width * 0.06, height - 40, "Arquitetura de Eventos")
-        pdf.setFont("Helvetica", 10)
-        pdf.drawString(width * 0.06, height - 60, "Contas Pagas e Recebidas por Evento")
-        pdf.setFont("Helvetica-Bold", 10)
-        pdf.drawString(50, height - 110, f"{event.id} - {event.event_name}")
-
-        # Table header
-        pdf.setFont("Helvetica-Bold", 9)
-        y_position = height - 140
-        pdf.drawString(col_positions[0], y_position, "Nro.")
-        pdf.drawString(col_positions[1], y_position, "Data")
-        pdf.drawString(col_positions[2], y_position, "Favorecido")
-        pdf.drawString(col_positions[3], y_position, "Memo")
-        pdf.drawString(col_positions[4], y_position, "Doc.")
-        pdf.drawString(col_positions[5], y_position, "Valor")
-        y_position -= 5
-        pdf.line(width * 0.05, y_position, width * 0.95, y_position)
-        y_position -= 15
-        return y_position
-
-    y_position = draw_header(pdf, height)
-
-    def check_page_break(pdf, y_position):
-        if y_position < 50:
-            pdf.showPage()
-            return draw_header(pdf, height)
-        return y_position
-
-    # Expenses Section
     pdf.setFont("Helvetica-Bold", 9)
-    pdf.drawString(40, y_position, "Despesas")
-    y_position -= 15
-
-    for bill in expenses:
-        y_position = check_page_break(pdf, y_position)
-        pdf.setFont("Helvetica", 9)
-        pdf.drawString(col_positions[0], y_position, str(bill.id))
-        pdf.drawString(col_positions[1], y_position, bill.date_due.strftime("%d/%m/%y"))
-        pdf.drawString(col_positions[2], y_position, bill.person.name)
-        pdf.drawString(col_positions[3], y_position, bill.description)
-        pdf.drawString(col_positions[4], y_position, bill.doc_number or "DN")
-        pdf.drawString(col_positions[5], y_position, f"-{bill.value:.2f}")
-        y_position -= 15
-
-    y_position = check_page_break(pdf, y_position - 2)
-    pdf.setFont("Helvetica-Bold", 9)
-    pdf.drawString(col_positions[4], y_position, "Total Despesas")
-    pdf.drawString(col_positions[5], y_position, f"-{total_despesas:.2f}")
-    y_position -= 25
-
-    # Incomes Section
-    y_position = check_page_break(pdf, y_position)
-    pdf.setFont("Helvetica-Bold", 9)
-    pdf.drawString(40, y_position, "Receitas")
-    y_position -= 15
-
-    for income in incomes:
-        y_position = check_page_break(pdf, y_position)
-        pdf.setFont("Helvetica", 9)
-        pdf.drawString(col_positions[0], y_position, str(income.id))
-        pdf.drawString(col_positions[1], y_position, income.date_due.strftime("%d/%m/%y"))
-        pdf.drawString(col_positions[2], y_position, income.person.name)
-        pdf.drawString(col_positions[3], y_position, income.description)
-        pdf.drawString(col_positions[4], y_position, income.doc_number or "DN")
-        pdf.drawString(col_positions[5], y_position, f"{income.value:.2f}")
-        y_position -= 15
-
-    y_position = check_page_break(pdf, y_position - 2)
-    pdf.setFont("Helvetica-Bold", 9)
-    pdf.drawString(col_positions[4], y_position, "Total Receitas")
-    pdf.drawString(col_positions[5], y_position, f"{total_receitas:.2f}")
-    y_position -= 25
-
-    # Event Balance
-    y_position = check_page_break(pdf, y_position)
-    pdf.drawString(col_positions[4], y_position, "Saldo do Evento")
-    pdf.drawString(col_positions[5], y_position, f"{saldo_evento:.2f}")
-    y_position -= 15
-
-    y_position = check_page_break(pdf, y_position)
-    pdf.drawString(col_positions[4], y_position, "Restante a receber")
-    pdf.drawString(col_positions[5], y_position, f"{saldo_restante:.2f}")
+    pdf.drawString(cols[4], y, "Saldo do Evento")
+    pdf.drawString(cols[5], y, f"{saldo_evento:.2f}")
+    y -= 15
+    pdf.drawString(cols[4], y, "Restante a Receber")
+    pdf.drawString(cols[5], y, f"{saldo_restante:.2f}")
 
     pdf.setFont("Helvetica", 8)
     pdf.drawString(width - 100, 30, "Página 1 de 1")
-
     pdf.showPage()
     pdf.save()
     return response
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def generate_event_accruals_pdf(request, event_id):
+    event = get_object_or_404(Event, id=event_id, user=request.user)
+
+    accrual_bills = get_event_rows(event, Bill, request.user, "accruals")
+    accrual_incomes = get_event_rows(event, Income, request.user, "accruals")
+
+    total_despesas = sum(b["value"] for b in accrual_bills)
+    total_receitas = sum(i["value"] for i in accrual_incomes)
+    saldo_evento = total_receitas - total_despesas
+    saldo_restante = event.total_value - total_receitas
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename=\"evento_{event.id}_accruals.pdf\"'
+
+    pdf = canvas.Canvas(response, pagesize=landscape(A4))
+    width, height = landscape(A4)
+    cols = [50, width * 0.15, width * 0.3, width * 0.5, width * 0.75, width * 0.9]
+
+    y = draw_header(pdf, width, height, event.event_name, event.id, "Lançamentos Contábeis por Evento")
+    y, _ = draw_rows(pdf, accrual_bills, y, width, height, "Despesas", cols, event.event_name, event.id, "Lançamentos", is_income=False, total_label="Total Despesas")
+    y, _ = draw_rows(pdf, accrual_incomes, y, width, height, "Receitas", cols, event.event_name, event.id, "Lançamentos", is_income=True, total_label="Total Receitas")
+
+
+    pdf.setFont("Helvetica-Bold", 9)
+    pdf.drawString(cols[4], y, "Saldo do Evento")
+    pdf.drawString(cols[5], y, f"{saldo_evento:.2f}")
+    y -= 15
+    pdf.drawString(cols[4], y, "Restante a Receber")
+    pdf.drawString(cols[5], y, f"{saldo_restante:.2f}")
+
+    pdf.setFont("Helvetica", 8)
+    pdf.drawString(width - 100, 30, "Página 1 de 1")
+    pdf.showPage()
+    pdf.save()
+    return response
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def generate_event_contas_pdf(request, event_id):
+    event = get_object_or_404(Event, id=event_id, user=request.user)
+
+    remaining_bills = get_event_rows(event, Bill, request.user, "remaining")
+    remaining_incomes = get_event_rows(event, Income, request.user, "remaining")
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename=\"evento_{event.id}_contas_restantes.pdf\"'
+
+    pdf = canvas.Canvas(response, pagesize=landscape(A4))
+    width, height = landscape(A4)
+    cols = [50, width * 0.15, width * 0.3, width * 0.5, width * 0.75, width * 0.9]
+
+    y = draw_header(pdf, width, height, event.event_name, event.id, "Contas a Pagar e Receber")
+    y, _ = draw_rows(pdf, remaining_bills, y, width, height, "Contas a Pagar", cols, event.event_name, event.id, "Contas Restantes", is_income=False, total_label="Total a Pagar")
+    y, _ = draw_rows(pdf, remaining_incomes, y, width, height, "Contas a Receber", cols, event.event_name, event.id, "Contas Restantes", is_income=True, total_label="Total a Receber")
+
+    pdf.setFont("Helvetica", 8)
+    pdf.drawString(width - 100, 30, "Página 1 de 1")
+    pdf.showPage()
+    pdf.save()
+    return response
 
 class EventDetailView(generics.RetrieveAPIView):
     queryset = Event.objects.all()
