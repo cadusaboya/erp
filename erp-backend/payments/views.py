@@ -25,6 +25,7 @@ def generate_payments_report(request):
     person_id = request.query_params.get("person")
     status = request.query_params.get("status")
     event_id = request.query_params.get("event_id")
+    cost_center_id = request.query_params.get("cost_center")
 
     user = request.user
     event = get_object_or_404(Event, id=event_id, user=user) if event_id else None
@@ -51,6 +52,9 @@ def generate_payments_report(request):
     if event:
         bill_qs = bill_qs.filter(event_allocations__event_id=event.id).distinct()
         income_qs = income_qs.filter(event_allocations__event_id=event.id).distinct()
+    if cost_center_id:
+        bill_qs = bill_qs.filter(cost_center_id=cost_center_id)
+        income_qs = income_qs.filter(cost_center_id=cost_center_id)
 
     def get_rows_from_queryset(qs, is_bill):
         rows = []

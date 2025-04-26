@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Income, Bill, ChartAccount
+from .models import Income, Bill, ChartAccount, CostCenter
 
 admin.site.register(Income)
 
@@ -13,3 +13,9 @@ class BillAdmin(admin.ModelAdmin):
 class ChartAccountAdmin(admin.ModelAdmin):
     list_display = ("code", "description")
     search_fields = ("code", "description")
+
+@admin.register(CostCenter)
+class CostCenterAdmin(admin.ModelAdmin):
+    list_display = ('name', 'user')
+    search_fields = ('name',)
+    list_filter = ('user',)
