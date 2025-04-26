@@ -4,118 +4,168 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics, status, viewsets  # type: ignore
 from reportlab.lib.pagesizes import landscape, A4
 from reportlab.pdfgen import canvas
+from reportlab.lib import colors
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from .models import Event
 from .serializers import EventSerializer
 from payments.models import Bill, Income
 from payments.serializers import BillSerializer, IncomeSerializer
+from collections import defaultdict
 from decimal import Decimal
-from events.utils.pdffunctions import (
-    get_event_rows,
-    draw_header,
-    draw_rows,
-    check_page_break,
-)
+import locale
+try:
+    locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+except:
+    locale.setlocale(locale.LC_ALL, '')  # fallback para Windows
+
+def format_currency(value: Decimal) -> str:
+    return locale.currency(value, grouping=True)
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
-def generate_event_pdf(request, event_id):
-    event = get_object_or_404(Event, id=event_id, user=request.user)
+def generate_event_type_monthly_report(request):
+    year = request.query_params.get("year")
+    if not year:
+        return Response({"error": "Year parameter is required."}, status=400)
 
-    payment_bills = get_event_rows(event, Bill, request.user, "payments")
-    payment_incomes = get_event_rows(event, Income, request.user, "payments")
+    try:
+        year = int(year)
+    except ValueError:
+        return Response({"error": "Year must be an integer."}, status=400)
 
-    total_despesas = sum(p["value"] for p in payment_bills)
-    total_receitas = sum(p["value"] for p in payment_incomes)
-    saldo_evento = total_receitas - total_despesas
-    saldo_restante = event.total_value - total_receitas
+    user = request.user
+    event_type_labels = dict(Event.EVENT_TYPES)
+    data = defaultdict(lambda: defaultdict(lambda: Decimal("0.00")))
 
+    for db_value, label in Event.EVENT_TYPES:
+        data[label]["total"] = Decimal("0.00")
+        for m in range(1, 13):
+            data[label][m] = Decimal("0.00")
+
+    events = Event.objects.filter(user=user, date__year=year)
+
+    for event in events:
+        event_type_label = event.get_type_display() if event.type else "Sem Tipo"
+        month = event.date.month
+        value = event.total_value or Decimal("0.00")
+        data[event_type_label][month] += value
+        data[event_type_label]["total"] += value
+
+    # PDF setup
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename=\"evento_{event.id}_report.pdf\"'
+    response["Content-Disposition"] = f'attachment; filename=receita_mensal_{year}.pdf'
 
     pdf = canvas.Canvas(response, pagesize=landscape(A4))
     width, height = landscape(A4)
-    cols = [50, width * 0.15, width * 0.3, width * 0.5, width * 0.75, width * 0.9]
+    margin = 40
+    x_start = margin
+    col_width = (width - 2 * margin) / 8  # 8 colunas: Tipo, Total, 6 meses
+    y_start = height - 100
+    row_height = 22
 
-    y = draw_header(pdf, width, height, event.event_name, event.id, "Contas Pagas e Recebidas")
-    y, _ = draw_rows(pdf, payment_bills, y, width, height, "Despesas", cols, event.event_name, event.id, "Contas Pagas", is_income=False, total_label="Total Pago")
-    y, _ = draw_rows(pdf, payment_incomes, y, width, height, "Receitas", cols, event.event_name, event.id, "Contas Recebidas", is_income=True, total_label="Total Recebido")
+    # Define meses
+    first_half = ["jan", "fev", "mar", "abr", "mai", "jun"]
+    second_half = ["jul", "ago", "set", "out", "nov", "dez"]
 
+    # --- Cabeçalho ---
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawCentredString(width / 2, height - 40, "Relatório de Receita Mensal por Tipo de Evento")
+    pdf.setFont("Helvetica", 10)
+    pdf.drawCentredString(width / 2, height - 60, f"Ano: {year}")
+
+    # --- Cabeçalho da tabela ---
+    y = y_start
     pdf.setFont("Helvetica-Bold", 9)
-    pdf.drawString(cols[4], y, "Saldo do Evento")
-    pdf.drawString(cols[5], y, f"{saldo_evento:.2f}")
-    y -= 15
-    pdf.drawString(cols[4], y, "Restante a Receber")
-    pdf.drawString(cols[5], y, f"{saldo_restante:.2f}")
 
+    headers = ["Tipo de Evento", "Total"] + first_half
+    for i, col in enumerate(headers):
+        pdf.setFillColor(colors.lightgrey)
+        pdf.rect(x_start + i * col_width, y, col_width, row_height, fill=True, stroke=False)
+        pdf.setFillColor(colors.black)
+        pdf.drawString(x_start + i * col_width + 4, y + 6, col)
+    y -= row_height
+
+    # Table rows
     pdf.setFont("Helvetica", 8)
-    pdf.drawString(width - 100, 30, "Página 1 de 1")
-    pdf.showPage()
-    pdf.save()
-    return response
+    total_geral_first = [Decimal("0.00")] * 6
+    total_geral_second = [Decimal("0.00")] * 6
+    total_global = Decimal("0.00")
 
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def generate_event_accruals_pdf(request, event_id):
-    event = get_object_or_404(Event, id=event_id, user=request.user)
+    for idx, (_, event_type) in enumerate(Event.EVENT_TYPES):
+        months = data[event_type]
 
-    accrual_bills = get_event_rows(event, Bill, request.user, "accruals")
-    accrual_incomes = get_event_rows(event, Income, request.user, "accruals")
+        # Alternância de cor
+        if idx % 2 == 0:
+            pdf.setFillColor(colors.whitesmoke)
+            pdf.rect(x_start, y, col_width * 8, row_height * 2, fill=True, stroke=False)
+        pdf.setFillColor(colors.black)
 
-    total_despesas = sum(b["value"] for b in accrual_bills)
-    total_receitas = sum(i["value"] for i in accrual_incomes)
-    saldo_evento = total_receitas - total_despesas
-    saldo_restante = event.total_value - total_receitas
+        # Primeira linha: Tipo, Total, Jan-Jun
+        x = x_start
+        pdf.drawString(x + 4, y + row_height + 6, event_type[:18])
+        x += col_width
 
-    response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename=\"evento_{event.id}_accruals.pdf\"'
+        pdf.drawRightString(x + col_width - 4, y + row_height + 6, format_currency(months['total']))
+        total_global += months["total"]
 
-    pdf = canvas.Canvas(response, pagesize=landscape(A4))
-    width, height = landscape(A4)
-    cols = [50, width * 0.15, width * 0.3, width * 0.5, width * 0.75, width * 0.9]
+        for i in range(6):  # Janeiro a Junho
+            x += col_width
+            value = months.get(i + 1, Decimal("0.00"))
+            if value > 0:
+                pdf.drawRightString(x + col_width - 4, y + row_height + 6, format_currency(value))
+            else:
+                pdf.setFillGray(0.6)
+                pdf.drawRightString(x + col_width - 4, y + row_height + 6, "-")
+                pdf.setFillGray(0)
+            total_geral_first[i] += value
 
-    y = draw_header(pdf, width, height, event.event_name, event.id, "Lançamentos Contábeis por Evento")
-    y, _ = draw_rows(pdf, accrual_bills, y, width, height, "Despesas", cols, event.event_name, event.id, "Lançamentos", is_income=False, total_label="Total Despesas")
-    y, _ = draw_rows(pdf, accrual_incomes, y, width, height, "Receitas", cols, event.event_name, event.id, "Lançamentos", is_income=True, total_label="Total Receitas")
+        # Segunda linha: vazio, vazio, Jul-Dez
+        x = x_start + col_width * 2
+        for i in range(6, 12):
+            value = months.get(i + 1, Decimal("0.00"))
+            if value > 0:
+                pdf.drawRightString(x + col_width - 4, y + 6, format_currency(value))
+            else:
+                pdf.setFillGray(0.6)
+                pdf.drawRightString(x + col_width - 4, y + 6, "-")
+                pdf.setFillGray(0)
+            total_geral_second[i - 6] += value
+            x += col_width
 
+        y -= row_height * 2
+        if y < 60:
+            pdf.showPage()
+            y = height - 60
+            pdf.setFont("Helvetica", 8)
 
+    # TOTAL GERAL
     pdf.setFont("Helvetica-Bold", 9)
-    pdf.drawString(cols[4], y, "Saldo do Evento")
-    pdf.drawString(cols[5], y, f"{saldo_evento:.2f}")
-    y -= 15
-    pdf.drawString(cols[4], y, "Restante a Receber")
-    pdf.drawString(cols[5], y, f"{saldo_restante:.2f}")
+    pdf.setFillColor(colors.lightgrey)
+    pdf.rect(x_start, y, col_width * 8, row_height * 2, fill=True, stroke=False)
+    pdf.setFillColor(colors.black)
 
-    pdf.setFont("Helvetica", 8)
+    x = x_start
+    pdf.drawString(x + 4, y + row_height + 6, "TOTAL GERAL")
+    x += col_width
+    pdf.drawRightString(x + col_width - 4, y + row_height + 6, format_currency(total_global))
+
+    for i in range(6):
+        x += col_width
+        pdf.drawRightString(x + col_width - 4, y + row_height + 6, format_currency(total_geral_first[i]))
+
+    x = x_start + col_width * 2
+    for i in range(6):
+        pdf.drawRightString(x + col_width - 4, y + 6, format_currency(total_geral_second[i]))
+        x += col_width
+
+    # Footer
+    pdf.setFont("Helvetica", 7)
     pdf.drawString(width - 100, 30, "Página 1 de 1")
     pdf.showPage()
     pdf.save()
-    return response
 
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def generate_event_contas_pdf(request, event_id):
-    event = get_object_or_404(Event, id=event_id, user=request.user)
-
-    remaining_bills = get_event_rows(event, Bill, request.user, "remaining")
-    remaining_incomes = get_event_rows(event, Income, request.user, "remaining")
-
-    response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename=\"evento_{event.id}_contas_restantes.pdf\"'
-
-    pdf = canvas.Canvas(response, pagesize=landscape(A4))
-    width, height = landscape(A4)
-    cols = [50, width * 0.15, width * 0.3, width * 0.5, width * 0.75, width * 0.9]
-
-    y = draw_header(pdf, width, height, event.event_name, event.id, "Contas a Pagar e Receber")
-    y, _ = draw_rows(pdf, remaining_bills, y, width, height, "Contas a Pagar", cols, event.event_name, event.id, "Contas Restantes", is_income=False, total_label="Total a Pagar")
-    y, _ = draw_rows(pdf, remaining_incomes, y, width, height, "Contas a Receber", cols, event.event_name, event.id, "Contas Restantes", is_income=True, total_label="Total a Receber")
-
-    pdf.setFont("Helvetica", 8)
-    pdf.drawString(width - 100, 30, "Página 1 de 1")
-    pdf.showPage()
-    pdf.save()
     return response
 
 class EventDetailView(generics.RetrieveAPIView):

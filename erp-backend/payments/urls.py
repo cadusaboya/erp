@@ -1,5 +1,5 @@
 from rest_framework.routers import DefaultRouter
-from .views import BillViewSet, IncomeViewSet, BankViewSet, combined_extract, PaymentViewSet, CostCenterViewSet, event_accruals_view, ChartAccountViewSet
+from .views import BillViewSet, IncomeViewSet, BankViewSet, combined_extract, PaymentViewSet, generate_payments_report, CostCenterViewSet, event_accruals_view, ChartAccountViewSet
 from django.urls import path, include
 
 router = DefaultRouter()
@@ -14,4 +14,5 @@ urlpatterns = [
     path('', include(router.urls)),
     path('extract/', combined_extract),
     path("event-allocations/<int:event_id>/", event_accruals_view),
+    path("report/", generate_payments_report),
 ]

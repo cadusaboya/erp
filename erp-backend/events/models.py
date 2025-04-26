@@ -5,7 +5,7 @@ from clients.models import Client  # Import the Client model
 class Event(models.Model):
     EVENT_TYPES = [
         ("15 anos", "15 Anos"),
-        ("aniversário", "aniversário"),
+        ("aniversário", "Aniversário"),
         ("batizado", "Batizado"),
         ("bodas", "Bodas"),
         ("casamento", "Casamento"),

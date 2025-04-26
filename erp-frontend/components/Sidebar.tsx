@@ -8,7 +8,8 @@ const Sidebar: React.FC = () => {
     { name: "Extrato", href: "/lancamentos", icon: <Menu size={20} /> },
     { name: "Contas a Pagar", href: "/contas", icon: <Menu size={20} /> },
     { name: "Contas a Receber", href: "/contas/receber", icon: <Menu size={20} /> },
-    { name: "Contas Bancárias", href: "/bancos", icon: <Menu size={20} /> }
+    { name: "Contas Bancárias", href: "/bancos", icon: <Menu size={20} /> },
+    { name: "Relatórios", href: "/reports", icon: <Menu size={20} /> }
   ];
 
   return (

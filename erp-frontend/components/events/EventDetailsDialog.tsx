@@ -69,7 +69,7 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
     if (!token) return alert("Token não encontrado");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/events/${eventId}/pdf/payments/`, {
+      const response = await fetch(`${API_BASE_URL}/payments/report/?type=both&status=pago&event_id=${eventId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) throw new Error("Erro ao gerar o PDF");
@@ -92,7 +92,7 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
     if (!token) return alert("Token não encontrado");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/events/${eventId}/pdf/accruals/`, {
+      const response = await fetch(`${API_BASE_URL}/payments/report/?type=both&status=todos&event_id=${eventId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) throw new Error("Erro ao gerar o PDF");
@@ -115,7 +115,7 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
     if (!token) return alert("Token não encontrado");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/events/${eventId}/pdf/contas/`, {
+      const response = await fetch(`${API_BASE_URL}/payments/report/?type=em+aberto&status=todos&event_id=${eventId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) throw new Error("Erro ao gerar o PDF");
@@ -142,10 +142,10 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
             <Button variant="outline" onClick={handleDownloadPDF} className="ml-auto">
               <FileText size={18} className="mr-2" /> Pagamentos
             </Button>
-            <Button variant="outline" onClick={handleDownloadPDF2} className="ml-auto">
+            <Button variant="outline" onClick={handleDownloadPDF2} className="ml-2">
               <FileText size={18} className="mr-2" /> Contas
             </Button>
-            <Button variant="outline" onClick={handleDownloadPDF3} className="ml-auto">
+            <Button variant="outline" onClick={handleDownloadPDF3} className="ml-2">
               <FileText size={18} className="mr-2" /> Contas Pendentes
             </Button>
           </DialogTitle>
