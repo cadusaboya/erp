@@ -12,9 +12,310 @@ from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from reportlab.lib.pagesizes import landscape, A4
 from reportlab.pdfgen import canvas
+from reportlab.lib import colors
 from events.utils.pdffunctions import draw_header, draw_rows
-from payments.models import Bill, Income
 from events.models import Event
+from decimal import Decimal
+from datetime import datetime
+from collections import defaultdict
+
+import locale
+try:
+    locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+except:
+    locale.setlocale(locale.LC_ALL, '')
+
+def format_currency(value: Decimal) -> str:
+    return locale.currency(value, grouping=True)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def generate_chart_account_balance(request):
+    date_min = request.query_params.get("date_min")
+    date_max = request.query_params.get("date_max")
+    user = request.user
+
+    # Filtro inicial
+    bill_qs = Bill.objects.filter(user=user, status__in=["pago", "parcial"])
+    income_qs = Income.objects.filter(user=user, status__in=["pago", "parcial"])
+
+    if date_min:
+        bill_qs = bill_qs.filter(date_due__gte=date_min)
+        income_qs = income_qs.filter(date_due__gte=date_min)
+
+    if date_max:
+        bill_qs = bill_qs.filter(date_due__lte=date_max)
+        income_qs = income_qs.filter(date_due__lte=date_max)
+
+    qs = list(bill_qs) + list(income_qs)
+
+    # Mapeamento ChartAccount -> valor pago proporcional
+    chartaccount_totals = defaultdict(Decimal)
+
+    for accrual in qs:
+        total_paid = sum(p.value for p in accrual.payments.all()) if hasattr(accrual, "payments") else Decimal("0.00")
+        original_value = accrual.value
+
+        payment_ratio = min(total_paid / original_value, Decimal("1.00")) if original_value else Decimal("0.00")
+
+        for allocation in accrual.allocations.all():
+            proportional_paid = allocation.value * payment_ratio
+            chartaccount_totals[allocation.chart_account_id] += proportional_paid
+
+    # Buscar contas usadas + parents
+    used_accounts = ChartAccount.objects.filter(id__in=chartaccount_totals.keys()).select_related("parent")
+    parent_ids = [acc.parent_id for acc in used_accounts if acc.parent_id]
+    all_ids = set(chartaccount_totals.keys()) | set(parent_ids)
+    chart_accounts = ChartAccount.objects.filter(id__in=all_ids).select_related("parent")
+
+    account_map = {acc.id: acc for acc in chart_accounts}
+    parent_children = defaultdict(list)
+
+    for acc in chart_accounts:
+        if acc.parent_id:
+            parent_children[acc.parent_id].append(acc.id)
+
+    # Somar valores recursivamente
+    totals_with_children = {}
+
+    def sum_children(account_id):
+        total = chartaccount_totals.get(account_id, Decimal("0.00"))
+        for child_id in parent_children.get(account_id, []):
+            total += sum_children(child_id)
+        totals_with_children[account_id] = total
+        return total
+
+    for acc_id in account_map:
+        if account_map[acc_id].parent_id is None:
+            sum_children(acc_id)
+
+    # Iniciar PDF
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="balancete_plano_contas.pdf"'
+
+    pdf = canvas.Canvas(response, pagesize=A4)
+    width, height = A4
+    margin = 40
+
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawCentredString(width / 2, height - 50, "Arquitetura de Eventos")
+
+    pdf.setFont("Helvetica", 12)
+    pdf.drawCentredString(width / 2, height - 70, "Balancete por Plano de Contas")
+
+    pdf.setFont("Helvetica", 9)
+    periodo_text = f"Período {date_min or '--'} a {date_max or '--'}"
+    pdf.drawString(margin, height - 100, periodo_text)
+
+    # Cabeçalho
+    y = height - 130
+    pdf.setFont("Helvetica-Bold", 9)
+    pdf.drawString(margin, y, "Conta")
+    pdf.drawString(margin + 80, y, "Descrição")
+    pdf.drawRightString(width - margin, y, "Valor")
+    y -= 5
+
+    # Linha horizontal abaixo do cabeçalho
+    pdf.line(margin, y, width - margin, y)
+    y -= 15
+
+    total_receitas = Decimal("0.00")
+    total_despesas = Decimal("0.00")
+
+    # Função para desenhar
+    def draw_account(account_id, indent=0):
+        nonlocal y
+        acc = account_map.get(account_id)
+        if not acc:
+            return
+
+        total = totals_with_children.get(account_id, Decimal("0.00"))
+        if total == 0:
+            return
+
+        font_size = 9
+        if indent == 0:
+            pdf.setFont("Helvetica-Bold", font_size)
+        else:
+            pdf.setFont("Helvetica", font_size)
+
+        pdf.drawString(margin + indent * 20, y, acc.code)
+        pdf.drawString(margin + 80 + indent * 20, y, acc.description.upper() if indent == 0 else acc.description)
+        pdf.drawRightString(width - margin, y, f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+
+        if indent == 0:
+            if acc.code.startswith("1"):
+                nonlocal total_receitas
+                total_receitas += total
+            elif acc.code.startswith("2"):
+                nonlocal total_despesas
+                total_despesas += total
+
+        y -= 15
+
+        if y < 60:
+            pdf.showPage()
+            y = height - 50
+            pdf.setFont("Helvetica", 9)
+
+        for child_id in parent_children.get(account_id, []):
+            draw_account(child_id, indent + 1)
+
+    # Imprimir tudo
+    drawn = set()
+    for acc_id, acc in account_map.items():
+        if acc.parent_id is None and acc_id not in drawn:
+            draw_account(acc_id)
+            drawn.add(acc_id)
+
+    # Resultado
+    resultado = total_receitas - total_despesas
+
+    y -= 20
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawString(margin, y, "Resultado")
+    pdf.drawRightString(width - margin, y, f"R$ {resultado:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+
+    pdf.setFont("Helvetica", 7)
+    pdf.drawString(width - 100, 30, "Página 1 de 1")
+    pdf.showPage()
+    pdf.save()
+
+    return response
+
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def generate_cost_center_consolidated_report(request):
+    date_min = request.query_params.get("date_min")
+    date_max = request.query_params.get("date_max")
+    status = request.query_params.get("status", "todos")
+    type_filter = request.query_params.get("type")
+
+    if type_filter not in ["bills", "incomes"]:
+        return Response({"error": "É necessário especificar 'type=bills' ou 'type=incomes'."}, status=400)
+
+    user = request.user
+
+    if type_filter == "bills":
+        qs = Bill.objects.filter(user=user)
+    else:
+        qs = Income.objects.filter(user=user)
+
+    if date_min:
+        qs = qs.filter(date_due__gte=date_min)
+    if date_max:
+        qs = qs.filter(date_due__lte=date_max)
+
+    if status == "pago":
+        qs = qs.filter(status__in=["pago", "parcial"])
+    elif status == "em_aberto":
+        qs = qs.filter(status__in=["em aberto", "parcial"])
+
+    # Preparar o total consolidado
+    cost_center_totals = defaultdict(lambda: Decimal("0.00"))
+
+    for item in qs:
+        if not hasattr(item, "payments"):
+            total_paid = Decimal("0.00")
+        else:
+            total_paid = sum(p.value for p in item.payments.all())
+
+        original_value = item.value
+
+        # Agora decide o valor a considerar conforme status
+        if status == "pago":
+            value = min(total_paid, original_value)
+        elif status == "em_aberto":
+            value = max(original_value - total_paid, Decimal("0.00"))
+        else:  # status == todos
+            value = original_value
+
+        # Se estiver filtrando pagos e total_pago == 0, ignora
+        if status == "pago" and total_paid == 0:
+            continue
+
+        label = item.cost_center.name if item.cost_center else "#Sem Centro"
+        cost_center_totals[label] += value
+
+    # Ordenar por valor decrescente
+    sorted_totals = sorted(cost_center_totals.items(), key=lambda x: x[1], reverse=True)
+
+    # PDF
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename=relatorio_consolidado_centros_custo.pdf'
+
+    pdf = canvas.Canvas(response, pagesize=A4)
+    width, height = A4
+    margin = 40
+
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawCentredString(width / 2, height - 50, "Arquitetura de Eventos")
+
+    pdf.setFont("Helvetica", 12)
+    # Mapear os títulos de acordo com type e status
+    titles = {
+        "bills": {
+            "pago": "Contas Pagas por Centro de Custo",
+            "em_aberto": "Contas a Pagar por Centro de Custo",
+            "todos": "Despesas por Centro de Custo",
+        },
+        "incomes": {
+            "pago": "Contas Recebidas por Centro de Custo",
+            "em_aberto": "Contas a Receber por Centro de Custo",
+            "todos": "Receitas por Centro de Custo",
+        }
+    }
+
+    # Pegar título baseado no filtro selecionado
+    titulo = titles.get(type_filter, {}).get(status, "Relatório por Centro de Custo")
+    pdf.drawCentredString(width / 2, height - 70, titulo)
+
+    # Período
+    pdf.setFont("Helvetica", 9)
+    periodo_text = f"Período {date_min or '--'} a {date_max or '--'}"
+    pdf.drawString(margin, height - 100, periodo_text)
+
+    # Cabeçalho da tabela
+    y = height - 130
+    pdf.setFont("Helvetica-Bold", 9)
+    pdf.drawString(margin, y, "Centro de Custo")
+    pdf.drawRightString(width - margin, y, "Valor")
+    y -= 20
+
+    total_geral = Decimal("0.00")
+
+    pdf.setFont("Helvetica", 9)
+
+    for idx, (cost_center_name, total) in enumerate(sorted_totals):
+        if idx % 2 == 0:
+            pdf.setFillColor(colors.whitesmoke)
+            pdf.rect(margin, y - 4, width - 2 * margin, 18, fill=True, stroke=False)
+            pdf.setFillColor(colors.black)
+
+        pdf.drawString(margin, y, cost_center_name)
+        pdf.drawRightString(width - margin, y, f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))  # formato brasileiro
+        total_geral += total
+        y -= 20
+
+        if y < 60:
+            pdf.showPage()
+            y = height - 50
+            pdf.setFont("Helvetica", 9)
+
+    # Linha Total
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawString(margin, y, "Total")
+    pdf.drawRightString(width - margin, y, f"R$ {total_geral:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+
+    # Footer
+    pdf.setFont("Helvetica", 7)
+    pdf.drawString(width - 100, 30, "Página 1 de 1")
+    pdf.showPage()
+    pdf.save()
+
+    return response
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

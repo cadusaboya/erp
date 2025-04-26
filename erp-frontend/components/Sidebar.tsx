@@ -13,7 +13,7 @@ const Sidebar: React.FC = () => {
   ];
 
   return (
-    <div className="w-64 h-screen bg-gray-900 text-white p-4 flex flex-col">
+    <div className="w-64 min-h-screen bg-gray-900 text-white p-4 flex flex-col">
       <h1 className="text-xl font-bold mb-6">Sistema Financeiro</h1>
       <nav className="flex flex-col gap-3">
         {menuItems.map((item) => (
