@@ -13,7 +13,7 @@ from django.http import HttpResponse
 from reportlab.lib.pagesizes import landscape, A4
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
-from events.utils.pdffunctions import draw_header, draw_rows
+from events.utils.pdffunctions import draw_header, draw_rows, check_page_break
 from events.models import Event
 from decimal import Decimal
 from datetime import datetime
@@ -331,80 +331,118 @@ def generate_payments_report(request):
     user = request.user
     event = get_object_or_404(Event, id=event_id, user=user) if event_id else None
 
-    bill_qs = Bill.objects.filter(user=user)
-    income_qs = Income.objects.filter(user=user)
+    bills = []
+    incomes = []
 
-    if date_min:
-        bill_qs = bill_qs.filter(date_due__gte=date_min)
-        income_qs = income_qs.filter(date_due__gte=date_min)
-    if date_max:
-        bill_qs = bill_qs.filter(date_due__lte=date_max)
-        income_qs = income_qs.filter(date_due__lte=date_max)
-    if person_id:
-        bill_qs = bill_qs.filter(person_id=person_id)
-        income_qs = income_qs.filter(person_id=person_id)
-    if status:
-        if status == "pago":
-            bill_qs = bill_qs.filter(status__in=["pago", "parcial"])
-            income_qs = income_qs.filter(status__in=["pago", "parcial"])
-        elif status == "em aberto":
+    if status == "pago":
+        payments = Payment.objects.filter(
+            user=user,
+            content_type__model__in=["bill", "income"],
+        )
+
+        if date_min:
+            payments = payments.filter(date__gte=date_min)
+        if date_max:
+            payments = payments.filter(date__lte=date_max)
+        if person_id:
+            payments = payments.filter(
+                Q(bill__person_id=person_id) | Q(income__person_id=person_id)
+            )
+        if event_id:
+            payments = payments.filter(
+                Q(bill__event_allocations__event_id=event_id) | 
+                Q(income__event_allocations__event_id=event_id)
+            )
+        if cost_center_id:
+            payments = payments.filter(
+                Q(bill__cost_center_id=cost_center_id) |
+                Q(income__cost_center_id=cost_center_id)
+            )
+
+        for p in payments:
+            accrual = p.payable  # bill or income
+            if p.content_type.model == "bill":
+                if type_filter in ["both", "bills"]:
+                    bills.append({
+                        "id": p.id,
+                        "date": p.date,
+                        "person": accrual.person.name if accrual.person else "-",
+                        "description": accrual.description,
+                        "doc_number": accrual.doc_number or "DN",
+                        "value": round(p.value, 2),
+                    })
+            elif p.content_type.model == "income":
+                if type_filter in ["both", "incomes"]:
+                    incomes.append({
+                        "id": p.id,
+                        "date": p.date,
+                        "person": accrual.person.name if accrual.person else "-",
+                        "description": accrual.description,
+                        "doc_number": accrual.doc_number or "DN",
+                        "value": round(p.value, 2),
+                    })
+
+    else:
+        bill_qs = Bill.objects.filter(user=user)
+        income_qs = Income.objects.filter(user=user)
+
+        if date_min:
+            bill_qs = bill_qs.filter(date_due__gte=date_min)
+            income_qs = income_qs.filter(date_due__gte=date_min)
+        if date_max:
+            bill_qs = bill_qs.filter(date_due__lte=date_max)
+            income_qs = income_qs.filter(date_due__lte=date_max)
+        if person_id:
+            bill_qs = bill_qs.filter(person_id=person_id)
+            income_qs = income_qs.filter(person_id=person_id)
+        if status == "em aberto":
             bill_qs = bill_qs.filter(status__in=["em aberto", "parcial"])
             income_qs = income_qs.filter(status__in=["em aberto", "parcial"])
-    if event:
-        bill_qs = bill_qs.filter(event_allocations__event_id=event.id).distinct()
-        income_qs = income_qs.filter(event_allocations__event_id=event.id).distinct()
-    if cost_center_id:
-        bill_qs = bill_qs.filter(cost_center_id=cost_center_id)
-        income_qs = income_qs.filter(cost_center_id=cost_center_id)
+        if event_id:
+            bill_qs = bill_qs.filter(event_allocations__event_id=event_id).distinct()
+            income_qs = income_qs.filter(event_allocations__event_id=event_id).distinct()
+        if cost_center_id:
+            bill_qs = bill_qs.filter(cost_center_id=cost_center_id)
+            income_qs = income_qs.filter(cost_center_id=cost_center_id)
 
-    def get_rows_from_queryset(qs, is_bill):
-        rows = []
-        for item in qs:
-            if event:
-                allocation = item.event_allocations.filter(event_id=event.id).first()
-                if not allocation:
+        def get_rows(qs, is_bill):
+            rows = []
+            for item in qs:
+                if event:
+                    allocation = item.event_allocations.filter(event_id=event.id).first()
+                    if not allocation:
+                        continue
+                    original_value = allocation.value
+                    ratio = allocation.value / item.value if item.value else 0
+                    total_paid = sum(p.value for p in item.payments.all()) * ratio
+                else:
+                    original_value = item.value
+                    total_paid = sum(p.value for p in item.payments.all()) if hasattr(item, "payments") else 0
+
+                if status == "em aberto":
+                    value = round(original_value - total_paid, 2)
+                else:
+                    value = round(original_value, 2)
+
+                if status == "em aberto" and value <= 0:
                     continue
-                original_value = allocation.value
 
-                # Ratio between allocation and full item
-                ratio = allocation.value / item.value if item.value else 0
-                total_paid = sum(p.value for p in item.payments.all()) * ratio
-            else:
-                original_value = item.value
-                total_paid = sum(p.value for p in item.payments.all()) if hasattr(item, "payments") else 0
+                rows.append({
+                    "id": item.id,
+                    "date": item.date_due,
+                    "person": item.person.name if item.person else "-",
+                    "description": item.description,
+                    "doc_number": item.doc_number or "DN",
+                    "value": value,
+                })
+            return rows
 
-            # Decide what value to show
-            if status in ["pago"]:
-                value = round(min(total_paid, original_value), 2)
-            elif status in ["em aberto"]:
-                value = round(original_value - total_paid, 2)
-            else:
-                value = round(original_value, 2)
-                
-            # Decide what value to show
-            if status in ["em aberto"]:
-                value = round(original_value - total_paid, 2)
+        if type_filter in ["both", "bills"]:
+            bills = get_rows(bill_qs, True)
+        if type_filter in ["both", "incomes"]:
+            incomes = get_rows(income_qs, False)
 
-
-            # Skip if total_paid == 0 and filtering for "pago"
-            if status in ["pago"] and total_paid == 0:
-                continue
-
-            rows.append({
-                "id": item.id,
-                "date": item.date_due,
-                "person": item.person.name,
-                "description": item.description,
-                "doc_number": item.doc_number or "DN",
-                "value": value,
-                "is_bill": is_bill,
-            })
-        return rows
-
-
-
-    bills = get_rows_from_queryset(bill_qs, True) if type_filter in ["both", "bills"] else []
-    incomes = get_rows_from_queryset(income_qs, False) if type_filter in ["both", "incomes"] else []
+    # ------------------------- PDF ---------------------------------
 
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = "attachment; filename=relatorio_completo_contas.pdf"
@@ -415,37 +453,57 @@ def generate_payments_report(request):
 
     event_name = event.event_name if event else "Todos os Eventos"
 
-    # Title depending on type
-    if type_filter == "bills":
-        title = "Relatório de Despesas"
+    if status == "pago":
+        title = "Pagamentos Recebidos e Efetuados"
+    elif type_filter == "bills" and status == "em aberto":
+        title = "Contas a Pagar"
+    elif type_filter == "bills":
+        title = "Despesas"
+    elif type_filter == "incomes" and status == "em aberto":
+        title = "Contas a Receber"
     elif type_filter == "incomes":
-        title = "Relatório de Receitas"
+        title = "Receitas"
     else:
         title = "Lançamentos Contábeis"
-
+        
     y = draw_header(pdf, width, height, event_name, event.id if event else "Geral", title)
 
-    if bills:
-        y, _ = draw_rows(pdf, bills, y, width, height, "Despesas", cols, "Todos os Eventos", "Geral", title, is_income=False, total_label="Total Despesas")
-    if incomes:
-        y, _ = draw_rows(pdf, incomes, y, width, height, "Receitas", cols, "Todos os Eventos", "Geral", title, is_income=True, total_label="Total Receitas")
+    def draw_table(pdf, items, label, y, is_income=False):
+        if not items:
+            return y
 
-    if event and status == "pago":
-        total_despesas = sum(b["value"] for b in bills)
-        total_receitas = sum(i["value"] for i in incomes)
-        saldo_evento = total_receitas - total_despesas
-        saldo_restante = event.total_value - total_receitas
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(cols[0], y, label)
+        y -= 20
+
+        total = Decimal("0.00")
+        pdf.setFont("Helvetica", 8)
+
+        for row in items:
+            y = check_page_break(pdf, y, height, width, event_name, event_id, title)
+            pdf.setFont("Helvetica", 9)
+            pdf.drawString(cols[0], y, str(row["id"]))
+            pdf.drawString(cols[1], y, row["date"].strftime("%d/%m/%y"))
+            pdf.drawString(cols[2], y, row["person"])
+            pdf.drawString(cols[3], y, row["description"])
+            pdf.drawString(cols[4], y, row["doc_number"])
+            pdf.drawString(cols[5], y, f"R$ {row['value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+            total += row["value"]
+            y -= 15
 
         pdf.setFont("Helvetica-Bold", 9)
-        pdf.drawString(cols[4], y, "Saldo do Evento")
-        pdf.drawString(cols[5], y, f"{saldo_evento:.2f}")
-        y -= 15
-        pdf.drawString(cols[4], y, "Restante a Receber")
-        pdf.drawString(cols[5], y, f"{saldo_restante:.2f}")
+        pdf.drawString(cols[4], y, f"Total {label}")
+        pdf.drawString(cols[5], y, f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        y -= 25
+        return y
 
-    pdf.setFont("Helvetica", 8)
+    if bills:
+        y = draw_table(pdf, bills, "Despesas", y, is_income=False)
+    if incomes:
+        y = draw_table(pdf, incomes, "Receitas", y, is_income=True)
+
+    pdf.setFont("Helvetica", 7)
     pdf.drawString(width - 100, 30, "Página 1 de 1")
-    pdf.showPage()
     pdf.save()
     return response
 

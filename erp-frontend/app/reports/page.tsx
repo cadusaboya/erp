@@ -202,7 +202,7 @@ export default function ReportsPage() {
                 <SelectContent>
                   <SelectItem value="todos">Lançamentos</SelectItem>
                   <SelectItem value="pago">Pago</SelectItem>
-                  <SelectItem value="em_aberto">A Pagar</SelectItem>
+                  <SelectItem value="em aberto">A Pagar</SelectItem>
                 </SelectContent>
               </Select>
             </div>
