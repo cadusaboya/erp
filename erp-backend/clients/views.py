@@ -27,7 +27,7 @@ class ClientViewSet(viewsets.ModelViewSet):
         if telephone:
             queryset = queryset.filter(telephone__icontains=telephone)
 
-        return queryset
+        return queryset.order_by("-id")
 
     def perform_create(self, serializer):
         # Associate the new supplier with the authenticated user
@@ -57,7 +57,7 @@ class SupplierViewSet(viewsets.ModelViewSet):
         if telephone:
             queryset = queryset.filter(telephone__icontains=telephone)
 
-        return queryset
+        return queryset.order_by("-id")
 
     def perform_create(self, serializer):
         # Associate the new supplier with the authenticated user
