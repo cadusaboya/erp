@@ -1,12 +1,22 @@
+export interface PaymentCreatePayload {
+  bill_id?: number;
+  income_id?: number;
+  income?: number;
+  value: string;
+  date: string;
+  bank?: number;
+  doc_number: string;
+}
+
 export interface PaymentRecord {
   id: number;
-  content_type: "bill" | "income";
+  bill_id?: number;              // ✅ Novo
+  income_id?: number;            // ✅ Novo
   description?: string;
-  object_id: number;
   date: string;
   value: string;
   bank?: number;
-  bank_name?: number;
+  bank_name?: string;         // ✅ Corrigido para string
   doc_number: string;
   person_name: string | null;
   person_type: "supplier" | "client" | null;
@@ -20,9 +30,10 @@ export interface FilterPaymentType {
   maxValue?: string;
   type?: ("Despesa" | "Receita")[];
   bank_name?: string[];
-  content_type?: "bill" | "income"; // ✅ NEW
-  object_id?: number; // ✅ NEW
+  bill_id?: number;   // ✅ Novo campo para despesa
+  income_id?: number; // ✅ Novo campo para receita
 }
+
   
   export type FilterFinanceRecordType = {
     startDate: string;

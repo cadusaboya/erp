@@ -800,7 +800,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
         user = self.request.user
         payment = serializer.save(user=user)
 
-        parent = payment.payable
+        parent = parent = payment.bill or payment.income
         if not parent:
             raise ValidationError("Pagamento inválido: objeto relacionado não encontrado.")
 

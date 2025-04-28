@@ -5,7 +5,7 @@ import EditContaDialog from "@/components/contas/EditContaDialog";
 import Filters from "@/components/Filters";
 import CreateContaDialog from "@/components/contas/CreateContaDialog";
 import { PlusCircle } from "lucide-react";
-import { FinanceRecord, FilterFinanceRecordType } from "@/types/types";
+import { FinanceRecord, FilterFinanceRecordType, PaymentCreatePayload } from "@/types/types";
 import { PaymentsDialog } from "@/components/lancamentos/ViewMoreDialog";
 import { fetchPayments } from "@/services/lancamentos";
 import CreateDialog from "@/components/CreateDialog"; // 👈 new import
@@ -47,8 +47,11 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
   };
 
   const handlePaymentsClick = async (record: FinanceRecord) => {
-    const contentType = type === "bill" ? "bill" : "income";
-    const paymentData = await fetchPayments({ content_type: contentType, object_id: record.id });
+    const filters = type === "bill"
+    ? { bill_id: record.id }
+    : { income_id: record.id };
+  
+    const paymentData = await fetchPayments(filters);
     setPayments(paymentData);
     setSelectedRecord(record);
     setPaymentsDialogOpen(true);
@@ -65,15 +68,21 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
     setCurrentPage(1);
   };
 
-  const handleSubmitPayment = async (formData: Record<string, string>) => {
+  const handleSubmitPayment = async (formData: Record<string, any>) => {
     if (!recordToPay) return;
-    await createPayment({
+  
+    const payload: PaymentCreatePayload = {
       ...formData,
-      content_type: type,
-      object_id: recordToPay.id,
-    });
+      ...(type === "bill" ? { bill_id: Number(recordToPay.id) } : { income_id: Number(recordToPay.id) }),
+    };
+  
+    await createPayment(payload);
     onRecordUpdated();
   };
+  
+  
+  
+  
 
   return (
     <div className="p-6 bg-white shadow-lg rounded-lg">

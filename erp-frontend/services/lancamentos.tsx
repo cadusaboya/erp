@@ -1,4 +1,4 @@
-import { PaymentRecord, FilterPaymentType } from "@/types/types";
+import { PaymentRecord, FilterPaymentType, PaymentCreatePayload } from "@/types/types";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -26,9 +26,9 @@ export const fetchPayments = async (filters: FilterPaymentType = {}) => {
     filters.bank_name.forEach((b) => params.append("bank_name", b));
   }
 
-  // ✅ New additions:
-  if (filters.content_type) params.append("content_type", filters.content_type);
-  if (filters.object_id) params.append("object_id", filters.object_id.toString());
+  // ✅ Agora usando os novos campos corretos:
+  if (filters.bill_id) params.append("bill_id", filters.bill_id.toString());
+  if (filters.income_id) params.append("income_id", filters.income_id.toString());
 
   const response = await fetch(`${API_BASE_URL}/payments/payments/?${params.toString()}`, {
     headers: {
@@ -41,22 +41,24 @@ export const fetchPayments = async (filters: FilterPaymentType = {}) => {
   return await response.json();
 };
 
-export const createPayment = async (payment: PaymentRecord) => {
-  const token = getToken();
 
+export const createPayment = async (data: PaymentCreatePayload) => {
+  const token = getToken();
+  
   const response = await fetch(`${API_BASE_URL}/payments/payments/`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${token}`,
+      "Authorization": `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(payment),
+    body: JSON.stringify(data),
   });
 
   if (!response.ok) throw new Error("Erro ao criar pagamento");
 
   return await response.json();
 };
+
 
 export const updatePayment = async (id: number, payment: Partial<PaymentRecord>) => {
   const token = getToken();

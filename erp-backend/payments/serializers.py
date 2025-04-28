@@ -139,11 +139,13 @@ class IncomeSerializer(serializers.ModelSerializer):
 
 class PaymentSerializer(serializers.ModelSerializer):
     bill_id = serializers.PrimaryKeyRelatedField(
+        source="bill",  # 👈 IMPORTANTE
         queryset=Bill.objects.all(),
         required=False,
         allow_null=True
     )
     income_id = serializers.PrimaryKeyRelatedField(
+        source="income",  # 👈 IMPORTANTE
         queryset=Income.objects.all(),
         required=False,
         allow_null=True
@@ -167,8 +169,8 @@ class PaymentSerializer(serializers.ModelSerializer):
         return None
 
     def validate(self, attrs):
-        bill = attrs.get('bill') or getattr(self.instance, 'bill', None)
-        income = attrs.get('income') or getattr(self.instance, 'income', None)
+        bill = attrs.get('bill') or (self.instance.bill if self.instance else None)
+        income = attrs.get('income') or (self.instance.income if self.instance else None)
 
         if not bill and not income:
             raise serializers.ValidationError("É necessário informar 'bill' ou 'income'.")
@@ -177,6 +179,8 @@ class PaymentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Não é permitido preencher 'bill' e 'income' ao mesmo tempo.")
 
         return attrs
+
+
 
 
 class BankSerializer(serializers.ModelSerializer):
