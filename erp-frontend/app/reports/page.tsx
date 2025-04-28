@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 
 export default function ReportsPage() {
-  const [type, setType] = useState("both");
+  const [type, setType] = useState("bills"); // Default now 'bills'
   const [status, setStatus] = useState("");
   const [person, setPerson] = useState("");
   const [eventId, setEventId] = useState("");
@@ -16,10 +18,10 @@ export default function ReportsPage() {
   const [dateMax, setDateMax] = useState("");
   const [year, setYear] = useState("");
   const [costCenter, setCostCenter] = useState("");
-  const [costCenters, setCostCenters] = useState([]);
   const [bankId, setBankId] = useState("");
+  const [costCenters, setCostCenters] = useState([]);
   const [banks, setBanks] = useState([]);
-
+  const [isLoading, setIsLoading] = useState(false);
 
   const getToken = () => {
     const token = localStorage.getItem("token");
@@ -28,453 +30,245 @@ export default function ReportsPage() {
   };
 
   useEffect(() => {
-    const fetchCostCentersAndBanks = async () => {
+    const fetchData = async () => {
       try {
         const token = getToken();
-  
-        const [costCenterResponse, banksResponse] = await Promise.all([
-          fetch("http://127.0.0.1:8000/payments/costcenter/", {
-            method: "GET",
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch("http://127.0.0.1:8000/payments/banks/", {
-            method: "GET",
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+        const [costCentersRes, banksRes] = await Promise.all([
+          fetch("http://127.0.0.1:8000/payments/costcenter/", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("http://127.0.0.1:8000/payments/banks/", { headers: { Authorization: `Bearer ${token}` } }),
         ]);
-  
-        if (!costCenterResponse.ok) throw new Error("Erro ao buscar centros de custo");
-        if (!banksResponse.ok) throw new Error("Erro ao buscar bancos");
-  
-        const costCenterData = await costCenterResponse.json();
-        const banksData = await banksResponse.json();
-  
-        setCostCenters(costCenterData);
-        setBanks(banksData);
-      } catch (error) {
-        console.error("Erro ao carregar centros de custo ou bancos:", error);
+        setCostCenters(await costCentersRes.json());
+        setBanks(await banksRes.json());
+      } catch (err) {
+        console.error("Erro ao buscar dados:", err);
       }
     };
-  
-    fetchCostCentersAndBanks();
+    fetchData();
   }, []);
 
-  const handleGenerateBankStatement = async () => {
-    const params = new URLSearchParams();
-    if (dateMin) params.append("date_min", dateMin);
-    if (dateMax) params.append("date_max", dateMax);
-    if (bankId && bankId !== "todos") params.append("bank_id", bankId);
-  
+  const handleDownload = async (url: string, filename: string) => {
     try {
+      setIsLoading(true);
       const token = getToken();
-      const response = await fetch(`http://127.0.0.1:8000/payments/report/bank/?${params.toString()}`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("Erro ao gerar extrato bancário");
-  
-      const blob = await response.blob();
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error("Erro ao gerar relatório");
+      const blob = await res.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;
-      link.download = "extrato_bancario.pdf";
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
-      console.error("Erro ao baixar extrato bancário:", error);
-      alert("Não foi possível gerar o extrato bancário. Tente novamente.");
+      alert("Erro ao gerar relatório. Tente novamente.");
+    } finally {
+      setIsLoading(false);
     }
   };
-
-  const handleGenerateTypeReport = async () => {
-    if (!year) {
-      alert("Por favor, selecione um ano.");
-      return;
-    }
-    const params = new URLSearchParams({ year });
-    try {
-      const token = getToken();
-      const response = await fetch(`http://127.0.0.1:8000/events/report/type/?${params.toString()}`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("Erro ao gerar o relatório");
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = `receita_por_tipo_${year}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-    } catch (err) {
-      console.error("Erro ao baixar relatório por tipo:", err);
-      alert("Não foi possível gerar o relatório. Tente novamente.");
-    }
-  };
-
-  const handleGenerateReport = async () => {
-    const params = new URLSearchParams();
-    if (type) params.append("type", type);
-    if (status) params.append("status", status);
-    if (person) params.append("person", person);
-    if (eventId) params.append("event_id", eventId);
-    if (costCenter && costCenter !== "todos") params.append("cost_center", costCenter);
-    if (dateMin) params.append("date_min", dateMin);
-    if (dateMax) params.append("date_max  ", dateMax);
-
-    const url = `http://127.0.0.1:8000/payments/report/?${params.toString()}`;
-    try {
-      const token = getToken();
-      const response = await fetch(url, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("Erro ao gerar o relatório");
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = "relatorio_contas.pdf";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-    } catch (error) {
-      console.error("Erro ao baixar o PDF:", error);
-      alert("Não foi possível gerar o relatório. Tente novamente.");
-    }
-  };
-
-  const handleGenerateCostCenterConsolidated = async () => {
-    const params = new URLSearchParams();
-    if (dateMin) params.append("date_min", dateMin);
-    if (dateMax) params.append("date_max", dateMax);
-    if (status && status !== "todos") params.append("status", status);
-    if (type) params.append("type", type);
-
-    try {
-      const token = getToken();
-      const response = await fetch(`http://127.0.0.1:8000/payments/report/costcenter/?${params.toString()}`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("Erro ao gerar o relatório consolidado");
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = `relatorio_consolidado_centros.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-    } catch (error) {
-      console.error("Erro ao baixar o relatório consolidado:", error);
-      alert("Não foi possível gerar o relatório. Tente novamente.");
-    }
-  };
-
-  const handleGenerateChartAccountBalance = async () => {
-    const params = new URLSearchParams();
-    if (type) params.append("type", type);
-    if (dateMin) params.append("date_min", dateMin);
-    if (dateMax) params.append("date_max", dateMax);
-
-    try {
-      const token = getToken();
-      const response = await fetch(`http://127.0.0.1:8000/payments/report/chartaccount/?${params.toString()}`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("Erro ao gerar o balancete");
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = "balancete_plano_contas.pdf";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-    } catch (error) {
-      console.error("Erro ao baixar o balancete:", error);
-      alert("Não foi possível gerar o balancete. Tente novamente.");
-    }
-  };
-
-  const handleGenerateEventsSummary = async () => {
-    const params = new URLSearchParams();
-    if (dateMin) params.append("date_min", dateMin);
-    if (dateMax) params.append("date_max", dateMax);
-  
-    try {
-      const token = getToken();
-      const response = await fetch(`http://127.0.0.1:8000/events/report/?${params.toString()}`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) throw new Error("Erro ao gerar o relatório de eventos");
-  
-      const blob = await response.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = "resumo_eventos.pdf";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-    } catch (error) {
-      console.error("Erro ao baixar o relatório de eventos:", error);
-      alert("Não foi possível gerar o relatório. Tente novamente.");
-    }
-  };
-  
 
   return (
     <div className="flex">
       <Sidebar />
-      <div className="flex flex-col gap-6 p-6">
+      <div className="flex flex-col p-6 gap-6">
+        <h1 className="text-2xl font-bold">Relatórios</h1>
+        <Tabs defaultValue="contas" className="w-full">
+          <TabsList className="grid grid-cols-3 lg:grid-cols-6">
+            <TabsTrigger value="contas">Contas</TabsTrigger>
+            <TabsTrigger value="tipo">Receita por Tipo</TabsTrigger>
+            <TabsTrigger value="custo">Centros de Custo</TabsTrigger>
+            <TabsTrigger value="evento">Resumo Eventos</TabsTrigger>
+            <TabsTrigger value="banco">Extrato Bancário</TabsTrigger>
+            <TabsTrigger value="balancete">Balancete</TabsTrigger>
+          </TabsList>
 
-        {/* --- Relatório de Contas --- */}
-        <h1 className="text-2xl font-bold">Gerar Relatórios de Contas</h1>
-        <Card>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-            <div>
-              <label className="text-sm">Tipo de Contas</label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="both">Receitas e Despesas</SelectItem>
-                  <SelectItem value="bills">Despesas</SelectItem>
-                  <SelectItem value="incomes">Receitas</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm">Pessoa (ID)</label>
-              <Input placeholder="ID da pessoa" value={person} onChange={(e) => setPerson(e.target.value)} />
-            </div>
-
-            <div>
-              <label className="text-sm">Evento (ID)</label>
-              <Input placeholder="ID do evento" value={eventId} onChange={(e) => setEventId(e.target.value)} />
-            </div>
-
-            <div>
-              <label className="text-sm">Status</label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Lançamentos</SelectItem>
-                  <SelectItem value="pago">Pago</SelectItem>
-                  <SelectItem value="em aberto">A Pagar</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm">Centro de Custo</label>
-              <Select value={costCenter} onValueChange={setCostCenter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o Centro de Custo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os Centros de Custo</SelectItem>
-                  {costCenters.map((cc) => (
-                    <SelectItem key={cc.id} value={String(cc.id)}>
-                      {cc.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm">Data Inicial</label>
-              <Input type="date" value={dateMin} onChange={(e) => setDateMin(e.target.value)} />
-            </div>
-
-            <div>
-              <label className="text-sm">Data Final</label>
-              <Input type="date" value={dateMax} onChange={(e) => setDateMax(e.target.value)} />
-            </div>
-
-          </CardContent>
-        </Card>
-
-        <div>
-          <Button onClick={handleGenerateReport} className="w-full md:w-auto">
-            Gerar Relatório PDF
-          </Button>
-        </div>
-
-        {/* --- Receita por Tipo --- */}
-        <h2 className="text-xl font-semibold mt-8">Relatório de Receita por Tipo de Evento</h2>
-        <Card className="mt-4">
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-            <div>
-              <label className="text-sm">Ano</label>
-              <Input type="number" placeholder="Ex: 2024" value={year} onChange={(e) => setYear(e.target.value)} />
-            </div>
-            <div className="flex items-end">
-              <Button onClick={handleGenerateTypeReport} className="w-full md:w-auto">
-                Gerar Relatório PDF
+          {/* Contas */}
+          <TabsContent value="contas">
+            <Card><CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-xs">Tipo</label>
+                <Select value={type} onValueChange={setType}>
+                  <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="both">Receitas e Despesas</SelectItem>
+                    <SelectItem value="bills">Despesas</SelectItem>
+                    <SelectItem value="incomes">Receitas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs">Pessoa (ID)</label>
+                <Input className="w-[250px]" value={person} onChange={(e) => setPerson(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs">Evento (ID)</label>
+                <Input className="w-[250px]" value={eventId} onChange={(e) => setEventId(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs">Status</label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="pago">Pago</SelectItem>
+                    <SelectItem value="em aberto">A Pagar</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs">Data Inicial</label>
+                <Input type="date" value={dateMin} onChange={(e) => setDateMin(e.target.value)} className="max-w-[150px]" />
+              </div>
+              <div>
+                <label className="text-xs">Data Final</label>
+                <Input type="date" value={dateMax} onChange={(e) => setDateMax(e.target.value)} className="max-w-[150px]" />
+              </div>
+              <div>
+                <label className="text-xs">Centro de Custo</label>
+                <Select value={costCenter} onValueChange={setCostCenter}>
+                  <SelectTrigger><SelectValue placeholder="Centro de Custo" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {costCenters.map(cc => (
+                      <SelectItem key={cc.id} value={String(cc.id)}>{cc.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent></Card>
+            <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
+              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/`, "relatorio_contas.pdf")} disabled={isLoading}>
+                {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
 
-        {/* --- Consolidado por Centro de Custo --- */}
-        <h2 className="text-xl font-semibold mt-8">Relatório Consolidado por Centro de Custo</h2>
-        <Card className="mt-4">
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-            <div>
-              <label className="text-sm">Tipo de Contas</label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bills">Despesas</SelectItem>
-                  <SelectItem value="incomes">Receitas</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm">Data Inicial</label>
-              <Input type="date" value={dateMin} onChange={(e) => setDateMin(e.target.value)} />
-            </div>
-
-            <div>
-              <label className="text-sm">Data Final</label>
-              <Input type="date" value={dateMax} onChange={(e) => setDateMax(e.target.value)} />
-            </div>
-
-          </CardContent>
-        </Card>
-
-        <div>
-          <Button onClick={handleGenerateCostCenterConsolidated} className="w-full md:w-auto mt-4">
-            Gerar Relatório Consolidado
-          </Button>
-        </div>
-
-        {/* --- Balancete Plano de Contas --- */}
-        <h2 className="text-xl font-semibold mt-8">Balancete por Plano de Contas</h2>
-        <Card className="mt-4">
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-            <div>
-              <label className="text-sm">Data Inicial</label>
-              <Input
-                type="date"
-                value={dateMin}
-                onChange={(e) => setDateMin(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm">Data Final</label>
-              <Input
-                type="date"
-                value={dateMax}
-                onChange={(e) => setDateMax(e.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <div>
-          <Button onClick={handleGenerateChartAccountBalance} className="w-full md:w-auto mt-4">
-            Gerar Balancete
-          </Button>
-        </div>
-
-        <h2 className="text-xl font-semibold mt-8">Relatório de Resumo de Eventos</h2>
-        <Card className="mt-4">
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-            <div>
-              <label className="text-sm">Data Inicial</label>
-              <Input
-                type="date"
-                value={dateMin}
-                onChange={(e) => setDateMin(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm">Data Final</label>
-              <Input
-                type="date"
-                value={dateMax}
-                onChange={(e) => setDateMax(e.target.value)}
-              />
-            </div>
-
-            <div className="flex items-end">
-              <Button onClick={handleGenerateEventsSummary} className="w-full md:w-auto">
-                Gerar Resumo de Eventos
+          {/* Receita por Tipo */}
+          <TabsContent value="tipo">
+            <Card>
+              <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs">Ano</label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: 2025"
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    className="w-50"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+            <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
+              <Button
+                onClick={() => handleDownload(`http://127.0.0.1:8000/events/report/type/?year=${year}`, `receita_tipo_${year}.pdf`)}
+                disabled={isLoading}
+              >
+                {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
 
-        {/* --- Extrato Bancário --- */}
-        <h2 className="text-xl font-semibold mt-8">Relatório de Extrato Bancário</h2>
-        <Card className="mt-4">
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-            <div>
-              <label className="text-sm">Banco</label>
-              <Select value={bankId} onValueChange={setBankId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o Banco" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os Bancos (Consolidado)</SelectItem>
-                  {banks.map((bank) => (
-                    <SelectItem key={bank.id} value={String(bank.id)}>
-                      {bank.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm">Data Inicial</label>
-              <Input
-                type="date"
-                value={dateMin}
-                onChange={(e) => setDateMin(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="text-sm">Data Final</label>
-              <Input
-                type="date"
-                value={dateMax}
-                onChange={(e) => setDateMax(e.target.value)}
-              />
-            </div>
-
-            <div className="flex items-end">
-              <Button onClick={handleGenerateBankStatement} className="w-full md:w-auto">
-                Gerar Extrato Bancário
+          {/* Consolidado Centros */}
+          <TabsContent value="custo">
+            <Card><CardContent className="p-4 grid gap-4">
+              <div>
+                <label className="text-xs">Tipo</label>
+                <Select value={type} onValueChange={setType}>
+                  <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bills">Despesas</SelectItem>
+                    <SelectItem value="incomes">Receitas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs">Data Inicial</label>
+                <Input type="date" value={dateMin} onChange={(e) => setDateMin(e.target.value)} className="max-w-[150px]" />
+              </div>
+              <div>
+                <label className="text-xs">Data Final</label>
+                <Input type="date" value={dateMax} onChange={(e) => setDateMax(e.target.value)} className="max-w-[150px]" />
+              </div>
+            </CardContent></Card>
+            <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
+              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/costcenter/`, "consolidado_centros.pdf")} disabled={isLoading}>
+                {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
+
+          {/* Resumo Eventos */}
+          <TabsContent value="evento">
+            <Card><CardContent className="p-4 grid gap-4">
+              <div>
+                <label className="text-xs">Data Inicial</label>
+                <Input type="date" value={dateMin} onChange={(e) => setDateMin(e.target.value)} className="max-w-[150px]" />
+              </div>
+              <div>
+                <label className="text-xs">Data Final</label>
+                <Input type="date" value={dateMax} onChange={(e) => setDateMax(e.target.value)} className="max-w-[150px]" />
+              </div>
+            </CardContent></Card>
+            <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
+              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/events/report/`, "resumo_eventos.pdf")} disabled={isLoading}>
+                {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
+              </Button>
+            </div>
+          </TabsContent>
+
+          {/* Extrato Bancário */}
+          <TabsContent value="banco">
+            <Card><CardContent className="p-4 grid gap-4">
+              <div>
+                <label className="text-xs">Banco</label>
+                <Select value={bankId} onValueChange={setBankId}>
+                  <SelectTrigger><SelectValue placeholder="Banco" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {banks.map(bank => (
+                      <SelectItem key={bank.id} value={String(bank.id)}>{bank.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs">Data Inicial</label>
+                <Input type="date" value={dateMin} onChange={(e) => setDateMin(e.target.value)} className="max-w-[150px]" />
+              </div>
+              <div>
+                <label className="text-xs">Data Final</label>
+                <Input type="date" value={dateMax} onChange={(e) => setDateMax(e.target.value)} className="max-w-[150px]" />
+              </div>
+            </CardContent></Card>
+            <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
+              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/bank/`, "extrato_bancario.pdf")} disabled={isLoading}>
+                {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
+              </Button>
+            </div>
+          </TabsContent>
+
+          {/* Balancete */}
+          <TabsContent value="balancete">
+            <Card><CardContent className="p-4 grid gap-4">
+              <div>
+                <label className="text-xs">Data Inicial</label>
+                <Input type="date" value={dateMin} onChange={(e) => setDateMin(e.target.value)} className="max-w-[150px]" />
+              </div>
+              <div>
+                <label className="text-xs">Data Final</label>
+                <Input type="date" value={dateMax} onChange={(e) => setDateMax(e.target.value)} className="max-w-[150px]" />
+              </div>
+            </CardContent></Card>
+            <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
+              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/chartaccount/`, "balancete.pdf")} disabled={isLoading}>
+                {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Balancete"}
+              </Button>
+            </div>
+          </TabsContent>
+
+        </Tabs>
       </div>
     </div>
   );
