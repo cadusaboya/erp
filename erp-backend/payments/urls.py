@@ -1,5 +1,5 @@
 from rest_framework.routers import DefaultRouter
-from .views import BillViewSet, IncomeViewSet, BankViewSet, combined_extract, PaymentViewSet, generate_chart_account_balance, generate_payments_report, generate_cost_center_consolidated_report, CostCenterViewSet, event_accruals_view, ChartAccountViewSet
+from .views import BillViewSet, IncomeViewSet, BankViewSet, combined_extract, PaymentViewSet, generate_bank_statement_report, generate_chart_account_balance, generate_payments_report, generate_cost_center_consolidated_report, CostCenterViewSet, event_accruals_view, ChartAccountViewSet
 from django.urls import path, include
 
 router = DefaultRouter()
@@ -17,4 +17,5 @@ urlpatterns = [
     path("report/", generate_payments_report),
     path("report/costcenter/", generate_cost_center_consolidated_report),
     path("report/chartaccount/", generate_chart_account_balance),
+    path("report/bank/", generate_bank_statement_report),
 ]

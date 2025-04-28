@@ -22,6 +22,112 @@ except:
 def format_currency(value: Decimal) -> str:
     return locale.currency(value, grouping=True)
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def generate_events_summary_report(request):
+    date_min = request.query_params.get("date_min")
+    date_max = request.query_params.get("date_max")
+    user = request.user
+
+    events = Event.objects.filter(user=user)
+
+    if date_min:
+        events = events.filter(date__gte=date_min)
+    if date_max:
+        events = events.filter(date__lte=date_max)
+
+    events = events.order_by("date")
+
+    # Preparar dados
+    event_data = []
+
+    for event in events:
+        incomes = Income.objects.filter(user=user, event_allocations__event=event).distinct()
+        total_income = sum(income.value for income in incomes)
+
+        event_data.append({
+            "name": event.event_name,
+            "date": event.date,
+            "client": event.client.name if event.client else "-",
+            "total_income": total_income
+        })
+
+    # Iniciar PDF
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="resumo_eventos.pdf"'
+
+    pdf = canvas.Canvas(response, pagesize=landscape(A4))
+    width, height = landscape(A4)
+    margin = 40
+
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawCentredString(width / 2, height - 40, "Arquitetura de Eventos")
+
+    pdf.setFont("Helvetica", 12)
+    pdf.drawCentredString(width / 2, height - 60, "Resumo de Eventos")
+
+    pdf.setFont("Helvetica", 9)
+    periodo_text = f"Período {date_min or '--'} a {date_max or '--'}"
+    pdf.drawString(margin, height - 90, periodo_text)
+
+    # Cabeçalho
+    y = height - 120
+    pdf.setFont("Helvetica-Bold", 9)
+
+    col_date = margin
+    col_client = margin + 100
+    col_event = margin + 300
+    col_value = width - margin
+
+    pdf.drawString(col_date, y, "Data")
+    pdf.drawString(col_client, y, "Cliente")
+    pdf.drawString(col_event, y, "Evento")
+    pdf.drawRightString(col_value, y, "Valor Total")
+    y -= 5
+
+    pdf.line(margin, y, width - margin, y)
+    y -= 15
+
+    total_geral = Decimal("0.00")
+    pdf.setFont("Helvetica", 9)
+
+    for event in event_data:
+        if y < 60:
+            pdf.showPage()
+            y = height - 50
+            pdf.setFont("Helvetica", 9)
+
+            # Reescreve cabeçalho nas novas páginas
+            pdf.setFont("Helvetica-Bold", 9)
+            pdf.drawString(col_date, y, "Data")
+            pdf.drawString(col_client, y, "Cliente")
+            pdf.drawString(col_event, y, "Evento")
+            pdf.drawRightString(col_value, y, "Valor Total")
+            y -= 5
+            pdf.line(margin, y, width - margin, y)
+            y -= 15
+            pdf.setFont("Helvetica", 9)
+
+        pdf.drawString(col_date, y, event["date"].strftime("%d/%m/%Y"))
+        pdf.drawString(col_client, y, event["client"])
+        pdf.drawString(col_event, y, event["name"])
+        pdf.drawRightString(col_value, y, f"R$ {event['total_income']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+
+        total_geral += event["total_income"]
+        y -= 20
+
+    # Linha Total
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawString(col_event, y, "Total")
+    pdf.drawRightString(col_value, y, f"R$ {total_geral:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+
+    # Footer
+    pdf.setFont("Helvetica", 7)
+    pdf.drawString(width - 100, 30, "Página 1 de 1")
+    pdf.showPage()
+    pdf.save()
+
+    return response
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

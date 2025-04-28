@@ -18,6 +18,7 @@ from events.models import Event
 from decimal import Decimal
 from datetime import datetime
 from collections import defaultdict
+from functools import reduce
 
 import locale
 try:
@@ -30,33 +31,201 @@ def format_currency(value: Decimal) -> str:
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+def generate_bank_statement_report(request):
+    from django.utils import timezone
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+
+    def shorten_text(text, max_width, canvas, font_name="Helvetica", font_size=9):
+        canvas.setFont(font_name, font_size)
+        original_text = text
+        while canvas.stringWidth(text) > max_width and len(text) > 0:
+            text = text[:-1]
+        if len(text) < len(original_text):
+            return text.strip() + "..."
+        return text
+
+    date_min = request.query_params.get("date_min")
+    date_max = request.query_params.get("date_max")
+    bank_id = request.query_params.get("bank_id")
+    user = request.user
+
+    payments = Payment.objects.filter(user=user)
+
+    if date_min:
+        payments = payments.filter(date__gte=date_min)
+    if date_max:
+        payments = payments.filter(date__lte=date_max)
+    if bank_id:
+        payments = payments.filter(bank_id=bank_id)
+
+    payments = payments.select_related('bank', 'bill__person', 'income__person').order_by("date", "id")  # Mais antigos primeiro
+
+    if bank_id:
+        bank = Bank.objects.get(id=bank_id, user=user)
+        initial_balance = bank.balance
+        bank_name = bank.name
+    else:
+        initial_balance = sum(bank.balance for bank in Bank.objects.filter(user=user))
+        bank_name = "Consolidado"
+
+    # Retroagir saldo para o início do período
+    balance = initial_balance
+    for p in reversed(list(payments)):
+        if p.bill:
+            balance += p.value
+        elif p.income:
+            balance -= p.value
+
+    # Montar extrato
+    balance_moving = balance
+    lines = []
+    for p in payments:
+        if p.bill:
+            tipo = "Despesa"
+            favorecido = p.bill.person.name if p.bill.person else "-"
+            descricao = p.bill.description
+            balance_moving -= p.value
+            value_display = -p.value  # Negativo
+        elif p.income:
+            tipo = "Receita"
+            favorecido = p.income.person.name if p.income.person else "-"
+            descricao = p.income.description
+            balance_moving += p.value
+            value_display = p.value  # Positivo
+        else:
+            continue
+
+        lines.append({
+            "date": p.date,
+            "favorecido": favorecido,
+            "descricao": descricao,
+            "value": value_display,
+            "balance": balance_moving
+        })
+
+    # Definir data do saldo
+    if date_max:
+        saldo_date = timezone.datetime.strptime(date_max, "%Y-%m-%d").date()
+    else:
+        saldo_date = timezone.now().date()
+
+    # Criar PDF
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="extrato_bancario.pdf"'
+
+    pdf = canvas.Canvas(response, pagesize=A4)
+    width, height = A4
+    margin = 30
+
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawCentredString(width / 2, height - 40, "Arquitetura de Eventos")
+
+    pdf.setFont("Helvetica", 12)
+    pdf.drawCentredString(width / 2, height - 60, f"Extrato Bancário - {bank_name}")
+
+    pdf.setFont("Helvetica", 9)
+    periodo_text = f"Período: {date_min or '--'} a {date_max or '--'}"
+    pdf.drawString(margin, height - 90, periodo_text)
+
+    saldo_text = f"Saldo Atual: R$ {initial_balance:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    data_saldo_text = f"Data do Saldo: {saldo_date.strftime('%d/%m/%Y')}"
+    pdf.drawString(margin, height - 110, saldo_text)
+    pdf.drawString(margin, height - 125, data_saldo_text)
+
+    # Cabeçalho
+    y = height - 155
+    pdf.setFont("Helvetica-Bold", 9)
+
+    col_date = margin
+    col_fav = margin + 60
+    col_desc = margin + 180
+    col_value = width - margin - 100
+    col_balance = width - margin
+
+    pdf.drawString(col_date, y, "Data")
+    pdf.drawString(col_fav, y, "Favorecido")
+    pdf.drawString(col_desc, y, "Descrição")
+    pdf.drawRightString(col_value, y, "Valor")
+    pdf.drawRightString(col_balance, y, "Saldo")
+    y -= 5
+
+    pdf.line(margin, y, width - margin, y)
+    y -= 15
+
+    pdf.setFont("Helvetica", 9)
+
+    for line in lines:
+        if y < 60:
+            pdf.showPage()
+            y = height - 50
+            pdf.setFont("Helvetica", 9)
+
+            # Reescrever cabeçalho
+            pdf.setFont("Helvetica-Bold", 9)
+            pdf.drawString(col_date, y, "Data")
+            pdf.drawString(col_fav, y, "Favorecido")
+            pdf.drawString(col_desc, y, "Descrição")
+            pdf.drawRightString(col_value, y, "Valor")
+            pdf.drawRightString(col_balance, y, "Saldo")
+            y -= 5
+            pdf.line(margin, y, width - margin, y)
+            y -= 15
+            pdf.setFont("Helvetica", 9)
+
+        # Descrição cortada se necessário
+        descricao_curta = shorten_text(line["descricao"], col_value - col_desc - 10, pdf)
+
+        pdf.drawString(col_date, y, line["date"].strftime("%d/%m/%Y"))
+        pdf.drawString(col_fav, y, line["favorecido"])
+        pdf.drawString(col_desc, y, descricao_curta)
+        pdf.drawRightString(col_value, y, f"{'-' if line['value'] < 0 else ''}R$ {abs(line['value']):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        pdf.drawRightString(col_balance, y, f"R$ {line['balance']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+
+        y -= 20
+
+    pdf.setFont("Helvetica", 7)
+    pdf.drawString(width - 100, 30, "Página 1 de 1")
+    pdf.showPage()
+    pdf.save()
+
+    return response
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def generate_chart_account_balance(request):
     date_min = request.query_params.get("date_min")
     date_max = request.query_params.get("date_max")
     user = request.user
 
-    # Filtro inicial
-    bill_qs = Bill.objects.filter(user=user, status__in=["pago", "parcial"])
-    income_qs = Income.objects.filter(user=user, status__in=["pago", "parcial"])
+    # Filtrar pagamentos
+    payments = Payment.objects.filter(user=user)
 
     if date_min:
-        bill_qs = bill_qs.filter(date_due__gte=date_min)
-        income_qs = income_qs.filter(date_due__gte=date_min)
-
+        payments = payments.filter(date__gte=date_min)
     if date_max:
-        bill_qs = bill_qs.filter(date_due__lte=date_max)
-        income_qs = income_qs.filter(date_due__lte=date_max)
+        payments = payments.filter(date__lte=date_max)
 
-    qs = list(bill_qs) + list(income_qs)
+    # Só considerar pagamentos relacionados a bills ou incomes que têm alocação
+    payments = payments.filter(
+        Q(bill__isnull=False) | Q(income__isnull=False)
+    )
 
     # Mapeamento ChartAccount -> valor pago proporcional
     chartaccount_totals = defaultdict(Decimal)
 
-    for accrual in qs:
-        total_paid = sum(p.value for p in accrual.payments.all()) if hasattr(accrual, "payments") else Decimal("0.00")
-        original_value = accrual.value
+    for payment in payments:
+        accrual = payment.payable
+        if not accrual:
+            continue
 
-        payment_ratio = min(total_paid / original_value, Decimal("1.00")) if original_value else Decimal("0.00")
+        original_value = accrual.value or Decimal("0.00")
+        if original_value == 0:
+            continue  # evita divisão por zero
+
+        # Razão proporcional de pagamento sobre o valor total
+        payment_ratio = payment.value / original_value
 
         for allocation in accrual.allocations.all():
             proportional_paid = allocation.value * payment_ratio
@@ -161,7 +330,7 @@ def generate_chart_account_balance(request):
         for child_id in parent_children.get(account_id, []):
             draw_account(child_id, indent + 1)
 
-    # Imprimir tudo
+    # Imprimir contas raiz
     drawn = set()
     for acc_id, acc in account_map.items():
         if acc.parent_id is None and acc_id not in drawn:
@@ -183,8 +352,6 @@ def generate_chart_account_balance(request):
 
     return response
 
-
-
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def generate_cost_center_consolidated_report(request):
@@ -198,46 +365,39 @@ def generate_cost_center_consolidated_report(request):
 
     user = request.user
 
-    if type_filter == "bills":
-        qs = Bill.objects.filter(user=user)
-    else:
-        qs = Income.objects.filter(user=user)
+    # Filtrar pagamentos
+    payments = Payment.objects.filter(user=user)
 
     if date_min:
-        qs = qs.filter(date_due__gte=date_min)
+        payments = payments.filter(date__gte=date_min)
     if date_max:
-        qs = qs.filter(date_due__lte=date_max)
+        payments = payments.filter(date__lte=date_max)
 
-    if status == "pago":
-        qs = qs.filter(status__in=["pago", "parcial"])
-    elif status == "em_aberto":
-        qs = qs.filter(status__in=["em aberto", "parcial"])
+    if type_filter == "bills":
+        payments = payments.filter(bill__isnull=False)
+    else:
+        payments = payments.filter(income__isnull=False)
 
     # Preparar o total consolidado
     cost_center_totals = defaultdict(lambda: Decimal("0.00"))
 
-    for item in qs:
-        if not hasattr(item, "payments"):
-            total_paid = Decimal("0.00")
-        else:
-            total_paid = sum(p.value for p in item.payments.all())
-
-        original_value = item.value
-
-        # Agora decide o valor a considerar conforme status
-        if status == "pago":
-            value = min(total_paid, original_value)
-        elif status == "em_aberto":
-            value = max(original_value - total_paid, Decimal("0.00"))
-        else:  # status == todos
-            value = original_value
-
-        # Se estiver filtrando pagos e total_pago == 0, ignora
-        if status == "pago" and total_paid == 0:
+    for payment in payments:
+        accrual = payment.payable  # Bill ou Income
+        if not accrual:
             continue
 
-        label = item.cost_center.name if item.cost_center else "#Sem Centro"
-        cost_center_totals[label] += value
+        # Pega o centro de custo
+        label = accrual.cost_center.name if accrual.cost_center else "#Sem Centro"
+
+        # Decide quanto somar
+        if status == "pago":
+            if accrual.status in ["pago", "parcial"]:
+                cost_center_totals[label] += payment.value
+        elif status == "em_aberto":
+            if accrual.status in ["em aberto", "parcial"]:
+                cost_center_totals[label] += payment.value
+        else:  # todos
+            cost_center_totals[label] += payment.value
 
     # Ordenar por valor decrescente
     sorted_totals = sorted(cost_center_totals.items(), key=lambda x: x[1], reverse=True)
@@ -254,30 +414,25 @@ def generate_cost_center_consolidated_report(request):
     pdf.drawCentredString(width / 2, height - 50, "Arquitetura de Eventos")
 
     pdf.setFont("Helvetica", 12)
-    # Mapear os títulos de acordo com type e status
     titles = {
         "bills": {
-            "pago": "Contas Pagas por Centro de Custo",
-            "em_aberto": "Contas a Pagar por Centro de Custo",
-            "todos": "Despesas por Centro de Custo",
+            "pago": "Pagamentos de Despesas por Centro de Custo",
+            "em_aberto": "Pagamentos de Contas a Pagar por Centro de Custo",
+            "todos": "Pagamentos de Despesas por Centro de Custo",
         },
         "incomes": {
-            "pago": "Contas Recebidas por Centro de Custo",
-            "em_aberto": "Contas a Receber por Centro de Custo",
-            "todos": "Receitas por Centro de Custo",
+            "pago": "Recebimentos de Receitas por Centro de Custo",
+            "em_aberto": "Recebimentos de Contas a Receber por Centro de Custo",
+            "todos": "Recebimentos de Receitas por Centro de Custo",
         }
     }
-
-    # Pegar título baseado no filtro selecionado
     titulo = titles.get(type_filter, {}).get(status, "Relatório por Centro de Custo")
     pdf.drawCentredString(width / 2, height - 70, titulo)
 
-    # Período
     pdf.setFont("Helvetica", 9)
     periodo_text = f"Período {date_min or '--'} a {date_max or '--'}"
     pdf.drawString(margin, height - 100, periodo_text)
 
-    # Cabeçalho da tabela
     y = height - 130
     pdf.setFont("Helvetica-Bold", 9)
     pdf.drawString(margin, y, "Centro de Custo")
@@ -285,7 +440,6 @@ def generate_cost_center_consolidated_report(request):
     y -= 20
 
     total_geral = Decimal("0.00")
-
     pdf.setFont("Helvetica", 9)
 
     for idx, (cost_center_name, total) in enumerate(sorted_totals):
@@ -295,7 +449,7 @@ def generate_cost_center_consolidated_report(request):
             pdf.setFillColor(colors.black)
 
         pdf.drawString(margin, y, cost_center_name)
-        pdf.drawRightString(width - margin, y, f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))  # formato brasileiro
+        pdf.drawRightString(width - margin, y, f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         total_geral += total
         y -= 20
 
@@ -317,6 +471,7 @@ def generate_cost_center_consolidated_report(request):
 
     return response
 
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def generate_payments_report(request):
@@ -337,7 +492,6 @@ def generate_payments_report(request):
     if status == "pago":
         payments = Payment.objects.filter(
             user=user,
-            content_type__model__in=["bill", "income"],
         )
 
         if date_min:
@@ -350,7 +504,7 @@ def generate_payments_report(request):
             )
         if event_id:
             payments = payments.filter(
-                Q(bill__event_allocations__event_id=event_id) | 
+                Q(bill__event_allocations__event_id=event_id) |
                 Q(income__event_allocations__event_id=event_id)
             )
         if cost_center_id:
@@ -360,27 +514,26 @@ def generate_payments_report(request):
             )
 
         for p in payments:
-            accrual = p.payable  # bill or income
-            if p.content_type.model == "bill":
-                if type_filter in ["both", "bills"]:
-                    bills.append({
-                        "id": p.id,
-                        "date": p.date,
-                        "person": accrual.person.name if accrual.person else "-",
-                        "description": accrual.description,
-                        "doc_number": accrual.doc_number or "DN",
-                        "value": round(p.value, 2),
-                    })
-            elif p.content_type.model == "income":
-                if type_filter in ["both", "incomes"]:
-                    incomes.append({
-                        "id": p.id,
-                        "date": p.date,
-                        "person": accrual.person.name if accrual.person else "-",
-                        "description": accrual.description,
-                        "doc_number": accrual.doc_number or "DN",
-                        "value": round(p.value, 2),
-                    })
+            accrual = p.payable  # agora já usa a propriedade que aponta para bill ou income
+
+            if p.bill and type_filter in ["both", "bills"]:
+                bills.append({
+                    "id": p.id,
+                    "date": p.date,
+                    "person": accrual.person.name if accrual.person else "-",
+                    "description": accrual.description,
+                    "doc_number": accrual.doc_number or "DN",
+                    "value": round(p.value, 2),
+                })
+            elif p.income and type_filter in ["both", "incomes"]:
+                incomes.append({
+                    "id": p.id,
+                    "date": p.date,
+                    "person": accrual.person.name if accrual.person else "-",
+                    "description": accrual.description,
+                    "doc_number": accrual.doc_number or "DN",
+                    "value": round(p.value, 2),
+                })
 
     else:
         bill_qs = Bill.objects.filter(user=user)
@@ -405,7 +558,7 @@ def generate_payments_report(request):
             bill_qs = bill_qs.filter(cost_center_id=cost_center_id)
             income_qs = income_qs.filter(cost_center_id=cost_center_id)
 
-        def get_rows(qs, is_bill):
+        def get_rows(qs):
             rows = []
             for item in qs:
                 if event:
@@ -438,9 +591,9 @@ def generate_payments_report(request):
             return rows
 
         if type_filter in ["both", "bills"]:
-            bills = get_rows(bill_qs, True)
+            bills = get_rows(bill_qs)
         if type_filter in ["both", "incomes"]:
-            incomes = get_rows(income_qs, False)
+            incomes = get_rows(income_qs)
 
     # ------------------------- PDF ---------------------------------
 
@@ -468,7 +621,7 @@ def generate_payments_report(request):
         
     y = draw_header(pdf, width, height, event_name, event.id if event else "Geral", title)
 
-    def draw_table(pdf, items, label, y, is_income=False):
+    def draw_table(pdf, items, label, y):
         if not items:
             return y
 
@@ -498,14 +651,15 @@ def generate_payments_report(request):
         return y
 
     if bills:
-        y = draw_table(pdf, bills, "Despesas", y, is_income=False)
+        y = draw_table(pdf, bills, "Despesas", y)
     if incomes:
-        y = draw_table(pdf, incomes, "Receitas", y, is_income=True)
+        y = draw_table(pdf, incomes, "Receitas", y)
 
     pdf.setFont("Helvetica", 7)
     pdf.drawString(width - 100, 30, "Página 1 de 1")
     pdf.save()
     return response
+
 
 class BillViewSet(viewsets.ModelViewSet):
     serializer_class = BillSerializer
@@ -604,12 +758,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
         bank_name = params.getlist("bank_name")
         person = params.get("person")
         type_filter = params.getlist("type")
-        content_type_param = params.get("content_type")  # "bill" or "income"
-        object_id_param = params.get("object_id")
-
-        if content_type_param and object_id_param:
-            target_ct = ContentType.objects.get(model=content_type_param)
-            qs = qs.filter(content_type=target_ct, object_id=object_id_param)
+        bill_id = params.get("bill_id")
+        income_id = params.get("income_id")
 
         if start_date:
             qs = qs.filter(date__gte=start_date)
@@ -623,12 +773,25 @@ class PaymentViewSet(viewsets.ModelViewSet):
             qs = qs.filter(bank__name__in=bank_name)
 
         if person:
-            qs = qs.filter(person__name__icontains=person)
+            qs = qs.filter(
+                Q(bill__person__name__icontains=person) |
+                Q(income__person__name__icontains=person)
+            )
 
         if type_filter:
-            type_map = {"Despesa": "bill", "Receita": "income"}
-            content_type_names = [type_map[t] for t in type_filter]
-            qs = qs.filter(content_type__model__in=content_type_names)
+            conditions = []
+            for t in type_filter:
+                if t.lower() == "despesa":
+                    conditions.append(Q(bill__isnull=False))
+                elif t.lower() == "receita":
+                    conditions.append(Q(income__isnull=False))
+            if conditions:
+                qs = qs.filter(reduce(lambda x, y: x | y, conditions))
+
+        if bill_id:
+            qs = qs.filter(bill_id=bill_id)
+        if income_id:
+            qs = qs.filter(income_id=income_id)
 
         return qs
 
@@ -643,8 +806,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
         # Get all existing payments for this bill/income
         existing_payments = Payment.objects.filter(
-            content_type=payment.content_type,
-            object_id=payment.object_id
+            Q(bill=payment.bill) | Q(income=payment.income)
         )
 
         total_paid = sum(p.value for p in existing_payments)
@@ -652,19 +814,20 @@ class PaymentViewSet(viewsets.ModelViewSet):
         if total_paid > parent.value:
             raise ValidationError("Total pago excede o valor da conta/receita. Pagamento não registrado.")
 
-        elif total_paid == parent.value:
+        if total_paid == parent.value:
             parent.status = "pago"
-            parent.save()
-
         elif total_paid > 0:
             parent.status = "parcial"
-            parent.save()
+        else:
+            parent.status = "em aberto"
+
+        parent.save()
 
         # Update bank balance (subtract if Bill, add if Income)
         if payment.bank:
-            if payment.content_type.model == "bill":
+            if payment.bill:
                 payment.bank.balance -= payment.value
-            elif payment.content_type.model == "income":
+            elif payment.income:
                 payment.bank.balance += payment.value
             payment.bank.save()
 
@@ -674,7 +837,8 @@ class PaymentViewSet(viewsets.ModelViewSet):
         old_instance = self.get_object()
         old_value = old_instance.value
         old_bank = old_instance.bank
-        old_content_type = old_instance.content_type.model
+        old_bill = old_instance.bill
+        old_income = old_instance.income
 
         payment = serializer.save(user=user)
         parent = payment.payable
@@ -684,8 +848,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
         # Recalculate total paid after the update
         existing_payments = Payment.objects.filter(
-            content_type=payment.content_type,
-            object_id=payment.object_id
+            Q(bill=payment.bill) | Q(income=payment.income)
         )
 
         total_paid = sum(p.value for p in existing_payments)
@@ -693,44 +856,41 @@ class PaymentViewSet(viewsets.ModelViewSet):
         if total_paid > parent.value:
             raise ValidationError("Total pago excede o valor da conta/receita. Pagamento não atualizado.")
 
-        elif total_paid == parent.value:
+        if total_paid == parent.value:
             parent.status = "pago"
-            parent.save()
-
         elif total_paid > 0:
             parent.status = "parcial"
-            parent.save()
         else:
             parent.status = "em aberto"
-            parent.save()
 
-        # Adjust bank balance (consider value difference and model type)
-        if payment.bank:
-            value_diff = payment.value - old_value
+        parent.save()
 
-            if old_bank == payment.bank and old_content_type == payment.content_type.model:
-                # Same bank & type, adjust difference
-                if payment.content_type.model == "bill":
-                    payment.bank.balance -= value_diff
-                elif payment.content_type.model == "income":
-                    payment.bank.balance += value_diff
+        # Adjust bank balance
+        value_diff = payment.value - old_value
 
-            else:
-                # Revert old bank
-                if old_bank:
-                    if old_content_type == "bill":
-                        old_bank.balance += old_value
-                    elif old_content_type == "income":
-                        old_bank.balance -= old_value
-                    old_bank.save()
+        if old_bank == payment.bank and old_bill == payment.bill and old_income == payment.income:
+            # Same bank & same type
+            if payment.bill:
+                payment.bank.balance -= value_diff
+            elif payment.income:
+                payment.bank.balance += value_diff
+        else:
+            # Revert old bank
+            if old_bank:
+                if old_bill:
+                    old_bank.balance += old_value
+                elif old_income:
+                    old_bank.balance -= old_value
+                old_bank.save()
 
-                # Apply to new bank
-                if payment.content_type.model == "bill":
+            # Apply to new bank
+            if payment.bank:
+                if payment.bill:
                     payment.bank.balance -= payment.value
-                elif payment.content_type.model == "income":
+                elif payment.income:
                     payment.bank.balance += payment.value
+                payment.bank.save()
 
-            payment.bank.save()
 
 class BankViewSet(viewsets.ModelViewSet):
     serializer_class = BankSerializer

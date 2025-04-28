@@ -138,44 +138,46 @@ class IncomeSerializer(serializers.ModelSerializer):
 
 
 class PaymentSerializer(serializers.ModelSerializer):
-    content_type = serializers.SlugRelatedField(
-        slug_field='model',
-        queryset=ContentType.objects.filter(model__in=['bill', 'income'])
+    bill_id = serializers.PrimaryKeyRelatedField(
+        queryset=Bill.objects.all(),
+        required=False,
+        allow_null=True
     )
+    income_id = serializers.PrimaryKeyRelatedField(
+        queryset=Income.objects.all(),
+        required=False,
+        allow_null=True
+    )
+    bank_name = serializers.CharField(source="bank.name", read_only=True)
+    person_name = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField()
 
     class Meta:
         model = Payment
-        fields = ['id', 'content_type', 'object_id', 'value', 'bank', 'doc_number', 'date']
+        fields = ['id', 'bill_id', 'income_id', 'value', 'bank', 'bank_name', 'doc_number', 'date', 'person_name', 'description']
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
+    def get_person_name(self, obj):
+        if obj.payable and obj.payable.person:
+            return obj.payable.person.name
+        return None
 
-        if instance.payable:
-            data['person_name'] = instance.payable.person.name
-            data['description'] = instance.payable.description
-
-        if instance.bank:
-            data['bank_name'] = instance.bank.name
-
-        return data
+    def get_description(self, obj):
+        if obj.payable:
+            return obj.payable.description
+        return None
 
     def validate(self, attrs):
-        content_type = attrs.get('content_type') or getattr(self.instance, 'content_type', None)
-        object_id = attrs.get('object_id') or getattr(self.instance, 'object_id', None)
+        bill = attrs.get('bill') or getattr(self.instance, 'bill', None)
+        income = attrs.get('income') or getattr(self.instance, 'income', None)
 
-        if not content_type or not object_id:
-            raise serializers.ValidationError("É necessário informar 'content_type' e 'object_id'.")
+        if not bill and not income:
+            raise serializers.ValidationError("É necessário informar 'bill' ou 'income'.")
 
-        ModelClass = content_type.model_class()
-
-        try:
-            ModelClass.objects.get(pk=object_id)
-        except ObjectDoesNotExist:
-            raise serializers.ValidationError({
-                "object_id": f"O ID {object_id} não corresponde a um {content_type.model} existente."
-            })
+        if bill and income:
+            raise serializers.ValidationError("Não é permitido preencher 'bill' e 'income' ao mesmo tempo.")
 
         return attrs
+
 
 class BankSerializer(serializers.ModelSerializer):
     class Meta:

@@ -17,6 +17,9 @@ export default function ReportsPage() {
   const [year, setYear] = useState("");
   const [costCenter, setCostCenter] = useState("");
   const [costCenters, setCostCenters] = useState([]);
+  const [bankId, setBankId] = useState("");
+  const [banks, setBanks] = useState([]);
+
 
   const getToken = () => {
     const token = localStorage.getItem("token");
@@ -25,22 +28,65 @@ export default function ReportsPage() {
   };
 
   useEffect(() => {
-    const fetchCostCenters = async () => {
+    const fetchCostCentersAndBanks = async () => {
       try {
         const token = getToken();
-        const response = await fetch("http://127.0.0.1:8000/payments/costcenter/", {
-          method: "GET",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!response.ok) throw new Error("Erro ao buscar centros de custo");
-        const data = await response.json();
-        setCostCenters(data);
+  
+        const [costCenterResponse, banksResponse] = await Promise.all([
+          fetch("http://127.0.0.1:8000/payments/costcenter/", {
+            method: "GET",
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch("http://127.0.0.1:8000/payments/banks/", {
+            method: "GET",
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+  
+        if (!costCenterResponse.ok) throw new Error("Erro ao buscar centros de custo");
+        if (!banksResponse.ok) throw new Error("Erro ao buscar bancos");
+  
+        const costCenterData = await costCenterResponse.json();
+        const banksData = await banksResponse.json();
+  
+        setCostCenters(costCenterData);
+        setBanks(banksData);
       } catch (error) {
-        console.error("Erro ao carregar centros de custo:", error);
+        console.error("Erro ao carregar centros de custo ou bancos:", error);
       }
     };
-    fetchCostCenters();
+  
+    fetchCostCentersAndBanks();
   }, []);
+
+  const handleGenerateBankStatement = async () => {
+    const params = new URLSearchParams();
+    if (dateMin) params.append("date_min", dateMin);
+    if (dateMax) params.append("date_max", dateMax);
+    if (bankId && bankId !== "todos") params.append("bank_id", bankId);
+  
+    try {
+      const token = getToken();
+      const response = await fetch(`http://127.0.0.1:8000/payments/report/bank/?${params.toString()}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Erro ao gerar extrato bancário");
+  
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = "extrato_bancario.pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("Erro ao baixar extrato bancário:", error);
+      alert("Não foi possível gerar o extrato bancário. Tente novamente.");
+    }
+  };
 
   const handleGenerateTypeReport = async () => {
     if (!year) {
@@ -78,7 +124,7 @@ export default function ReportsPage() {
     if (eventId) params.append("event_id", eventId);
     if (costCenter && costCenter !== "todos") params.append("cost_center", costCenter);
     if (dateMin) params.append("date_min", dateMin);
-    if (dateMax) params.append("date_max", dateMax);
+    if (dateMax) params.append("date_max  ", dateMax);
 
     const url = `http://127.0.0.1:8000/payments/report/?${params.toString()}`;
     try {
@@ -159,6 +205,35 @@ export default function ReportsPage() {
       alert("Não foi possível gerar o balancete. Tente novamente.");
     }
   };
+
+  const handleGenerateEventsSummary = async () => {
+    const params = new URLSearchParams();
+    if (dateMin) params.append("date_min", dateMin);
+    if (dateMax) params.append("date_max", dateMax);
+  
+    try {
+      const token = getToken();
+      const response = await fetch(`http://127.0.0.1:8000/events/report/?${params.toString()}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Erro ao gerar o relatório de eventos");
+  
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = "resumo_eventos.pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("Erro ao baixar o relatório de eventos:", error);
+      alert("Não foi possível gerar o relatório. Tente novamente.");
+    }
+  };
+  
 
   return (
     <div className="flex">
@@ -277,20 +352,6 @@ export default function ReportsPage() {
             </div>
 
             <div>
-              <label className="text-sm">Status</label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="pago">Pagos</SelectItem>
-                  <SelectItem value="em_aberto">Em Aberto</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
               <label className="text-sm">Data Inicial</label>
               <Input type="date" value={dateMin} onChange={(e) => setDateMin(e.target.value)} />
             </div>
@@ -339,7 +400,81 @@ export default function ReportsPage() {
           </Button>
         </div>
 
+        <h2 className="text-xl font-semibold mt-8">Relatório de Resumo de Eventos</h2>
+        <Card className="mt-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+            <div>
+              <label className="text-sm">Data Inicial</label>
+              <Input
+                type="date"
+                value={dateMin}
+                onChange={(e) => setDateMin(e.target.value)}
+              />
+            </div>
 
+            <div>
+              <label className="text-sm">Data Final</label>
+              <Input
+                type="date"
+                value={dateMax}
+                onChange={(e) => setDateMax(e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-end">
+              <Button onClick={handleGenerateEventsSummary} className="w-full md:w-auto">
+                Gerar Resumo de Eventos
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* --- Extrato Bancário --- */}
+        <h2 className="text-xl font-semibold mt-8">Relatório de Extrato Bancário</h2>
+        <Card className="mt-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+            <div>
+              <label className="text-sm">Banco</label>
+              <Select value={bankId} onValueChange={setBankId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o Banco" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Bancos (Consolidado)</SelectItem>
+                  {banks.map((bank) => (
+                    <SelectItem key={bank.id} value={String(bank.id)}>
+                      {bank.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm">Data Inicial</label>
+              <Input
+                type="date"
+                value={dateMin}
+                onChange={(e) => setDateMin(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm">Data Final</label>
+              <Input
+                type="date"
+                value={dateMax}
+                onChange={(e) => setDateMax(e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-end">
+              <Button onClick={handleGenerateBankStatement} className="w-full md:w-auto">
+                Gerar Extrato Bancário
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

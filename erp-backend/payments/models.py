@@ -46,16 +46,18 @@ class Bill(Accrual):
         return f"Conta de {self.supplier.name} - {self.value}"
     
 class Payment(models.Model):
-    # Generic FK to Bill or Income
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, related_name="payment_target")
-    object_id = models.PositiveIntegerField()
-    payable = GenericForeignKey('content_type', 'object_id')
+    bill = models.ForeignKey('Bill', on_delete=models.CASCADE, null=True, blank=True, related_name='payments')
+    income = models.ForeignKey('Income', on_delete=models.CASCADE, null=True, blank=True, related_name='payments')
 
     date = models.DateField()
     value = models.DecimalField(max_digits=10, decimal_places=2)
-    bank = models.ForeignKey('Bank', on_delete=models.CASCADE)  # ✅ NEW FK to Bank model
+    bank = models.ForeignKey('Bank', on_delete=models.CASCADE)
     doc_number = models.CharField(max_length=100, blank=True)
+
+    @property
+    def payable(self):
+        return self.bill or self.income
 
     def __str__(self):
         return f"Pagamento de R$ {self.value} em {self.date}"
