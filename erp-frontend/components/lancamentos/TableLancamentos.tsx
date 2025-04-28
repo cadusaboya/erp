@@ -101,7 +101,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
         <tbody>
           {paginatedData.map((payment) => (
             <TableRow key={`${payment.id}`}>
-              <TableCell>{payment.content_type === "bill" ? "Despesa" : "Receita"}</TableCell>
+              <TableCell>{payment.bill_id ? "Despesa" : "Receita"}</TableCell>
               <TableCell>{payment.date}</TableCell>
               <TableCell>{payment.person_name}</TableCell>
               <TableCell>{payment.description}</TableCell>

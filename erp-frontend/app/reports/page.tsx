@@ -10,7 +10,7 @@ import { Loader2 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 
 export default function ReportsPage() {
-  const [type, setType] = useState("bills"); // Default now 'bills'
+  const [type, setType] = useState("bills");
   const [status, setStatus] = useState("");
   const [person, setPerson] = useState("");
   const [eventId, setEventId] = useState("");
@@ -46,6 +46,21 @@ export default function ReportsPage() {
     fetchData();
   }, []);
 
+  const buildParams = (extraParams: Record<string, string> = {}) => {
+    const params = new URLSearchParams();
+    if (type) params.append("type", type);
+    if (status && status !== "todos") params.append("status", status);
+    if (person) params.append("person", person);
+    if (eventId) params.append("event_id", eventId);
+    if (costCenter && costCenter !== "todos") params.append("cost_center", costCenter);
+    if (dateMin) params.append("date_min", dateMin);
+    if (dateMax) params.append("date_max", dateMax);
+    for (const key in extraParams) {
+      params.append(key, extraParams[key]);
+    }
+    return params;
+  };
+
   const handleDownload = async (url: string, filename: string) => {
     try {
       setIsLoading(true);
@@ -71,9 +86,23 @@ export default function ReportsPage() {
   return (
     <div className="flex">
       <Sidebar />
-      <div className="flex flex-col p-6 gap-6">
+      <div className="flex flex-col p-6 gap-6 w-full">
         <h1 className="text-2xl font-bold">Relatórios</h1>
-        <Tabs defaultValue="contas" className="w-full">
+        <Tabs
+          defaultValue="contas"
+          className="w-full"
+          onValueChange={(tab) => {
+            setType("");
+            setStatus("");
+            setPerson("");
+            setEventId("");
+            setDateMin("");
+            setDateMax("");
+            setYear("");
+            setCostCenter("");
+            setBankId("");
+          }}
+        >
           <TabsList className="grid grid-cols-3 lg:grid-cols-6">
             <TabsTrigger value="contas">Contas</TabsTrigger>
             <TabsTrigger value="tipo">Receita por Tipo</TabsTrigger>
@@ -85,7 +114,7 @@ export default function ReportsPage() {
 
           {/* Contas */}
           <TabsContent value="contas">
-            <Card><CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card><CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-2">
               <div>
                 <label className="text-xs">Tipo</label>
                 <Select value={type} onValueChange={setType}>
@@ -138,7 +167,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/`, "relatorio_contas.pdf")} disabled={isLoading}>
+              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/?${buildParams().toString()}`, "relatorio_contas.pdf")} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
@@ -146,25 +175,14 @@ export default function ReportsPage() {
 
           {/* Receita por Tipo */}
           <TabsContent value="tipo">
-            <Card>
-              <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-xs">Ano</label>
-                  <Input
-                    type="number"
-                    placeholder="Ex: 2025"
-                    value={year}
-                    onChange={(e) => setYear(e.target.value)}
-                    className="w-50"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            <Card><CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-2">
+              <div>
+                <label className="text-xs">Ano</label>
+                <Input type="number" placeholder="Ex: 2025" value={year} onChange={(e) => setYear(e.target.value)} className="max-w-[150px]" />
+              </div>
+            </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button
-                onClick={() => handleDownload(`http://127.0.0.1:8000/events/report/type/?year=${year}`, `receita_tipo_${year}.pdf`)}
-                disabled={isLoading}
-              >
+              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/events/report/type/?year=${year}`, `receita_tipo_${year}.pdf`)} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
@@ -172,7 +190,7 @@ export default function ReportsPage() {
 
           {/* Consolidado Centros */}
           <TabsContent value="custo">
-            <Card><CardContent className="p-4 grid gap-4">
+            <Card><CardContent className="p-4 grid gap-2">
               <div>
                 <label className="text-xs">Tipo</label>
                 <Select value={type} onValueChange={setType}>
@@ -193,7 +211,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/costcenter/`, "consolidado_centros.pdf")} disabled={isLoading}>
+              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/costcenter/?${buildParams().toString()}`, "consolidado_centros.pdf")} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
@@ -201,7 +219,7 @@ export default function ReportsPage() {
 
           {/* Resumo Eventos */}
           <TabsContent value="evento">
-            <Card><CardContent className="p-4 grid gap-4">
+            <Card><CardContent className="p-4 grid gap-2">
               <div>
                 <label className="text-xs">Data Inicial</label>
                 <Input type="date" value={dateMin} onChange={(e) => setDateMin(e.target.value)} className="max-w-[150px]" />
@@ -212,7 +230,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/events/report/`, "resumo_eventos.pdf")} disabled={isLoading}>
+              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/events/report/?${buildParams().toString()}`, "resumo_eventos.pdf")} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
@@ -220,7 +238,7 @@ export default function ReportsPage() {
 
           {/* Extrato Bancário */}
           <TabsContent value="banco">
-            <Card><CardContent className="p-4 grid gap-4">
+            <Card><CardContent className="p-4 grid gap-2">
               <div>
                 <label className="text-xs">Banco</label>
                 <Select value={bankId} onValueChange={setBankId}>
@@ -243,7 +261,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/bank/`, "extrato_bancario.pdf")} disabled={isLoading}>
+              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/bank/?${buildParams({ bank_id: bankId !== "todos" ? bankId : "" }).toString()}`, "extrato_bancario.pdf")} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
@@ -251,7 +269,7 @@ export default function ReportsPage() {
 
           {/* Balancete */}
           <TabsContent value="balancete">
-            <Card><CardContent className="p-4 grid gap-4">
+            <Card><CardContent className="p-4 grid gap-2">
               <div>
                 <label className="text-xs">Data Inicial</label>
                 <Input type="date" value={dateMin} onChange={(e) => setDateMin(e.target.value)} className="max-w-[150px]" />
@@ -262,7 +280,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/chartaccount/`, "balancete.pdf")} disabled={isLoading}>
+              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/chartaccount/?${buildParams().toString()}`, "balancete.pdf")} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Balancete"}
               </Button>
             </div>
