@@ -112,7 +112,7 @@ def generate_bank_statement_report(request):
 
     # Criar PDF
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = 'attachment; filename="extrato_bancario.pdf"'
+    response["Content-Disposition"] = "inline; filename=relatorio_completo_contas.pdf"
 
     pdf = canvas.Canvas(response, pagesize=A4)
     width, height = A4
@@ -260,7 +260,7 @@ def generate_chart_account_balance(request):
 
     # Iniciar PDF
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = 'attachment; filename="balancete_plano_contas.pdf"'
+    response["Content-Disposition"] = "inline; filename=relatorio_completo_contas.pdf"
 
     pdf = canvas.Canvas(response, pagesize=A4)
     width, height = A4
@@ -404,7 +404,7 @@ def generate_cost_center_consolidated_report(request):
 
     # PDF
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = 'attachment; filename=relatorio_consolidado_centros_custo.pdf'
+    response["Content-Disposition"] = "inline; filename=relatorio_completo_contas.pdf"
 
     pdf = canvas.Canvas(response, pagesize=A4)
     width, height = A4
@@ -609,7 +609,7 @@ def generate_payments_report(request):
     # ------------------------- PDF ---------------------------------
 
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = "attachment; filename=relatorio_completo_contas.pdf"
+    response["Content-Disposition"] = "inline; filename=relatorio_completo_contas.pdf"
 
     pdf = canvas.Canvas(response, pagesize=landscape(A4))
     width, height = landscape(A4)

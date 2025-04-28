@@ -54,7 +54,7 @@ def generate_events_summary_report(request):
 
     # Iniciar PDF
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = 'attachment; filename="resumo_eventos.pdf"'
+    response["Content-Disposition"] = "inline; filename=relatorio_completo_contas.pdf"
 
     pdf = canvas.Canvas(response, pagesize=landscape(A4))
     width, height = landscape(A4)
@@ -161,7 +161,7 @@ def generate_event_type_monthly_report(request):
 
     # PDF setup
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename=receita_mensal_{year}.pdf'
+    response["Content-Disposition"] = "inline; filename=relatorio_completo_contas.pdf"
 
     pdf = canvas.Canvas(response, pagesize=landscape(A4))
     width, height = landscape(A4)

@@ -61,27 +61,28 @@ export default function ReportsPage() {
     return params;
   };
 
-  const handleDownload = async (url: string, filename: string) => {
+  const handleOpenPdf = async (url: string) => {
     try {
       setIsLoading(true);
       const token = getToken();
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error("Erro ao gerar relatório");
+  
       const blob = await res.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
+      const pdfUrl = window.URL.createObjectURL(blob);
+  
+      // Open the PDF in a new browser tab
+      window.open(pdfUrl, "_blank");
+  
+      // Optional: revoke the object URL later to avoid memory leaks
+      setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 10000); // after 10 seconds
     } catch (error) {
       alert("Erro ao gerar relatório. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className="flex">
@@ -167,7 +168,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/?${buildParams().toString()}`, "relatorio_contas.pdf")} disabled={isLoading}>
+              <Button onClick={() => handleOpenPdf(`http://127.0.0.1:8000/payments/report/?${buildParams().toString()}`)} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
@@ -182,7 +183,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/events/report/type/?year=${year}`, `receita_tipo_${year}.pdf`)} disabled={isLoading}>
+              <Button onClick={() => handleOpenPdf(`http://127.0.0.1:8000/events/report/type/?year=${year}`)} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
@@ -211,7 +212,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/costcenter/?${buildParams().toString()}`, "consolidado_centros.pdf")} disabled={isLoading}>
+              <Button onClick={() => handleOpenPdf(`http://127.0.0.1:8000/payments/report/costcenter/?${buildParams().toString()}`)} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
@@ -230,7 +231,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/events/report/?${buildParams().toString()}`, "resumo_eventos.pdf")} disabled={isLoading}>
+              <Button onClick={() => handleOpenPdf(`http://127.0.0.1:8000/events/report/?${buildParams().toString()}`)} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
@@ -261,7 +262,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/bank/?${buildParams({ bank_id: bankId !== "todos" ? bankId : "" }).toString()}`, "extrato_bancario.pdf")} disabled={isLoading}>
+              <Button onClick={() => handleOpenPdf(`http://127.0.0.1:8000/payments/report/bank/?${buildParams({ bank_id: bankId !== "todos" ? bankId : "" }).toString()}`)} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
@@ -280,7 +281,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleDownload(`http://127.0.0.1:8000/payments/report/chartaccount/?${buildParams().toString()}`, "balancete.pdf")} disabled={isLoading}>
+              <Button onClick={() => handleOpenPdf(`http://127.0.0.1:8000/payments/report/chartaccount/?${buildParams().toString()}`)} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Balancete"}
               </Button>
             </div>
