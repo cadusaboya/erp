@@ -25,7 +25,7 @@ class Accrual(models.Model):
     description = models.TextField()
     date_due = models.DateField()
     value = models.DecimalField(max_digits=10, decimal_places=2)
-    doc_number = models.CharField(max_length=50, blank=True, null=True, unique=True)
+    doc_number = models.CharField(max_length=50, blank=True, null=True)
     event = models.ForeignKey('events.Event', on_delete=models.SET_NULL, blank=True, null=True, related_name="%(class)s")
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='em aberto')
     payments = GenericRelation('payments.Payment', content_type_field='content_type', object_id_field='object_id')
