@@ -492,7 +492,7 @@ def generate_payments_report(request):
     if status == "pago":
         payments = Payment.objects.filter(
             user=user,
-        )
+        ).select_related('bill', 'income', 'bill__person', 'income__person').prefetch_related('bill__event_allocations', 'income__event_allocations')
 
         if date_min:
             payments = payments.filter(date__gte=date_min)
@@ -514,25 +514,36 @@ def generate_payments_report(request):
             )
 
         for p in payments:
-            accrual = p.payable  # agora já usa a propriedade que aponta para bill ou income
+            accrual = p.payable  # Bill or Income
+
+            # Find event allocation for the selected event
+            if event:
+                allocation = accrual.event_allocations.filter(event_id=event.id).first()
+                if allocation:
+                    ratio = allocation.value / accrual.value if accrual.value else 0
+                    adjusted_value = round(p.value * ratio, 2)
+                else:
+                    continue  # this payment has no allocation to the event, skip
+            else:
+                adjusted_value = round(p.value, 2)
 
             if p.bill and type_filter in ["both", "bills"]:
                 bills.append({
                     "id": p.id,
                     "date": p.date,
                     "person": accrual.person.name if accrual.person else "-",
-                    "description": accrual.description,
-                    "doc_number": accrual.doc_number or "DN",
-                    "value": round(p.value, 2),
+                    "description": p.description,
+                    "doc_number": p.doc_number or "DN",
+                    "value": adjusted_value,
                 })
             elif p.income and type_filter in ["both", "incomes"]:
                 incomes.append({
                     "id": p.id,
                     "date": p.date,
                     "person": accrual.person.name if accrual.person else "-",
-                    "description": accrual.description,
-                    "doc_number": accrual.doc_number or "DN",
-                    "value": round(p.value, 2),
+                    "description": p.description,
+                    "doc_number": p.doc_number or "DN",
+                    "value": adjusted_value,
                 })
 
     else:
