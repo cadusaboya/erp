@@ -2,6 +2,7 @@ export interface PaymentCreatePayload {
   bill_id?: number;
   income_id?: number;
   income?: number;
+  description?: string;
   value: string;
   date: string;
   bank?: number;

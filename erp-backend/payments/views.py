@@ -800,9 +800,13 @@ class PaymentViewSet(viewsets.ModelViewSet):
         user = self.request.user
         payment = serializer.save(user=user)
 
-        parent = parent = payment.bill or payment.income
+        parent = payment.bill or payment.income
         if not parent:
             raise ValidationError("Pagamento inválido: objeto relacionado não encontrado.")
+
+        if not payment.description and parent.description:
+            payment.description = parent.description
+            payment.save(update_fields=["description"])
 
         # Get all existing payments for this bill/income
         existing_payments = Payment.objects.filter(
@@ -823,13 +827,14 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
         parent.save()
 
-        # Update bank balance (subtract if Bill, add if Income)
+        # Update bank balance
         if payment.bank:
             if payment.bill:
                 payment.bank.balance -= payment.value
             elif payment.income:
                 payment.bank.balance += payment.value
             payment.bank.save()
+
 
     @transaction.atomic
     def perform_update(self, serializer):
@@ -841,12 +846,17 @@ class PaymentViewSet(viewsets.ModelViewSet):
         old_income = old_instance.income
 
         payment = serializer.save(user=user)
-        parent = payment.payable
 
+        parent = payment.bill or payment.income
         if not parent:
             raise ValidationError("Pagamento inválido: objeto relacionado não encontrado.")
 
-        # Recalculate total paid after the update
+        # 👇 Auto-fill description if not provided on update
+        if not payment.description and parent.description:
+            payment.description = parent.description
+            payment.save(update_fields=["description"])
+
+        # Recalculate total paid
         existing_payments = Payment.objects.filter(
             Q(bill=payment.bill) | Q(income=payment.income)
         )
@@ -869,13 +879,11 @@ class PaymentViewSet(viewsets.ModelViewSet):
         value_diff = payment.value - old_value
 
         if old_bank == payment.bank and old_bill == payment.bill and old_income == payment.income:
-            # Same bank & same type
             if payment.bill:
                 payment.bank.balance -= value_diff
             elif payment.income:
                 payment.bank.balance += value_diff
         else:
-            # Revert old bank
             if old_bank:
                 if old_bill:
                     old_bank.balance += old_value
@@ -883,7 +891,6 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     old_bank.balance -= old_value
                 old_bank.save()
 
-            # Apply to new bank
             if payment.bank:
                 if payment.bill:
                     payment.bank.balance -= payment.value

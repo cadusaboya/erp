@@ -49,7 +49,7 @@ class Payment(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     bill = models.ForeignKey('Bill', on_delete=models.CASCADE, null=True, blank=True, related_name='payments')
     income = models.ForeignKey('Income', on_delete=models.CASCADE, null=True, blank=True, related_name='payments')
-
+    description = models.CharField(max_length=255, blank=True, null=True)
     date = models.DateField()
     value = models.DecimalField(max_digits=10, decimal_places=2)
     bank = models.ForeignKey('Bank', on_delete=models.CASCADE)
