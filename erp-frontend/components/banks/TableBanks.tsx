@@ -7,6 +7,7 @@ import { PlusCircle } from "lucide-react";
 import CreateBankDialog from "@/components/banks/CreateBankDialog";
 import EditBankDialog from "@/components/banks/EditBankDialog";
 import { Bank } from "@/types/types";
+import { formatCurrencyBR } from "@/lib/utils";
 
 interface TableBanksProps {
   banks: Bank[];
@@ -45,7 +46,7 @@ const TableBanks: React.FC<TableBanksProps> = ({ banks, onBankUpdated }) => {
             <TableRow key={bank.id}>
               <TableCell>{bank.id}</TableCell>
               <TableCell>{bank.name}</TableCell>
-              <TableCell>R$ {bank.balance}</TableCell>
+              <TableCell>{formatCurrencyBR(bank.balance)}</TableCell>
               <TableCell>
                 <Button
                   variant="outline"

@@ -10,6 +10,7 @@ import { PaymentsDialog } from "@/components/lancamentos/ViewMoreDialog";
 import { fetchPayments } from "@/services/lancamentos";
 import CreateDialog from "@/components/CreateDialog"; // 👈 new import
 import { createPayment } from "@/services/lancamentos"; // 👈 your service to create a payment
+import { formatCurrencyBR } from "@/lib/utils";
 
 interface BankOption {
   id: number;
@@ -132,7 +133,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
         <tbody>
           {paginatedData.map((record) => (
             <TableRow key={`${record.id}-${record.status}`}>
-              <TableCell>{record.date_due}</TableCell>
+              <TableCell>{new Date(record.date_due).toLocaleDateString("pt-BR")}</TableCell>
               <TableCell>{record.person_name}</TableCell>
               <TableCell>{record.description}</TableCell>
               <TableCell>{record.doc_number || "N/A"}</TableCell>
@@ -142,7 +143,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
                 </span>
               </TableCell>
               <TableCell>
-                {record.status === "parcial" ? `R$ ${Number(record.remaining_value).toFixed(2)}` : `R$ ${Number(record.value).toFixed(2)}`}
+                {record.status === "parcial" ? formatCurrencyBR(record.remaining_value) : formatCurrencyBR(record.value)}
               </TableCell>
               <TableCell className="space-y-2">
                 <Button variant="outline" onClick={() => handleEditClick(record)}>Editar</Button>

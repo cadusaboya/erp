@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { FileText } from "lucide-react";
 import { Event, FinancialSummary } from "@/types/types";
+import { formatCurrencyBR } from "@/lib/utils";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
@@ -15,12 +16,6 @@ interface EventDetailsDialogProps {
   onClose: () => void;
   eventId: string;
 }
-
-const formatCurrency = (val: any) =>
-  `R$ ${Number(val ?? 0).toLocaleString("pt-BR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
 
 export default function EventDetailsDialog({ open, onClose, eventId }: EventDetailsDialogProps) {
   const [event, setEvent] = useState<Event | null>(null);
@@ -161,7 +156,7 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
                 <p><strong>Nome:</strong> {event.event_name}</p>
                 <p><strong>Cliente:</strong> {event.client_name}</p>
                 <p><strong>Data:</strong> {event.date}</p>
-                <p><strong>Valor Total:</strong> {formatCurrency(event.total_value)}</p>
+                <p><strong>Valor Total:</strong> {formatCurrencyBR(event.total_value)}</p>
               </CardContent>
             </Card>
 
@@ -170,10 +165,10 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
                 <CardTitle>Resumo Financeiro</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-2 gap-4">
-                <p><strong>Receitas:</strong> {formatCurrency(financialSummary.total_receitas)}</p>
-                <p><strong>Despesas:</strong> {formatCurrency(financialSummary.total_despesas)}</p>
-                <p><strong>Saldo:</strong> {formatCurrency(financialSummary.saldo_evento)}</p>
-                <p><strong>Valor Pendente:</strong> {formatCurrency(financialSummary.valor_restante_pagar)}</p>
+                <p><strong>Receitas:</strong> {formatCurrencyBR(financialSummary.total_receitas)}</p>
+                <p><strong>Despesas:</strong> {formatCurrencyBR(financialSummary.total_despesas)}</p>
+                <p><strong>Saldo:</strong> {formatCurrencyBR(financialSummary.saldo_evento)}</p>
+                <p><strong>Valor Pendente:</strong> {formatCurrencyBR(financialSummary.valor_restante_pagar)}</p>
               </CardContent>
             </Card>
 
@@ -196,7 +191,7 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
                         <TableRow key={payment.id}>
                           <TableCell>{payment.date}</TableCell>
                           <TableCell>{payment.description}</TableCell>
-                          <TableCell className="text-green-600">{formatCurrency(payment.value)}</TableCell>
+                          <TableCell className="text-green-600">{formatCurrencyBR(payment.value)}</TableCell>
                         </TableRow>
                       ))}
                     </tbody>
@@ -224,7 +219,7 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
                         <TableRow key={payment.id}>
                           <TableCell>{payment.date}</TableCell>
                           <TableCell>{payment.description}</TableCell>
-                          <TableCell className="text-red-600">{formatCurrency(payment.value)}</TableCell>
+                          <TableCell className="text-red-600">{formatCurrencyBR(payment.value)}</TableCell>
                         </TableRow>
                       ))}
                     </tbody>

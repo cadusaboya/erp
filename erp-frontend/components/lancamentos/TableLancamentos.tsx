@@ -7,6 +7,7 @@ import { PaymentRecord, FilterPaymentType } from "@/types/types";
 import Filters from "@/components/Filters";
 import EditDialog from "../EditDialog";
 import { updatePayment } from "@/services/lancamentos";
+import { formatCurrencyBR } from "@/lib/utils";
 
 interface BankOption {
   id: number;
@@ -102,12 +103,12 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
           {paginatedData.map((payment) => (
             <TableRow key={`${payment.id}`}>
               <TableCell>{payment.bill_id ? "Despesa" : "Receita"}</TableCell>
-              <TableCell>{payment.date}</TableCell>
+              <TableCell>{new Date(payment.date).toLocaleDateString("pt-BR")}</TableCell>
               <TableCell>{payment.person_name}</TableCell>
               <TableCell>{payment.description}</TableCell>
               <TableCell>{payment.doc_number}</TableCell>
               <TableCell>{payment.bank_name}</TableCell>
-              <TableCell>R$ {payment.value}</TableCell>
+              <TableCell>{formatCurrencyBR(payment.value)}</TableCell>
               <TableCell>
                 <Button variant="outline" onClick={() => handleEdit(payment)}>
                   Editar

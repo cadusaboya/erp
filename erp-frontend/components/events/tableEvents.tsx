@@ -11,6 +11,7 @@ import Filters from "@/components/Filters"; // Adjust path as needed
 import { Event } from "@/types/types";
 import { FiltersEventType } from "@/types/types";
 import EventDetailsDialog from "./EventDetailsDialog";
+import { formatCurrencyBR } from "@/lib/utils";
 
 interface TableComponentProps {
   data: Event[];
@@ -123,11 +124,11 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onEventCre
         <tbody>
           {paginatedData.map((event) => (
             <TableRow key={event.id}>
-              <TableCell>{event.date}</TableCell>
+              <TableCell>{new Date(event.date).toLocaleDateString("pt-BR")}</TableCell>
               <TableCell>{event.event_name}</TableCell>
               <TableCell>{event.client_name}</TableCell>
               <TableCell>{event.type.charAt(0).toUpperCase() + event.type.slice(1)}</TableCell>
-              <TableCell>R$ {event.total_value}</TableCell>
+              <TableCell>{formatCurrencyBR(event.total_value)}</TableCell>
               <TableCell>
                 <Button className="mr-2" onClick={() => handleViewClick(event.id)} variant="outline">Ver Mais</Button>
                 <Button variant="outline" onClick={() => handleEditClick(event)}>Editar</Button>

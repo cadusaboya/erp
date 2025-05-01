@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { PaymentRecord } from "@/types/types";
+import { formatCurrencyBR } from "@/lib/utils";
 
 interface PaymentsDialogProps {
   open: boolean;
@@ -25,15 +26,15 @@ export const PaymentsDialog: React.FC<PaymentsDialogProps> = ({ open, onClose, p
           <div className="flex-1">
             <div>
               <p className="text-sm text-gray-600">Valor Total:</p>
-              <p className="text-lg font-bold">R$ {parseFloat(totalValue).toFixed(2)}</p>
+              <p className="text-lg font-bold">{formatCurrencyBR(totalValue)}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Valor Liquidado:</p>
-              <p className="text-lg font-bold text-green-600">R$ {totalPaid.toFixed(2)}</p>
+              <p className="text-lg font-bold text-green-600">{formatCurrencyBR(totalPaid)}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Saldo:</p>
-              <p className="text-lg font-bold text-red-600">R$ {remaining.toFixed(2)}</p>
+              <p className="text-lg font-bold text-red-600">{formatCurrencyBR(remaining)}</p>
             </div>
           </div>
 
@@ -56,7 +57,7 @@ export const PaymentsDialog: React.FC<PaymentsDialogProps> = ({ open, onClose, p
                   {payments.map((p) => (
                     <TableRow key={p.id}>
                       <TableCell>{p.date}</TableCell>
-                      <TableCell>R$ {parseFloat(p.value).toFixed(2)}</TableCell>
+                      <TableCell>{formatCurrencyBR(p.value)}</TableCell>
                       <TableCell>{p.bank_name || "-"}</TableCell>
                       <TableCell>{p.doc_number || "-"}</TableCell>
                     </TableRow>

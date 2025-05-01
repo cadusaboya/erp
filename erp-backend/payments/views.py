@@ -703,7 +703,7 @@ class BillViewSet(viewsets.ModelViewSet):
         if doc_number:
             queryset = queryset.filter(doc_number=doc_number)
         
-        return queryset
+        return queryset.order_by("date_due")
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -742,7 +742,7 @@ class IncomeViewSet(viewsets.ModelViewSet):
         if doc_number:
             queryset = queryset.filter(doc_number=doc_number)
         
-        return queryset
+        return queryset.order_by("date_due")
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -804,7 +804,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
         if income_id:
             qs = qs.filter(income_id=income_id)
 
-        return qs
+        return qs.order_by("-date")  
 
     @transaction.atomic
     def perform_create(self, serializer):
