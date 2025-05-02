@@ -18,6 +18,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext, PaginationLink } from "@/components/ui/pagination";
 
 
 interface TableComponentProps {
@@ -158,16 +159,37 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onEventCre
         </tbody>
       </Table>
 
-      {/* Pagination */}
-      <div className="flex justify-center mt-4 gap-4">
-        <button onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
-          ⬅️
-        </button>
-        <span>Página {currentPage} de {Math.ceil(data.length / itemsPerPage)}</span>
-        <button onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages}>
-          ➡️
-        </button>
-      </div>
+      <Pagination className="mt-4 justify-center">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+            />
+          </PaginationItem>
+
+          {[...Array(totalPages)].map((_, index) => {
+            const page = index + 1;
+            return (
+              <PaginationItem key={page}>
+                <PaginationLink
+                  isActive={page === currentPage}
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </PaginationLink>
+              </PaginationItem>
+            );
+          })}
+
+          <PaginationItem>
+            <PaginationNext
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
     </div>
   );
 };
