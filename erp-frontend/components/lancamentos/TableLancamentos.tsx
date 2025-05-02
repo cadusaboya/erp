@@ -8,6 +8,13 @@ import Filters from "@/components/Filters";
 import EditDialog from "../EditDialog";
 import { updatePayment } from "@/services/lancamentos";
 import { formatCurrencyBR } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { MoreVertical } from "lucide-react";
 
 interface BankOption {
   id: number;
@@ -110,9 +117,18 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
               <TableCell>{payment.bank_name}</TableCell>
               <TableCell>{formatCurrencyBR(payment.value)}</TableCell>
               <TableCell>
-                <Button variant="outline" onClick={() => handleEdit(payment)}>
-                  Editar
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => setTimeout(() => handleEdit(payment), 0)}>
+                      Editar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             </TableRow>
           ))}

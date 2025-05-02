@@ -4,13 +4,20 @@ import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import EditContaDialog from "@/components/contas/EditContaDialog";
 import Filters from "@/components/Filters";
 import CreateContaDialog from "@/components/contas/CreateContaDialog";
-import { PlusCircle } from "lucide-react";
+import { MoreVertical, PlusCircle } from "lucide-react";
 import { FinanceRecord, FilterFinanceRecordType, PaymentCreatePayload } from "@/types/types";
 import { PaymentsDialog } from "@/components/lancamentos/ViewMoreDialog";
 import { fetchPayments } from "@/services/lancamentos";
 import CreateDialog from "@/components/CreateDialog"; // 👈 new import
 import { createPayment } from "@/services/lancamentos"; // 👈 your service to create a payment
 import { formatCurrencyBR } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+
 
 interface BankOption {
   id: number;
@@ -145,11 +152,28 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
               <TableCell>
                 {record.status === "parcial" ? formatCurrencyBR(record.remaining_value) : formatCurrencyBR(record.value)}
               </TableCell>
-              <TableCell className="space-y-2">
-                <Button variant="outline" onClick={() => handleEditClick(record)}>Editar</Button>
-                <Button variant="outline" onClick={() => handlePaymentsClick(record)}>Pagamentos</Button>
-                <Button variant="outline" onClick={() => handleNewPayment(record)}>Pagar</Button>
+              <TableCell>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => setTimeout(() => handleEditClick(record), 0)}>
+                      Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeout(() => handlePaymentsClick(record), 0)}>
+                      Pagamentos
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeout(() => handleNewPayment(record), 0)}>
+                      Pagar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
+
+
             </TableRow>
           ))}
         </tbody>

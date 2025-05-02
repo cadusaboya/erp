@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
-import { PlusCircle, Filter } from "lucide-react";
+import { MoreVertical, PlusCircle, Filter } from "lucide-react";
 import CreateEventDialog from "./CreateEventDialog";
 import EditEventDialog from "./EditEventDialog";
 import Link from "next/link";
@@ -12,6 +12,13 @@ import { Event } from "@/types/types";
 import { FiltersEventType } from "@/types/types";
 import EventDetailsDialog from "./EventDetailsDialog";
 import { formatCurrencyBR } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+
 
 interface TableComponentProps {
   data: Event[];
@@ -130,8 +137,21 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onEventCre
               <TableCell>{event.type.charAt(0).toUpperCase() + event.type.slice(1)}</TableCell>
               <TableCell>{formatCurrencyBR(event.total_value)}</TableCell>
               <TableCell>
-                <Button className="mr-2" onClick={() => handleViewClick(event.id)} variant="outline">Ver Mais</Button>
-                <Button variant="outline" onClick={() => handleEditClick(event)}>Editar</Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => setTimeout(() => handleViewClick(event.id), 0)}>
+                      Ver Mais
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeout(() => handleEditClick(event), 0)}>
+                      Editar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             </TableRow>
           ))}

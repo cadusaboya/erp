@@ -8,6 +8,13 @@ import EditResourceDialog from "@/components/clients/EditResourceDialog";
 import CreateResourceDialog from "./CreateResourceDialog";
 import FiltersDialog from "@/components/Filters"; // generic filters dialog
 import { Resource, FiltersClientType } from "@/types/types";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { MoreVertical } from "lucide-react";
 
 type ResourceType = "clients" | "suppliers";
 
@@ -114,9 +121,18 @@ const TableResources: React.FC<TableResourcesProps> = ({
               <TableCell>{resource.address}</TableCell>
               <TableCell>{resource.cpf_cnpj}</TableCell>
               <TableCell>
-                <Button variant="outline" onClick={() => handleEditClick(resource)}>
-                  Editar
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => setTimeout(() => handleEditClick(resource), 0)}>
+                      Editar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             </TableRow>
           ))}

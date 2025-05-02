@@ -3,11 +3,17 @@
 import { useState } from "react";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { MoreVertical, PlusCircle } from "lucide-react";
 import CreateBankDialog from "@/components/banks/CreateBankDialog";
 import EditBankDialog from "@/components/banks/EditBankDialog";
 import { Bank } from "@/types/types";
 import { formatCurrencyBR } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 interface TableBanksProps {
   banks: Bank[];
@@ -48,15 +54,21 @@ const TableBanks: React.FC<TableBanksProps> = ({ banks, onBankUpdated }) => {
               <TableCell>{bank.name}</TableCell>
               <TableCell>{formatCurrencyBR(bank.balance)}</TableCell>
               <TableCell>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedBank(bank);
-                    setEditOpen(true);
-                  }}
-                >
-                  Editar
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => setTimeout(() => {
+                      setSelectedBank(bank);
+                      setEditOpen(true);
+                    }, 0)}>
+                      Editar
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
             </TableRow>
           ))}
