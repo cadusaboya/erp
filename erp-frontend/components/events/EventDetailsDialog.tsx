@@ -155,7 +155,7 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
               <CardContent className="grid grid-cols-2 gap-4">
                 <p><strong>Nome:</strong> {event.event_name}</p>
                 <p><strong>Cliente:</strong> {event.client_name}</p>
-                <p><strong>Data:</strong> {event.date}</p>
+                <p><strong>Data:</strong> {new Date(event.date).toLocaleDateString("pt-BR")}</p>
                 <p><strong>Valor Total:</strong> {formatCurrencyBR(event.total_value)}</p>
               </CardContent>
             </Card>
@@ -189,7 +189,7 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
                     <tbody>
                       {incomes.map((payment) => (
                         <TableRow key={payment.id}>
-                          <TableCell>{payment.date}</TableCell>
+                          <TableCell>{new Date(payment.date).toLocaleDateString("pt-BR")}</TableCell>
                           <TableCell>{payment.description}</TableCell>
                           <TableCell className="text-green-600">{formatCurrencyBR(payment.value)}</TableCell>
                         </TableRow>
@@ -217,7 +217,7 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
                     <tbody>
                       {bills.map((payment) => (
                         <TableRow key={payment.id}>
-                          <TableCell>{payment.date}</TableCell>
+                          <TableCell>{new Date(payment.date).toLocaleDateString("pt-BR")}</TableCell>
                           <TableCell>{payment.description}</TableCell>
                           <TableCell className="text-red-600">{formatCurrencyBR(payment.value)}</TableCell>
                         </TableRow>

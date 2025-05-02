@@ -946,53 +946,43 @@ class ChartAccountViewSet(viewsets.ReadOnlyModelViewSet):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def event_accruals_view(request, event_id):
-    event_id = int(event_id)
     user = request.user
+    start_date = request.query_params.get("start_date")
+    end_date = request.query_params.get("end_date")
 
     payments_bills = []
     payments_incomes = []
-
     total_despesas = 0
     total_receitas = 0
 
-    # Buscar contas com rateio para esse evento
-    bills = Bill.objects.filter(user=user, event_allocations__event_id=event_id).distinct()
-    incomes = Income.objects.filter(user=user, event_allocations__event_id=event_id).distinct()
+    payments = Payment.objects.filter(user=user).select_related("bill", "income")
 
-    for bill in bills:
-        bill_total = bill.value
-        allocation = bill.event_allocations.filter(event_id=event_id).first()
-        if not allocation:
+    if start_date:
+        payments = payments.filter(date__gte=start_date)
+    if end_date:
+        payments = payments.filter(date__lte=end_date)
+
+    for payment in payments:
+        value = payment.get_allocated_value_to_event(event_id)
+
+        if value == 0:
             continue
 
-        ratio = allocation.value / bill_total if bill_total else 0
-
-        for payment in bill.payments.all():
-            valor = round(payment.value * ratio, 2)
-            total_despesas += valor
+        if payment.bill:
+            total_despesas += value
             payments_bills.append({
                 "id": payment.id,
                 "date": payment.date,
-                "description": bill.description,
-                "value": valor,
+                "description": payment.bill.description,
+                "value": value,
             })
-
-    for income in incomes:
-        income_total = income.value
-        allocation = income.event_allocations.filter(event_id=event_id).first()
-        if not allocation:
-            continue
-
-        ratio = allocation.value / income_total if income_total else 0
-
-        for payment in income.payments.all():
-            valor = round(payment.value * ratio, 2)
-            total_receitas += valor
+        elif payment.income:
+            total_receitas += value
             payments_incomes.append({
                 "id": payment.id,
                 "date": payment.date,
-                "description": income.description,
-                "value": valor,
+                "description": payment.income.description,
+                "value": value,
             })
 
     return Response({

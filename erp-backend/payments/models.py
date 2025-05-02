@@ -61,6 +61,23 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Pagamento de R$ {self.value} em {self.date}"
+    
+    def get_allocated_value_to_event(self, event_id):
+        alloc = None
+        total = None
+
+        if self.bill:
+            alloc = self.bill.event_allocations.filter(event_id=event_id).first()
+            total = self.bill.value
+        elif self.income:
+            alloc = self.income.event_allocations.filter(event_id=event_id).first()
+            total = self.income.value
+
+        if not alloc or not total:
+            return 0
+
+        ratio = alloc.value / total if total else 0
+        return round(self.value * ratio, 2)
 
 
 class Bank(models.Model):
