@@ -618,23 +618,28 @@ def generate_payments_report(request):
     event_name = event.event_name if event else "Todos os Eventos"
 
     if status == "pago":
-        title = "Pagamentos Recebidos e Efetuados"
-    elif type_filter == "bills" and status == "em aberto":
-        title = "Contas a Pagar"
-    elif type_filter == "bills":
-        title = "Despesas"
-    elif type_filter == "incomes" and status == "em aberto":
-        title = "Contas a Receber"
-    elif type_filter == "incomes":
-        title = "Receitas"
+        title = {
+            "bills": "Pagamentos Efetuados",
+            "incomes": "Pagamentos Recebidos",
+            "both": "Pagamentos Efetuados e Recebidos"
+        }.get(type_filter, "Pagamentos Efetuados e Recebidos")
+    elif status == "em aberto":
+        title = {
+            "bills": "Contas a Pagar",
+            "incomes": "Contas a Receber",
+            "both": "Contas a Pagar e Receber"
+        }.get(type_filter, "Contas a Pagar e Receber")
     else:
-        title = "Lançamentos Contábeis"
+        title = {
+            "bills": "Despesas",
+            "incomes": "Receitas"
+        }.get(type_filter, "Lançamentos Contábeis")
         
     y = draw_header(pdf, width, height, event_name, event.id if event else "Geral", title)
 
     def draw_table(pdf, items, label, y):
         if not items:
-            return y
+            return y, Decimal("0.00")
 
         pdf.setFont("Helvetica-Bold", 10)
         pdf.drawString(cols[0], y, label)
@@ -658,13 +663,24 @@ def generate_payments_report(request):
         pdf.setFont("Helvetica-Bold", 9)
         pdf.drawString(cols[4], y, f"Total {label}")
         pdf.drawString(cols[5], y, f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        y -= 25
-        return y
+        y -= 15
+        return y, total
+
+    total_bills = Decimal("0.00")
+    total_incomes = Decimal("0.00")
 
     if bills:
-        y = draw_table(pdf, bills, "Despesas", y)
+        y, total_bills = draw_table(pdf, bills, "Despesas", y)
     if incomes:
-        y = draw_table(pdf, incomes, "Receitas", y)
+        y, total_incomes = draw_table(pdf, incomes, "Receitas", y)
+
+    # Saldo
+    if status == "pago" and event:
+        saldo = total_incomes - total_bills
+        pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(cols[4], y, "Saldo do Evento")
+        pdf.drawString(cols[5], y, f"R$ {saldo:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        y -= 20
 
     pdf.setFont("Helvetica", 7)
     pdf.drawString(width - 100, 30, "Página 1 de 1")
@@ -672,7 +688,7 @@ def generate_payments_report(request):
     return response
 
 
-class BillViewSet(viewsets.ModelViewSet):
+class BillViewSet(viewsets.ModelViewSet):   
     serializer_class = BillSerializer
     permission_classes = [IsAuthenticated]
 
