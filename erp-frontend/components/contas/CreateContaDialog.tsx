@@ -13,6 +13,7 @@ import { fetchBanks } from "@/services/banks";
 import { fetchChartAccounts } from "@/services/chartaccounts";
 import { FinanceRecord, Event, Resource, Bank, ChartAccount } from "@/types/types";
 import RatioTable from "@/components/RatioTable";
+import { Combobox } from "@/components/ui/combobox";
 
 interface CreateContaDialogProps {
   open: boolean;
@@ -89,16 +90,12 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({ open, onClose, on
           {/* Pessoa */}
           <div>
             <label className="text-sm font-medium block mb-1">{type === "bill" ? "Fornecedor" : "Cliente"}</label>
-            <Select value={person} onValueChange={(val) => setPerson(val)}>
-              <SelectTrigger>
-                <SelectValue placeholder={`Selecione ${type === "bill" ? "um Fornecedor" : "um Cliente"}`} />
-              </SelectTrigger>
-              <SelectContent>
-                {(resources || []).map((r) => (
-                  <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Combobox
+              options={resources.map((r) => ({ label: r.name, value: String(r.id) }))}
+              value={person}
+              onChange={setPerson}
+              placeholder={`Selecione ${type === "bill" ? "um Fornecedor" : "um Cliente"}`}
+            />
           </div>
 
           <Input placeholder="Descrição" {...register("description", { required: true })} />
