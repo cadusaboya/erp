@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { fetchEvents } from "@/services/events";
@@ -10,8 +16,13 @@ import { fetchResources } from "@/services/resources";
 import { fetchChartAccounts } from "@/services/chartaccounts";
 import { updateRecord } from "@/services/records";
 import RatioTable from "@/components/RatioTable";
-import { Combobox } from "@/components/ui/combobox"; // ajuste o path se necessário
-import { FinanceRecord, Event, Resource, ChartAccount } from "@/types/types";
+import { Combobox } from "@/components/ui/combobox";
+import {
+  FinanceRecord,
+  Event,
+  Resource,
+  ChartAccount,
+} from "@/types/types";
 
 interface EditContaDialogProps {
   open: boolean;
@@ -21,7 +32,13 @@ interface EditContaDialogProps {
   type: "bill" | "income";
 }
 
-const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onRecordUpdated, record, type }) => {
+const EditContaDialog: React.FC<EditContaDialogProps> = ({
+  open,
+  onClose,
+  onRecordUpdated,
+  record,
+  type,
+}) => {
   const { register, handleSubmit, reset } = useForm<FinanceRecord>();
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
@@ -43,27 +60,28 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
         setChartAccounts(chartAccountData);
 
         if (record) {
-          const normalizedRecord = {
-            ...record,
-          };
-          reset(normalizedRecord);
+          reset(record);
 
           if (record.person) {
             setPerson(String(record.person));
           }
 
           if (record.event_allocations) {
-            setEventAllocations(record.event_allocations.map((ea) => ({
-              event: String(ea.event),
-              value: String(ea.value),
-            })));
+            setEventAllocations(
+              record.event_allocations.map((ea) => ({
+                event: String(ea.event),
+                value: String(ea.value),
+              }))
+            );
           }
 
           if (record.account_allocations) {
-            setAccountAllocations(record.account_allocations.map((aa) => ({
-              chart_account: String(aa.chart_account),
-              value: String(aa.value),
-            })));
+            setAccountAllocations(
+              record.account_allocations.map((aa) => ({
+                chart_account: String(aa.chart_account),
+                value: String(aa.value),
+              }))
+            );
           }
         }
       }
@@ -75,7 +93,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
     if (!record?.id) return;
     const success = await updateRecord(type, record.id, {
       ...formData,
-      person: person,
+      person,
       event_allocations: eventAllocations,
       account_allocations: accountAllocations,
     });
@@ -88,61 +106,81 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>{type === "bill" ? "Editar Conta a Pagar" : "Editar Recebimento"}</DialogTitle>
+          <DialogTitle>
+            {type === "bill" ? "Editar Conta a Pagar" : "Editar Recebimento"}
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-        <div>
-          <label className="text-sm font-medium block mb-1">
-            {type === "bill" ? "Fornecedor" : "Cliente"}
-          </label>
-          <Combobox
-            options={resources.map((r) => ({ label: r.name, value: String(r.id) }))}
-            value={person}
-            onChange={setPerson}
-            placeholder={`Selecione ${type === "bill" ? "um Fornecedor" : "um Cliente"}`}
-          />
-        </div>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left column */}
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium block mb-1">
+                  {type === "bill" ? "Fornecedor" : "Cliente"}
+                </label>
+                <Combobox
+                  options={resources.map((r) => ({
+                    label: r.name,
+                    value: String(r.id),
+                  }))}
+                  value={person}
+                  onChange={setPerson}
+                  placeholder={`Selecione ${type === "bill" ? "um Fornecedor" : "um Cliente"}`}
+                />
+              </div>
 
-          <Input placeholder="Descrição" {...register("description", { required: true })} defaultValue={record?.description} />
-          <Input type="date" {...register("date_due", { required: true })} defaultValue={record?.date_due} />
-          <Input type="number" placeholder="Valor" {...register("value", { required: true })} defaultValue={record?.value} />
-          <Input placeholder="Número do Documento" {...register("doc_number")} defaultValue={record?.doc_number} />
+              <Input placeholder="Descrição" {...register("description")} />
+              <Input type="date" {...register("date_due")} />
+              <Input type="number" placeholder="Valor" {...register("value")} />
+              <Input placeholder="Número do Documento" {...register("doc_number")} />
 
-          <div>
-            <label className="text-sm font-medium block mb-1">Rateio de Eventos</label>
-            <RatioTable
-              allocations={eventAllocations}
-              setAllocations={setEventAllocations}
-              events={events}
-              label="Rateio de Eventos"
-            />
+              {/* Status */}
+              <div>
+                <label className="text-sm font-medium block mb-1">Status</label>
+                <select {...register("status")} className="p-2 border rounded w-full">
+                  <option value="em aberto">Em Aberto</option>
+                  <option value="vencido">Vencido</option>
+                  <option value="pago">Pago</option>
+                  <option value="parcial">Parcial</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Right column */}
+            <div className="space-y-6">
+              <div>
+                <label className="text-sm font-medium block mb-1">Rateio de Eventos</label>
+                <RatioTable
+                  allocations={eventAllocations}
+                  setAllocations={setEventAllocations}
+                  events={events}
+                  label="Rateio de Eventos"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">Rateio por Plano de Contas</label>
+                <RatioTable
+                  allocations={accountAllocations}
+                  setAllocations={setAccountAllocations}
+                  chartAccounts={chartAccounts.map((acc) => ({
+                    id: acc.id,
+                    name: acc.description,
+                  }))}
+                  label="Rateio por Conta"
+                />
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label className="text-sm font-medium block mb-1">Rateio por Plano de Contas</label>
-            <RatioTable
-              allocations={accountAllocations}
-              setAllocations={setAccountAllocations}
-              chartAccounts={chartAccounts.map((acc) => ({ id: acc.id, name: acc.description }))}
-              label="Rateio por Conta"
-            />
-          </div>
-
-          <select {...register("status")}
-            className="p-2 border rounded w-full"
-            defaultValue={record?.status}
-          >
-            <option value="em aberto">Em Aberto</option>
-            <option value="vencido">Vencido</option>
-            <option value="pago">Pago</option>
-            <option value="parcial">Parcial</option>
-          </select>
-
-          <DialogFooter>
-            <Button variant="outline" type="button" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" className="ml-2">Salvar</Button>
+          <DialogFooter className="pt-4">
+            <Button variant="outline" type="button" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" className="ml-2">
+              Salvar
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
