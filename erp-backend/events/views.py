@@ -330,7 +330,7 @@ class EventViewSet(viewsets.ModelViewSet):
 
         # Apply filters dynamically
         if event_name:
-            queryset = queryset.filter(name__icontains=event_name)
+            queryset = queryset.filter(event_name__icontains=event_name)
         if client:
             queryset = queryset.filter(client__name__icontains=client)
         if start_date:
