@@ -38,7 +38,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onEventCre
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const itemsPerPage = 13;
+  const itemsPerPage = 12;
 
   const totalPages = Math.ceil(data.length / itemsPerPage);
   const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);

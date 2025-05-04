@@ -46,7 +46,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
   const [createPaymentOpen, setCreatePaymentOpen] = useState(false); // 👈 new state
   const [recordToPay, setRecordToPay] = useState<FinanceRecord | null>(null); // 👈 new state
 
-  const itemsPerPage = 13;
+  const itemsPerPage = 12;
   const totalPages = Math.ceil(data.length / itemsPerPage);
   const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 

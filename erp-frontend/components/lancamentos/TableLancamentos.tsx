@@ -39,7 +39,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
 
-  const itemsPerPage = 13;
+  const itemsPerPage = 12;
 
   const applyFilters = (newFilters: FilterPaymentType) => {
     setFilters(newFilters);
