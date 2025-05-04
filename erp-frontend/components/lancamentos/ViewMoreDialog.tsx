@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area"; // ✅ You may need to import this
 import { PaymentRecord } from "@/types/types";
 import { formatCurrencyBR } from "@/lib/utils";
 
@@ -7,7 +8,7 @@ interface PaymentsDialogProps {
   open: boolean;
   onClose: () => void;
   payments: PaymentRecord[];
-  totalValue: string; // From the Bill or Income
+  totalValue: string;
 }
 
 export const PaymentsDialog: React.FC<PaymentsDialogProps> = ({ open, onClose, payments, totalValue }) => {
@@ -21,9 +22,9 @@ export const PaymentsDialog: React.FC<PaymentsDialogProps> = ({ open, onClose, p
           <DialogTitle>Detalhes de Pagamentos</DialogTitle>
         </DialogHeader>
 
-        <div className="flex">
+        <div className="flex gap-6">
           {/* Left side - totals */}
-          <div className="flex-1">
+          <div className="flex-1 space-y-3">
             <div>
               <p className="text-sm text-gray-600">Valor Total:</p>
               <p className="text-lg font-bold">{formatCurrencyBR(totalValue)}</p>
@@ -38,32 +39,33 @@ export const PaymentsDialog: React.FC<PaymentsDialogProps> = ({ open, onClose, p
             </div>
           </div>
 
-          {/* Right side - table */}
+          {/* Right side - scrollable table */}
           <div className="flex-1">
-
             {payments.length === 0 ? (
               <p className="text-sm text-gray-500">Nenhum pagamento registrado.</p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableCell>Data</TableCell>
-                    <TableCell>Valor</TableCell>
-                    <TableCell>Banco</TableCell>
-                    <TableCell>Doc Nº</TableCell>
-                  </TableRow>
-                </TableHeader>
-                <tbody>
-                  {payments.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell>{p.date}</TableCell>
-                      <TableCell>{formatCurrencyBR(p.value)}</TableCell>
-                      <TableCell>{p.bank_name || "-"}</TableCell>
-                      <TableCell>{p.doc_number || "-"}</TableCell>
+              <ScrollArea className="h-[200px] rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableCell>Data</TableCell>
+                      <TableCell>Valor</TableCell>
+                      <TableCell>Banco</TableCell>
+                      <TableCell>Doc Nº</TableCell>
                     </TableRow>
-                  ))}
-                </tbody>
-              </Table>
+                  </TableHeader>
+                  <tbody>
+                    {payments.map((p) => (
+                      <TableRow key={p.id}>
+                        <TableCell>{p.date}</TableCell>
+                        <TableCell>{formatCurrencyBR(p.value)}</TableCell>
+                        <TableCell>{p.bank_name || "-"}</TableCell>
+                        <TableCell>{p.doc_number || "-"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </tbody>
+                </Table>
+              </ScrollArea>
             )}
           </div>
         </div>
