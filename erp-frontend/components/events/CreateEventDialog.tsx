@@ -2,12 +2,26 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { fetchResources } from "@/services/resources";
 import { createEvent } from "@/services/events";
 import { Event, Resource } from "@/types/types";
+import { Combobox } from "@/components/ui/combobox";
 
 interface CreateEventDialogProps {
   open: boolean;
@@ -15,9 +29,12 @@ interface CreateEventDialogProps {
   onEventCreated: () => void;
 }
 
-
-const CreateEventDialog: React.FC<CreateEventDialogProps> = ({ open, onClose, onEventCreated }) => {
-  const { register, handleSubmit, reset } = useForm<Event>();
+const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
+  open,
+  onClose,
+  onEventCreated,
+}) => {
+  const { register, handleSubmit, reset, setValue, watch } = useForm<Event>();
   const [clients, setClients] = useState<Resource[]>([]);
   const [clientsLoaded, setClientsLoaded] = useState(false);
 
@@ -33,12 +50,11 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({ open, onClose, on
   }, [open, clientsLoaded]);
 
   const onSubmit = async (formData: Event) => {
-    const success = await createEvent(formData); // Dynamically calls for "bill" or "income"
-  
+    const success = await createEvent(formData);
     if (success) {
-      onEventCreated(); // Refresh table
+      onEventCreated();
       reset();
-      onClose(); // Close dialog
+      onClose();
     }
   };
 
@@ -52,29 +68,38 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({ open, onClose, on
           {/* Event Name */}
           <Input placeholder="Nome do Evento" {...register("event_name", { required: true })} />
 
-          {/* Event Type Dropdown */}
-          <select {...register("type", { required: true })} className="p-2 border rounded w-full">
-            <option value="">Selecione um Tipo</option>
-            <option value="15 anos">15 Anos</option>
-            <option value="empresarial">Empresarial</option>
-            <option value="aniversário">Aniversário</option>
-            <option value="batizado">Batizado</option>
-            <option value="bodas">Bodas</option>
-            <option value="casamento">Casamento</option>
-            <option value="chá">Chá</option>
-            <option value="formatura">Formatura</option>
-            <option value="outros">Outros</option>
-          </select>
+          {/* Event Type (shadcn Select) */}
+          <div>
+            <Select
+              value={watch("type")}
+              onValueChange={(val) => setValue("type", val)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="15 anos">15 Anos</SelectItem>
+                <SelectItem value="empresarial">Empresarial</SelectItem>
+                <SelectItem value="aniversário">Aniversário</SelectItem>
+                <SelectItem value="batizado">Batizado</SelectItem>
+                <SelectItem value="bodas">Bodas</SelectItem>
+                <SelectItem value="casamento">Casamento</SelectItem>
+                <SelectItem value="chá">Chá</SelectItem>
+                <SelectItem value="formatura">Formatura</SelectItem>
+                <SelectItem value="outros">Outros</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-          {/* Client Dropdown */}
-          <select {...register("client", { required: true })} className="p-2 border rounded w-full">
-            <option value="">Selecione um Cliente</option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.name}
-              </option>
-            ))}
-          </select>
+          {/* Cliente (Combobox) */}
+          <div>
+            <Combobox
+              options={clients.map((c) => ({ label: c.name, value: String(c.id) }))}
+              value={watch("client")}
+              onChange={(val) => setValue("client", val)}
+              placeholder="Selecione um Cliente"
+            />
+          </div>
 
           {/* Date */}
           <Input type="date" {...register("date", { required: true })} />

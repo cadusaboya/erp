@@ -50,7 +50,13 @@ export const Combobox: React.FC<ComboboxProps> = ({
           role="combobox"
           disabled={disabled}
           aria-expanded={open}
-          className="w-full justify-between"
+          className="justify-between px-3 py-2 text-sm font-normal"
+          style={{
+            width: `${Math.max(
+              ((selectedLabel || placeholder)?.length ?? 10) * 8 + 32, // +32 for padding & icon
+              150 // minimum width fallback
+            )}px`,
+          }}
         >
           {selectedLabel || placeholder}
           <ChevronsUpDown className="h-4 w-4 opacity-50" />

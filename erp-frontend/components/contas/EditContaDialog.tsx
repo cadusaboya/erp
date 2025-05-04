@@ -10,7 +10,7 @@ import { fetchResources } from "@/services/resources";
 import { fetchChartAccounts } from "@/services/chartaccounts";
 import { updateRecord } from "@/services/records";
 import RatioTable from "@/components/RatioTable";
-
+import { Combobox } from "@/components/ui/combobox"; // ajuste o path se necessário
 import { FinanceRecord, Event, Resource, ChartAccount } from "@/types/types";
 
 interface EditContaDialogProps {
@@ -28,6 +28,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
   const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([]);
   const [eventAllocations, setEventAllocations] = useState<{ event: string; value: string }[]>([]);
   const [accountAllocations, setAccountAllocations] = useState<{ chart_account: string; value: string }[]>([]);
+  const [person, setPerson] = useState<string>("");
 
   useEffect(() => {
     const load = async () => {
@@ -46,6 +47,10 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
             ...record,
           };
           reset(normalizedRecord);
+
+          if (record.person) {
+            setPerson(String(record.person));
+          }
 
           if (record.event_allocations) {
             setEventAllocations(record.event_allocations.map((ea) => ({
@@ -70,6 +75,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
     if (!record?.id) return;
     const success = await updateRecord(type, record.id, {
       ...formData,
+      person: person,
       event_allocations: eventAllocations,
       account_allocations: accountAllocations,
     });
@@ -87,12 +93,17 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({ open, onClose, onReco
           <DialogTitle>{type === "bill" ? "Editar Conta a Pagar" : "Editar Recebimento"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <select {...register("person", { required: true })} className="p-2 border rounded w-full" defaultValue={record?.person || ""}>
-            <option value="">Selecione {type === "bill" ? "um Fornecedor" : "um Cliente"}</option>
-            {resources.map((res) => (
-              <option key={res.id} value={res.id}>{res.name}</option>
-            ))}
-          </select>
+        <div>
+          <label className="text-sm font-medium block mb-1">
+            {type === "bill" ? "Fornecedor" : "Cliente"}
+          </label>
+          <Combobox
+            options={resources.map((r) => ({ label: r.name, value: String(r.id) }))}
+            value={person}
+            onChange={setPerson}
+            placeholder={`Selecione ${type === "bill" ? "um Fornecedor" : "um Cliente"}`}
+          />
+        </div>
 
           <Input placeholder="Descrição" {...register("description", { required: true })} defaultValue={record?.description} />
           <Input type="date" {...register("date_due", { required: true })} defaultValue={record?.date_due} />

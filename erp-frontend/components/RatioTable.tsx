@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { Combobox } from "@/components/ui/combobox";
 
 interface RateioItem {
   id?: number;
@@ -46,26 +47,16 @@ const RatioTable: React.FC<RateioTableProps> = ({
     <div className="space-y-2">
       {allocations.map((item, index) => (
         <div key={index} className="flex gap-2 items-center">
-          <select
-            value={isEvent ? item.event : item.chart_account}
-            onChange={(e) =>
-              handleChange(index, isEvent ? "event" : "chart_account", e.target.value)
-            }
-            className="p-2 border rounded w-1/2"
-          >
-            <option value="">Selecione</option>
-            {isEvent
-              ? events.map((ev) => (
-                  <option key={ev.id} value={String(ev.id)}>
-                    {ev.event_name}
-                  </option>
-                ))
-              : chartAccounts.map((acc) => (
-                  <option key={acc.id} value={String(acc.id)}>
-                    {acc.name}
-                  </option>
-                ))}
-          </select>
+          <div className="w-1/2">
+            <Combobox
+              options={(isEvent
+                ? events.map((ev) => ({ label: ev.event_name, value: String(ev.id) }))
+                : chartAccounts.map((acc) => ({ label: acc.name, value: String(acc.id) })))}
+              value={isEvent ? item.event || "" : item.chart_account || ""}
+              onChange={(val) => handleChange(index, isEvent ? "event" : "chart_account", val)}
+              placeholder="Selecione"
+            />
+          </div>
           <input
             type="number"
             value={item.value}
@@ -83,15 +74,15 @@ const RatioTable: React.FC<RateioTableProps> = ({
         </div>
       ))}
       <div className="flex justify-start mt-2">
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        onClick={addRow}
-        title="Adicionar Rateio"
-      >
-        <Plus className="w-4 h-4" />
-      </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={addRow}
+          title="Adicionar Rateio"
+        >
+          <Plus className="w-4 h-4" />
+        </Button>
       </div>
     </div>
   );
