@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Sidebar from "@/components/Sidebar";
 import TableComponent from "@/components/lancamentos/TableLancamentos";
 import { fetchPayments } from "@/services/lancamentos"; // updated to use fetchPayments
 import { fetchBanks } from "@/services/banks";
@@ -45,18 +44,15 @@ export default function Page() {
   }, [filters]);
 
   return (
-    <div className="flex">
-      <Sidebar />
-      <div className="flex-1 p-6">
-        <TableComponent 
-          data={data} 
-          title="Pagamentos" 
-          onOrderUpdated={() => loadPayments(filters)} 
-          filters={filters} 
-          setFilters={setFilters}
-          bankOptions={bankOptions}
-        />
-      </div>
+    <div className="p-6">
+      <TableComponent 
+        data={data} 
+        title="Pagamentos" 
+        onOrderUpdated={() => loadPayments(filters)} 
+        filters={filters} 
+        setFilters={setFilters}
+        bankOptions={bankOptions}
+      />
     </div>
   );
 }

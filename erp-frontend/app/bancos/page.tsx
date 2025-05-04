@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import TableBanks from "@/components/banks/TableBanks";
 import { fetchBanks } from "@/services/banks";
-import Sidebar from "@/components/Sidebar"
 import { Bank } from "@/types/types"
 
 export default function BanksPage() {
@@ -23,7 +22,6 @@ export default function BanksPage() {
 
   return (
     <div className="flex">
-        <Sidebar />
         <div className="flex-1 p-6">
             {loading ? (
             <p>Carregando contas bancárias...</p>

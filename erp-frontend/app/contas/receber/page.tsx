@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import TableComponent from "@/components/contas/TableContas";
-import Sidebar from "@/components/Sidebar";
 import { fetchRecords } from "@/services/records";
 import { fetchBanks } from "@/services/banks";
 import { FinanceRecord } from "@/types/types";
@@ -53,7 +52,6 @@ export default function Page() {
 
   return (
     <div className="flex">
-      <Sidebar />
       <div className="flex-1 p-6">
         <TableComponent
           title="Contas a Receber"

@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
-import Sidebar from "@/components/Sidebar";
+import { Combobox } from "@/components/ui/combobox";
 
 export default function ReportsPage() {
   const [type, setType] = useState("bills");
@@ -22,6 +22,9 @@ export default function ReportsPage() {
   const [costCenters, setCostCenters] = useState([]);
   const [banks, setBanks] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [clients, setClients] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [events, setEvents] = useState([]);
 
   const getToken = () => {
     const token = localStorage.getItem("token");
@@ -33,18 +36,26 @@ export default function ReportsPage() {
     const fetchData = async () => {
       try {
         const token = getToken();
-        const [costCentersRes, banksRes] = await Promise.all([
+        const [costCentersRes, banksRes, eventsRes, clientsRes, suppliersRes] = await Promise.all([
           fetch("http://127.0.0.1:8000/payments/costcenter/", { headers: { Authorization: `Bearer ${token}` } }),
           fetch("http://127.0.0.1:8000/payments/banks/", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("http://127.0.0.1:8000/events/", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("http://127.0.0.1:8000/clients/clients/", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("http://127.0.0.1:8000/clients/suppliers/", { headers: { Authorization: `Bearer ${token}` } }),
         ]);
+  
         setCostCenters(await costCentersRes.json());
         setBanks(await banksRes.json());
+        setEvents(await eventsRes.json());
+        setClients(await clientsRes.json());
+        setSuppliers(await suppliersRes.json());
       } catch (err) {
         console.error("Erro ao buscar dados:", err);
       }
     };
     fetchData();
   }, []);
+  
 
   const buildParams = (extraParams: Record<string, string> = {}) => {
     const params = new URLSearchParams();
@@ -86,7 +97,6 @@ export default function ReportsPage() {
 
   return (
     <div className="flex">
-      <Sidebar />
       <div className="flex flex-col p-6 gap-6 w-full">
         <h1 className="text-2xl font-bold">Relatórios</h1>
         <Tabs
@@ -118,7 +128,7 @@ export default function ReportsPage() {
             <Card><CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-2">
               <div>
                 <label className="text-xs">Tipo</label>
-                <Select value={type} onValueChange={setType}>
+                <Select value={type} onValueChange={(value) => {setType(value), setPerson("")}} >
                   <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="both">Receitas e Despesas</SelectItem>
@@ -127,14 +137,38 @@ export default function ReportsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <label className="text-xs">Pessoa (ID)</label>
-                <Input className="w-[250px]" value={person} onChange={(e) => setPerson(e.target.value)} />
+
+              {/* Pessoa */}
+              <div className="flex flex-col gap-1 w-fit">
+                <label className="text-xs">Pessoa</label>
+                <Combobox
+                  disabled={type === "both"}
+                  options={(type === "incomes" ? clients : type === "bills" ? suppliers : []).map(p => ({
+                    label: p.name,
+                    value: String(p.id),
+                  }))}
+                  value={person}
+                  onChange={setPerson}
+                  placeholder={
+                    type === "both" ? "Desativado para Receitas e Despesas" : "Selecione uma pessoa"
+                  }
+                />
               </div>
-              <div>
-                <label className="text-xs">Evento (ID)</label>
-                <Input className="w-[250px]" value={eventId} onChange={(e) => setEventId(e.target.value)} />
+
+              {/* Evento */}
+              <div className="flex flex-col gap-1 w-fit">
+                <label className="text-xs">Evento</label>
+                <Combobox
+                  options={events.map(ev => ({
+                    label: ev.event_name,
+                    value: String(ev.id),
+                  }))}
+                  value={eventId}
+                  onChange={setEventId}
+                  placeholder="Selecione um evento"
+                />
               </div>
+              
               <div>
                 <label className="text-xs">Status</label>
                 <Select value={status} onValueChange={setStatus}>
