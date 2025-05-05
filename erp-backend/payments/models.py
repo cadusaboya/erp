@@ -28,19 +28,18 @@ class Accrual(models.Model):
     doc_number = models.CharField(max_length=50, blank=True, null=True)
     event = models.ForeignKey('events.Event', on_delete=models.SET_NULL, blank=True, null=True, related_name="%(class)s")
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='em aberto')
-    payments = GenericRelation('payments.Payment', content_type_field='content_type', object_id_field='object_id')
     cost_center = models.ForeignKey(CostCenter, on_delete=models.SET_NULL, null=True, blank=True)
 
 
 class Income(Accrual):
-    person = models.ForeignKey('clients.Client', on_delete=models.CASCADE, related_name='incomes')
+    person = models.ForeignKey('clients.Client', on_delete=models.PROTECT, related_name='incomes')
 
     def __str__(self):
         return f"Receita de {self.client.name} - {self.value}"
 
 
 class Bill(Accrual):
-    person = models.ForeignKey('clients.Supplier', on_delete=models.CASCADE, related_name='bills')
+    person = models.ForeignKey('clients.Supplier', on_delete=models.PROTECT, related_name='bills')
 
     def __str__(self):
         return f"Conta de {self.supplier.name} - {self.value}"
@@ -52,7 +51,7 @@ class Payment(models.Model):
     description = models.CharField(max_length=255, blank=True, null=True)
     date = models.DateField()
     value = models.DecimalField(max_digits=10, decimal_places=2)
-    bank = models.ForeignKey('Bank', on_delete=models.CASCADE)
+    bank = models.ForeignKey('Bank', on_delete=models.PROTECT)
     doc_number = models.CharField(max_length=100, blank=True)
 
     @property
@@ -109,7 +108,7 @@ class AccountAllocation(models.Model):
     value = models.DecimalField(max_digits=10, decimal_places=2)
 
 class EventAllocation(models.Model):
-    accrual = models.ForeignKey(Accrual, on_delete=models.CASCADE, related_name="event_allocations")
+    accrual = models.ForeignKey(Accrual, on_delete=models.PROTECT, related_name="event_allocations")
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     value = models.DecimalField(max_digits=10, decimal_places=2)
 

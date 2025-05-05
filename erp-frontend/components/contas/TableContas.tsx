@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
@@ -7,9 +9,9 @@ import CreateContaDialog from "@/components/contas/CreateContaDialog";
 import { MoreVertical, PlusCircle } from "lucide-react";
 import { FinanceRecord, FilterFinanceRecordType, PaymentCreatePayload } from "@/types/types";
 import { PaymentsDialog } from "@/components/lancamentos/ViewMoreDialog";
-import { fetchPayments } from "@/services/lancamentos";
-import CreateDialog from "@/components/CreateDialog"; // 👈 new import
-import { createPayment } from "@/services/lancamentos"; // 👈 your service to create a payment
+import { fetchPayments, createPayment } from "@/services/lancamentos";
+import CreateDialog from "@/components/CreateDialog";
+import { deleteRecord } from "@/services/records";
 import { formatCurrencyBR } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -17,8 +19,25 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext, PaginationLink } from "@/components/ui/pagination";
-
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationLink,
+} from "@/components/ui/pagination";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 interface BankOption {
   id: number;
@@ -35,7 +54,15 @@ interface TableComponentProps {
   bankOptions: BankOption[];
 }
 
-const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRecordUpdated, filters, setFilters, bankOptions }) => {
+const TableComponent: React.FC<TableComponentProps> = ({
+  data,
+  title,
+  type,
+  onRecordUpdated,
+  filters,
+  setFilters,
+  bankOptions,
+}) => {
   const [createOpen, setCreateOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -43,8 +70,9 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
   const [paymentsDialogOpen, setPaymentsDialogOpen] = useState(false);
   const [payments, setPayments] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [createPaymentOpen, setCreatePaymentOpen] = useState(false); // 👈 new state
-  const [recordToPay, setRecordToPay] = useState<FinanceRecord | null>(null); // 👈 new state
+  const [createPaymentOpen, setCreatePaymentOpen] = useState(false);
+  const [recordToPay, setRecordToPay] = useState<FinanceRecord | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false); // 🧨 delete dialog
 
   const itemsPerPage = 12;
   const totalPages = Math.ceil(data.length / itemsPerPage);
@@ -56,10 +84,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
   };
 
   const handlePaymentsClick = async (record: FinanceRecord) => {
-    const filters = type === "bill"
-    ? { bill_id: record.id }
-    : { income_id: record.id };
-  
+    const filters = type === "bill" ? { bill_id: record.id } : { income_id: record.id };
     const paymentData = await fetchPayments(filters);
     setPayments(paymentData);
     setSelectedRecord(record);
@@ -71,6 +96,11 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
     setCreatePaymentOpen(true);
   };
 
+  const handleDelete = (record: FinanceRecord) => {
+    setSelectedRecord(record);
+    setDeleteOpen(true);
+  };
+
   const applyFilters = (newFilters: FilterFinanceRecordType) => {
     setFilters(newFilters);
     setFiltersOpen(false);
@@ -79,19 +109,15 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
 
   const handleSubmitPayment = async (formData: Record<string, any>) => {
     if (!recordToPay) return;
-  
+
     const payload: PaymentCreatePayload = {
       ...formData,
       ...(type === "bill" ? { bill_id: Number(recordToPay.id) } : { income_id: Number(recordToPay.id) }),
     };
-  
+
     await createPayment(payload);
     onRecordUpdated();
   };
-  
-  
-  
-  
 
   return (
     <div className="p-6 bg-white shadow-lg rounded-lg">
@@ -113,7 +139,17 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
         open={filtersOpen}
         onClose={() => setFiltersOpen(false)}
         applyFilters={applyFilters}
-        clearFilters={() => setFilters({ startDate: "", endDate: "", person: "", description: "", status: ["em aberto", "vencido", "parcial"], minValue: "", maxValue: "" })}
+        clearFilters={() =>
+          setFilters({
+            startDate: "",
+            endDate: "",
+            person: "",
+            description: "",
+            status: ["em aberto", "vencido", "parcial"],
+            minValue: "",
+            maxValue: "",
+          })
+        }
         filterFields={[
           { key: "startDate", type: "date", label: "Data Inicial", placeholder: "Data Inicial" },
           { key: "endDate", type: "date", label: "Data Final", placeholder: "Data Final" },
@@ -121,7 +157,12 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
           { key: "description", type: "text", label: "Descrição", placeholder: "Descrição" },
           { key: "minValue", type: "number", label: "Valor Mínimo", placeholder: "Valor Mínimo" },
           { key: "maxValue", type: "number", label: "Valor Máximo", placeholder: "Valor Máximo" },
-          { key: "status", type: "checkboxes", label: "Tipo", options: ["em aberto", "vencido", "parcial", "pago"] },
+          {
+            key: "status",
+            type: "checkboxes",
+            label: "Tipo",
+            options: ["em aberto", "vencido", "parcial", "pago"],
+          },
         ]}
       />
 
@@ -146,12 +187,22 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
               <TableCell>{record.description}</TableCell>
               <TableCell>{record.doc_number || "N/A"}</TableCell>
               <TableCell>
-                <span className={`px-2 py-1 rounded-lg text-sm font-semibold ${record.status === "vencido" ? "bg-red-100 text-red-600" : record.status === "pago" ? "bg-green-100 text-green-600" : "bg-yellow-100 text-yellow-600"}`}>
+                <span
+                  className={`px-2 py-1 rounded-lg text-sm font-semibold ${
+                    record.status === "vencido"
+                      ? "bg-red-100 text-red-600"
+                      : record.status === "pago"
+                      ? "bg-green-100 text-green-600"
+                      : "bg-yellow-100 text-yellow-600"
+                  }`}
+                >
                   {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
                 </span>
               </TableCell>
               <TableCell>
-                {record.status === "parcial" ? formatCurrencyBR(record.remaining_value) : formatCurrencyBR(record.value)}
+                {record.status === "parcial"
+                  ? formatCurrencyBR(record.remaining_value)
+                  : formatCurrencyBR(record.value)}
               </TableCell>
               <TableCell>
                 <DropdownMenu>
@@ -170,11 +221,12 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
                     <DropdownMenuItem onClick={() => setTimeout(() => handleNewPayment(record), 0)}>
                       Pagar
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeout(() => handleDelete(record), 0)}>
+                      Excluir
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
-
-
             </TableRow>
           ))}
         </tbody>
@@ -193,10 +245,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
             const page = index + 1;
             return (
               <PaginationItem key={page}>
-                <PaginationLink
-                  isActive={page === currentPage}
-                  onClick={() => setCurrentPage(page)}
-                >
+                <PaginationLink isActive={page === currentPage} onClick={() => setCurrentPage(page)}>
                   {page}
                 </PaginationLink>
               </PaginationItem>
@@ -212,11 +261,26 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
         </PaginationContent>
       </Pagination>
 
-      {/* Modals */}
-      <EditContaDialog open={editOpen} onClose={() => setEditOpen(false)} onRecordUpdated={onRecordUpdated} record={selectedRecord} type={type} />
-      <CreateContaDialog open={createOpen} onClose={() => setCreateOpen(false)} onRecordCreated={onRecordUpdated} type={type} />
-      <PaymentsDialog open={paymentsDialogOpen} onClose={() => setPaymentsDialogOpen(false)} payments={payments} totalValue={selectedRecord?.value || "0.00"} />
-
+      {/* Dialogs */}
+      <EditContaDialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        onRecordUpdated={onRecordUpdated}
+        record={selectedRecord}
+        type={type}
+      />
+      <CreateContaDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onRecordCreated={onRecordUpdated}
+        type={type}
+      />
+      <PaymentsDialog
+        open={paymentsDialogOpen}
+        onClose={() => setPaymentsDialogOpen(false)}
+        payments={payments}
+        totalValue={selectedRecord?.value || "0.00"}
+      />
       <CreateDialog
         open={createPaymentOpen}
         onClose={() => setCreatePaymentOpen(false)}
@@ -231,13 +295,39 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, type, onRe
             label: "Banco",
             options: bankOptions.map((bank) => ({
               label: bank.name,
-              value: String(bank.id), // ✅ using real ID here
+              value: String(bank.id),
             })),
           },
           { key: "doc_number", type: "text", label: "Documento", placeholder: "Nº do comprovante" },
         ]}
         onSubmit={handleSubmitPayment}
       />
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta conta será excluída permanentemente e não poderá ser recuperada.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteOpen(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!selectedRecord) return;
+                await deleteRecord(type, selectedRecord.id);
+                setDeleteOpen(false);
+                setSelectedRecord(null);
+                onRecordUpdated();
+              }}
+            >
+              Sim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

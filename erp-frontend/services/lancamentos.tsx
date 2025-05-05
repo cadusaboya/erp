@@ -76,3 +76,23 @@ export const updatePayment = async (id: number, payment: Partial<PaymentRecord>)
 
   return await response.json();
 };
+
+export const deletePayment = async (id: number) => {
+  try {
+    const token = getToken();
+
+    const response = await fetch(`${API_BASE_URL}/payments/payments/${id}/`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) throw new Error("Erro ao deletar pagamento");
+
+    return true;
+  } catch (error) {
+    console.error("Erro ao deletar pagamento:", error);
+    return false;
+  }
+};

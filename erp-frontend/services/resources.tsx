@@ -99,3 +99,25 @@ export const createResource = async (
     return false;
   }
 };
+
+export const deleteResource = async (resource: ResourceType, resourceId: number) => {
+  try {
+    const token = getToken();
+
+    const response = await fetch(`${API_BASE_URL}/clients/${resource}/${resourceId}/`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro ao deletar ${resource}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error(`Erro ao deletar ${resource}:`, error);
+    return false;
+  }
+};

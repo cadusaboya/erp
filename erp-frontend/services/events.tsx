@@ -90,3 +90,28 @@ export const updateEvent = async (eventId: number, updatedData: any) => {
     return false;
   }
 };
+
+export const deleteEvent = async (eventId: number) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      throw new Error("Token não encontrado");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}/`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Erro ao deletar evento");
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Erro ao deletar evento:", error);
+    return false;
+  }
+};

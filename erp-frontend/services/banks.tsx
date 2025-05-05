@@ -41,3 +41,15 @@ export const updateBank = async (id: number, data: { name: string; balance: numb
   });
   return response.ok;
 };
+
+export const deleteBank = async (id: number) => {
+  const token = getToken();
+  const response = await fetch(`${API_BASE_URL}/payments/banks/${id}/`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.ok;
+};
+

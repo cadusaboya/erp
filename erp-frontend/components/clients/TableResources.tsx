@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
-import { PlusCircle, Filter } from "lucide-react";
+import { PlusCircle, Filter, Trash } from "lucide-react";
 import EditResourceDialog from "@/components/clients/EditResourceDialog";
 import CreateResourceDialog from "./CreateResourceDialog";
-import FiltersDialog from "@/components/Filters"; // generic filters dialog
+import FiltersDialog from "@/components/Filters";
 import { Resource, FiltersClientType } from "@/types/types";
 import {
   DropdownMenu,
@@ -15,7 +15,26 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical } from "lucide-react";
-import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext, PaginationLink } from "@/components/ui/pagination";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationLink,
+} from "@/components/ui/pagination";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+  AlertDialogDescription,
+} from "@/components/ui/alert-dialog";
+import { deleteResource } from "@/services/resources"; // ✅ make sure this is correct
 
 type ResourceType = "clients" | "suppliers";
 
@@ -40,6 +59,8 @@ const TableResources: React.FC<TableResourcesProps> = ({
   const [editOpen, setEditOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
+  const [resourceToDelete, setResourceToDelete] = useState<Resource | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
@@ -48,8 +69,20 @@ const TableResources: React.FC<TableResourcesProps> = ({
     setEditOpen(true);
   };
 
-  const resourceLabel = resourceType === "clients" ? "Cliente" : "Fornecedor";
+  const handleDeleteClick = (resource: Resource) => {
+    setResourceToDelete(resource);
+    setDeleteDialogOpen(true);
+  };
 
+  const confirmDelete = async () => {
+    if (resourceToDelete) {
+      await deleteResource(resourceType, resourceToDelete.id);
+      setDeleteDialogOpen(false);
+      onResourceCreated();
+    }
+  };
+
+  const resourceLabel = resourceType === "clients" ? "Cliente" : "Fornecedor";
   const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   const totalPages = Math.ceil(data.length / itemsPerPage);
 
@@ -84,7 +117,6 @@ const TableResources: React.FC<TableResourcesProps> = ({
         ]}
       />
 
-      {/* Create / Edit Dialogs */}
       <CreateResourceDialog
         resourceType={resourceType}
         open={createOpen}
@@ -99,7 +131,6 @@ const TableResources: React.FC<TableResourcesProps> = ({
         resource={selectedResource}
       />
 
-      {/* Table */}
       <Table>
         <TableHeader>
           <TableRow>
@@ -131,6 +162,12 @@ const TableResources: React.FC<TableResourcesProps> = ({
                   <DropdownMenuContent>
                     <DropdownMenuItem onClick={() => setTimeout(() => handleEditClick(resource), 0)}>
                       Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-red-600"
+                      onClick={() => setTimeout(() => handleDeleteClick(resource), 0)}
+                    >
+                      Excluir
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -171,6 +208,22 @@ const TableResources: React.FC<TableResourcesProps> = ({
           </PaginationItem>
         </PaginationContent>
       </Pagination>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza que deseja excluir?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não poderá ser desfeita. O dado será permanentemente removido.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Sim, excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

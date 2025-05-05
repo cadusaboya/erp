@@ -96,3 +96,22 @@ export const updateRecord = async (type: "bill" | "income", recordId: number, up
     return false;
   }
 };
+
+export const deleteRecord = async (type: "bill" | "income", recordId: number) => {
+  try {
+    const token = getToken();
+
+    const response = await fetch(`${API_BASE_URL}/payments/${type}s/${recordId}/`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) throw new Error(`Erro ao deletar ${type}`);
+    return true;
+  } catch (error) {
+    console.error(`Erro ao deletar ${type}:`, error);
+    return false;
+  }
+};

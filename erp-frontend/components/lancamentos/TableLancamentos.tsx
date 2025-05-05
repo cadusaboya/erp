@@ -16,6 +16,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical } from "lucide-react";
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext, PaginationLink } from "@/components/ui/pagination";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+  AlertDialogDescription,
+} from "@/components/ui/alert-dialog";
+
+import { deletePayment } from "@/services/lancamentos";
 
 
 interface BankOption {
@@ -35,7 +48,8 @@ interface TableComponentProps {
 const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpdated, filters, setFilters, bankOptions }) => {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState<PaymentRecord | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
 
@@ -129,6 +143,12 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
                     <DropdownMenuItem onClick={() => setTimeout(() => handleEdit(payment), 0)}>
                       Editar
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeout(() => {
+                      setPaymentToDelete(payment);
+                      setDeleteDialogOpen(true);
+                    }, 0)}>
+                      Excluir
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -169,6 +189,29 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
         </PaginationContent>
       </Pagination>
 
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O dado será excluído permanentemente e não poderá ser restaurado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!paymentToDelete) return;
+                await deletePayment(paymentToDelete.id);
+                setDeleteDialogOpen(false);
+                onOrderUpdated();
+              }}
+            >
+              Sim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* EditDialog */}
       {selectedPayment && (

@@ -7,7 +7,7 @@ import { MoreVertical, PlusCircle, Filter } from "lucide-react";
 import CreateEventDialog from "./CreateEventDialog";
 import EditEventDialog from "./EditEventDialog";
 import Link from "next/link";
-import Filters from "@/components/Filters"; // Adjust path as needed
+import Filters from "@/components/Filters";
 import { Event } from "@/types/types";
 import { FiltersEventType } from "@/types/types";
 import EventDetailsDialog from "./EventDetailsDialog";
@@ -18,28 +18,54 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext, PaginationLink } from "@/components/ui/pagination";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationLink,
+} from "@/components/ui/pagination";
 
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+
+import { deleteEvent } from "@/services/events"; // ✅ adjust path if needed
 
 interface TableComponentProps {
   data: Event[];
   title: string;
   onEventCreated: () => void;
   filters: FiltersEventType;
-  setFilters: (filters: FiltersEventType) => void; // ✅ Receive filters from parent
+  setFilters: (filters: FiltersEventType) => void;
 }
 
-const TableComponent: React.FC<TableComponentProps> = ({ data, title, onEventCreated, filters, setFilters }) => {
+const TableComponent: React.FC<TableComponentProps> = ({
+  data,
+  title,
+  onEventCreated,
+  filters,
+  setFilters,
+}) => {
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
   const itemsPerPage = 12;
-
   const totalPages = Math.ceil(data.length / itemsPerPage);
   const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -51,6 +77,11 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onEventCre
   const handleViewClick = (id: string) => {
     setSelectedEventId(id);
     setDialogOpen(true);
+  };
+
+  const handleDeleteClick = (event: Event) => {
+    setSelectedEvent(event);
+    setDeleteOpen(true);
   };
 
   const applyFilters = (newFilters: typeof filters) => {
@@ -97,15 +128,17 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onEventCre
         open={filtersOpen}
         onClose={() => setFiltersOpen(false)}
         applyFilters={applyFilters}
-        clearFilters={() => setFilters({
-          event_name: "",
-          client: "",
-          startDate: "",
-          endDate: "",
-          minValue: "",
-          maxValue: "",
-          type: [],
-        })}
+        clearFilters={() =>
+          setFilters({
+            event_name: "",
+            client: "",
+            startDate: "",
+            endDate: "",
+            minValue: "",
+            maxValue: "",
+            type: [],
+          })
+        }
         filterFields={[
           { key: "event_name", type: "text", label: "Nome do Evento", placeholder: "Nome do Evento" },
           { key: "client", type: "text", label: "Cliente", placeholder: "Cliente" },
@@ -113,10 +146,14 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onEventCre
           { key: "endDate", type: "date", label: "Data Final", placeholder: "Data Final" },
           { key: "minValue", type: "number", label: "Valor Mínimo", placeholder: "Valor Mínimo" },
           { key: "maxValue", type: "number", label: "Valor Máximo", placeholder: "Valor Máximo" },
-          { key: "type", type: "checkboxes", label: "Tipo de Evento", options: ["casamento", "15 anos", "formatura", "aniversário", "empresarial", "outros"] },
+          {
+            key: "type",
+            type: "checkboxes",
+            label: "Tipo de Evento",
+            options: ["casamento", "15 anos", "formatura", "aniversário", "empresarial", "outros"],
+          },
         ]}
       />
-
 
       <Table>
         <TableHeader>
@@ -150,6 +187,9 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onEventCre
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setTimeout(() => handleEditClick(event), 0)}>
                       Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeout(() => handleDeleteClick(event), 0)}>
+                      Excluir
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -190,6 +230,31 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onEventCre
           </PaginationItem>
         </PaginationContent>
       </Pagination>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O evento será excluído permanentemente e não poderá ser restaurado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteOpen(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!selectedEvent) return;
+                await deleteEvent(selectedEvent.id);
+                setDeleteOpen(false);
+                setSelectedEvent(null);
+                onEventCreated();
+              }}
+            >
+              Sim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
