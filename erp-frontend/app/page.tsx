@@ -5,6 +5,7 @@ import axios from "axios";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { API_URL } from "@/types/apiUrl";
+import { AxiosError } from "axios";
 
 export default function Home() {
   const [username, setUsername] = useState("");
@@ -52,8 +53,9 @@ export default function Home() {
         setMessage("Login successful! Redirecting...");
         setTimeout(() => (window.location.href = "/dashboard"), 1000);
       }
-    } catch (error: any) {
-      const data = error.response?.data;
+    } catch (error) {
+      const err = error as AxiosError<any>;
+      const data = err.response?.data;
       const detailedError =
         data?.message ||
         data?.errors ||
