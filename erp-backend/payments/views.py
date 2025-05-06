@@ -947,11 +947,15 @@ def event_accruals_view(request, event_id):
     start_date = request.query_params.get("start_date")
     end_date = request.query_params.get("end_date")
 
-    payments_bills = []
-    payments_incomes = []
-    total_despesas = 0
-    total_receitas = 0
+    event_allocs = EventAllocation.objects.select_related("accrual").filter(event_id=event_id)
 
+    # Group allocations by accrual ID and keep their ratio
+    accrual_ratios = {
+        alloc.accrual.id: (alloc.value / alloc.accrual.value)
+        for alloc in event_allocs if alloc.accrual.value > 0
+    }
+
+    # Get all payments related to those accruals
     payments = Payment.objects.filter(user=user).select_related("bill", "income")
 
     if start_date:
@@ -959,27 +963,40 @@ def event_accruals_view(request, event_id):
     if end_date:
         payments = payments.filter(date__lte=end_date)
 
-    for payment in payments:
-        value = payment.get_allocated_value_to_event(event_id)
+    payments_bills = []
+    payments_incomes = []
+    total_despesas = 0
+    total_receitas = 0
 
-        if value == 0:
-            continue
+    for payment in payments:
+        accrual = None
 
         if payment.bill:
-            total_despesas += value
+            accrual = payment.bill
+        elif payment.income:
+            accrual = payment.income
+
+        if not accrual or accrual.id not in accrual_ratios:
+            continue
+
+        ratio = accrual_ratios[accrual.id]
+        allocated_value = round(payment.value * ratio, 2)
+
+        if payment.bill:
+            total_despesas += allocated_value
             payments_bills.append({
                 "id": payment.id,
                 "date": payment.date,
-                "description": payment.bill.description,
-                "value": value,
+                "description": accrual.description,
+                "value": allocated_value,
             })
         elif payment.income:
-            total_receitas += value
+            total_receitas += allocated_value
             payments_incomes.append({
                 "id": payment.id,
                 "date": payment.date,
-                "description": payment.income.description,
-                "value": value,
+                "description": accrual.description,
+                "value": allocated_value,
             })
 
     return Response({
@@ -989,6 +1006,7 @@ def event_accruals_view(request, event_id):
         "total_receitas": round(total_receitas, 2),
         "saldo_evento": round(total_receitas - total_despesas, 2)
     })
+
 
         
 @api_view(["GET"])
