@@ -4,6 +4,7 @@ import { useState } from "react";
 import axios from "axios";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { API_URL } from "@/types/apiUrl";
 
 export default function Home() {
   const [username, setUsername] = useState("");
@@ -22,8 +23,6 @@ export default function Home() {
     }
   }, []);
 
-  const API_URL = "http://127.0.0.1:8000/accounts"; // Adjust to your Django backend
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
@@ -31,7 +30,7 @@ export default function Home() {
     try {
       if (isRegistering) {
         // Register a new user
-        await axios.post(`${API_URL}/register/`, {
+        await axios.post(`${API_URL}/accounts/register/`, {
           username,
           password,
           email,
@@ -41,7 +40,7 @@ export default function Home() {
         setMessage("User registered successfully! You can now log in.");
       } else {
         // Login existing user
-        const response = await axios.post(`${API_URL}/login/`, {
+        const response = await axios.post(`${API_URL}/accounts/login/`, {
           username,
           password,
         });

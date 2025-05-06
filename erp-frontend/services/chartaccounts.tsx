@@ -1,10 +1,10 @@
 import { ChartAccount } from "@/types/types";
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+import { API_URL } from "@/types/apiUrl";
 
 export const fetchChartAccounts = async (): Promise<ChartAccount[]> => {
   const token = localStorage.getItem("token");
-  const response = await fetch(`${API_BASE_URL}/payments/chartaccounts/`, {
+  const response = await fetch(`${API_URL}/payments/chartaccounts/`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

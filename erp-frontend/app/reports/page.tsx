@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { searchEvents } from "@/services/events";
 import { searchResources } from "@/services/resources";
+import { API_URL } from "@/types/apiUrl";
 
 export default function ReportsPage() {
   const [type, setType] = useState("bills");
@@ -39,11 +40,11 @@ export default function ReportsPage() {
       try {
         const token = getToken();
         const [costCentersRes, banksRes, eventsRes, clientsRes, suppliersRes] = await Promise.all([
-          fetch("http://127.0.0.1:8000/payments/costcenter/", { headers: { Authorization: `Bearer ${token}` } }),
-          fetch("http://127.0.0.1:8000/payments/banks/", { headers: { Authorization: `Bearer ${token}` } }),
-          fetch("http://127.0.0.1:8000/events/", { headers: { Authorization: `Bearer ${token}` } }),
-          fetch("http://127.0.0.1:8000/clients/clients/", { headers: { Authorization: `Bearer ${token}` } }),
-          fetch("http://127.0.0.1:8000/clients/suppliers/", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_URL}/payments/costcenter/`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_URL}/payments/banks/`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_URL}/events/`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_URL}/clients/clients/`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_URL}/clients/suppliers/`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
   
         setCostCenters(await costCentersRes.json());
@@ -89,8 +90,6 @@ export default function ReportsPage() {
   
       // Optional: revoke the object URL later to avoid memory leaks
       setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 10000); // after 10 seconds
-    } catch (error) {
-      alert("Erro ao gerar relatório. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
@@ -104,7 +103,7 @@ export default function ReportsPage() {
         <Tabs
           defaultValue="contas"
           className="w-full"
-          onValueChange={(tab) => {
+          onValueChange={() => {
             setType("");
             setStatus("");
             setPerson("");
@@ -130,7 +129,10 @@ export default function ReportsPage() {
             <Card><CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-2">
               <div>
                 <label className="text-xs">Tipo</label>
-                <Select value={type} onValueChange={(value) => {setType(value), setPerson("")}} >
+                <Select value={type} onValueChange={(value) => {
+                    setType(value);
+                    setPerson("");
+                  }} >
                   <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="both">Receitas e Despesas</SelectItem>
@@ -208,7 +210,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleOpenPdf(`http://127.0.0.1:8000/payments/report/?${buildParams().toString()}`)} disabled={isLoading}>
+              <Button onClick={() => handleOpenPdf(`${API_URL}/payments/report/?${buildParams().toString()}`)} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
@@ -223,7 +225,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleOpenPdf(`http://127.0.0.1:8000/events/report/type/?year=${year}`)} disabled={isLoading}>
+              <Button onClick={() => handleOpenPdf(`${API_URL}/events/report/type/?year=${year}`)} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
@@ -252,7 +254,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleOpenPdf(`http://127.0.0.1:8000/payments/report/costcenter/?${buildParams().toString()}`)} disabled={isLoading}>
+              <Button onClick={() => handleOpenPdf(`${API_URL}/payments/report/costcenter/?${buildParams().toString()}`)} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
@@ -271,7 +273,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleOpenPdf(`http://127.0.0.1:8000/events/report/?${buildParams().toString()}`)} disabled={isLoading}>
+              <Button onClick={() => handleOpenPdf(`${API_URL}/events/report/?${buildParams().toString()}`)} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
@@ -302,7 +304,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleOpenPdf(`http://127.0.0.1:8000/payments/report/bank/?${buildParams({ bank_id: bankId !== "todos" ? bankId : "" }).toString()}`)} disabled={isLoading}>
+              <Button onClick={() => handleOpenPdf(`${API_URL}/payments/report/bank/?${buildParams({ bank_id: bankId !== "todos" ? bankId : "" }).toString()}`)} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
@@ -321,7 +323,7 @@ export default function ReportsPage() {
               </div>
             </CardContent></Card>
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
-              <Button onClick={() => handleOpenPdf(`http://127.0.0.1:8000/payments/report/chartaccount/?${buildParams().toString()}`)} disabled={isLoading}>
+              <Button onClick={() => handleOpenPdf(`${API_URL}/payments/report/chartaccount/?${buildParams().toString()}`)} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Balancete"}
               </Button>
             </div>

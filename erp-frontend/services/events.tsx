@@ -1,6 +1,6 @@
 import { FiltersEventType } from "@/types/types";
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+import { API_URL } from "@/types/apiUrl";
 
 export const fetchEvents = async (
   filters: FiltersEventType = {},
@@ -26,7 +26,7 @@ export const fetchEvents = async (
     // ✅ Paginação
     params.append("page", page.toString());
 
-    const response = await fetch(`${API_BASE_URL}/events/?${params.toString()}`, {
+    const response = await fetch(`${API_URL}/events/?${params.toString()}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -52,7 +52,7 @@ export const searchEvents = async (query: string) => {
     params.append("page", "1");
     params.append("page_size", "10");
 
-    const response = await fetch(`${API_BASE_URL}/events/?${params.toString()}`, {
+    const response = await fetch(`${API_URL}/events/?${params.toString()}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -80,7 +80,7 @@ export const createEvent = async (eventData: any) => {
       throw new Error("Token not found");
     }
 
-    const response = await fetch(`${API_BASE_URL}/events/`, {
+    const response = await fetch(`${API_URL}/events/`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -107,7 +107,7 @@ export const updateEvent = async (eventId: number, updatedData: any) => {
       throw new Error("Token não encontrado");
     }
 
-    const response = await fetch(`${API_BASE_URL}/events/${eventId}/`, {
+    const response = await fetch(`${API_URL}/events/${eventId}/`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -134,7 +134,7 @@ export const deleteEvent = async (eventId: number) => {
       throw new Error("Token não encontrado");
     }
 
-    const response = await fetch(`${API_BASE_URL}/events/${eventId}/`, {
+    const response = await fetch(`${API_URL}/events/${eventId}/`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -156,7 +156,7 @@ export const fetchSingleEvent = async (id: number | string) => {
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Token não encontrado");
 
-  const response = await fetch(`${API_BASE_URL}/events/${id}/`, {
+  const response = await fetch(`${API_URL}/events/${id}/`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

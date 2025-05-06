@@ -110,7 +110,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
     setCurrentPage(1);
   };
 
-  const handleSubmitPayment = async (formData: Record<string, any>) => {
+  const handleSubmitPayment = async (formData: Record<string, string>) => {
     if (!recordToPay) return;
     const payload: PaymentCreatePayload = {
       ...formData,

@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://127.0.0.1:8000";
+import { API_URL } from "@/types/apiUrl";
 
 type ResourceType = "clients" | "suppliers";
 import { FiltersClientType } from "@/types/types";
@@ -31,7 +31,7 @@ export const fetchResources = async (
 
     const queryString = `?${params.toString()}`;
 
-    const response = await fetch(`${API_BASE_URL}/clients/${resource}/${queryString}`, {
+    const response = await fetch(`${API_URL}/clients/${resource}/${queryString}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -60,7 +60,7 @@ export const updateResource = async (
     const token = getToken();
 
     const response = await fetch(
-      `${API_BASE_URL}/clients/${resource}/${resourceId}/`,
+      `${API_URL}/clients/${resource}/${resourceId}/`,
       {
         method: "PUT",
         headers: {
@@ -89,7 +89,7 @@ export const createResource = async (
   try {
     const token = getToken();
 
-    const response = await fetch(`${API_BASE_URL}/clients/${resource}/`, {
+    const response = await fetch(`${API_URL}/clients/${resource}/`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -113,7 +113,7 @@ export const deleteResource = async (resource: ResourceType, resourceId: number)
   try {
     const token = getToken();
 
-    const response = await fetch(`${API_BASE_URL}/clients/${resource}/${resourceId}/`, {
+    const response = await fetch(`${API_URL}/clients/${resource}/${resourceId}/`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -135,7 +135,7 @@ export const fetchSingleResource = async (type: "clients" | "suppliers", id: num
   const token = localStorage.getItem("token");
   if (!token) throw new Error("Token não encontrado");
 
-  const response = await fetch(`${API_BASE_URL}/clients/${type}/${id}/`, {
+  const response = await fetch(`${API_URL}/clients/${type}/${id}/`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

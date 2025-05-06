@@ -1,6 +1,6 @@
 import { PaymentRecord, FilterPaymentType, PaymentCreatePayload } from "@/types/types";
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+import { API_URL } from "@/types/apiUrl";
 
 const getToken = () => {
   const token = localStorage.getItem("token");
@@ -36,7 +36,7 @@ export const fetchPayments = async (
   // ✅ Paginação
   params.append("page", page.toString());
 
-  const response = await fetch(`${API_BASE_URL}/payments/payments/?${params.toString()}`, {
+  const response = await fetch(`${API_URL}/payments/payments/?${params.toString()}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -52,7 +52,7 @@ export const fetchPayments = async (
 export const createPayment = async (data: PaymentCreatePayload) => {
   const token = getToken();
   
-  const response = await fetch(`${API_BASE_URL}/payments/payments/`, {
+  const response = await fetch(`${API_URL}/payments/payments/`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token}`,
@@ -70,7 +70,7 @@ export const createPayment = async (data: PaymentCreatePayload) => {
 export const updatePayment = async (id: number, payment: Partial<PaymentRecord>) => {
   const token = getToken();
 
-  const response = await fetch(`${API_BASE_URL}/payments/payments/${id}/`, {
+  const response = await fetch(`${API_URL}/payments/payments/${id}/`, {
     method: "PATCH",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -88,7 +88,7 @@ export const deletePayment = async (id: number) => {
   try {
     const token = getToken();
 
-    const response = await fetch(`${API_BASE_URL}/payments/payments/${id}/`, {
+    const response = await fetch(`${API_URL}/payments/payments/${id}/`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,

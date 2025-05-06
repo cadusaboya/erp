@@ -27,7 +27,6 @@ import {
   FinanceRecord,
   Event,
   Resource,
-  Bank,
   ChartAccount,
 } from "@/types/types";
 import RatioTable from "@/components/RatioTable";
@@ -69,12 +68,10 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
           const [
             eventsData,
             resourceData,
-            banksData,
             chartAccountsData,
           ] = await Promise.all([
             fetchEvents(),
             fetchResources(type === "bill" ? "suppliers" : "clients"),
-            fetchBanks(),
             fetchChartAccounts(),
           ]);
           setEvents(eventsData.results || []);
