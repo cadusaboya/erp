@@ -38,16 +38,16 @@ export interface FilterPaymentType {
 
   
   export type FilterFinanceRecordType = {
-    startDate: string;
-    endDate: string;
-    person: string;
-    description: string;
+    startDate?: string;
+    endDate?: string;
+    person?: string;
+    description?: string;
     status?: string[];
     type?: string[];
     bank_name?: string[];
     docNumber?: string;
-    minValue: string;
-    maxValue: string;
+    minValue?: string;
+    maxValue?: string;
   };
 
   export type FiltersEventType = {
