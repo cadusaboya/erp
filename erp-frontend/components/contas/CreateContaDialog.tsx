@@ -21,7 +21,6 @@ import {
 import { createRecord } from "@/services/records";
 import { fetchEvents } from "@/services/events";
 import { fetchResources, searchResources } from "@/services/resources";
-import { fetchBanks } from "@/services/banks";
 import { fetchChartAccounts } from "@/services/chartaccounts";
 import {
   FinanceRecord,
