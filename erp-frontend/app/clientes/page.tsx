@@ -13,15 +13,18 @@ export default function ClientsPage() {
     email: "",
     telephone: "",
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const loadClients = async (activeFilters: FiltersClientType) => {
-    const clientsData = await fetchResources("clients", activeFilters);
-    setData(clientsData);
+  const loadClients = async (activeFilters: FiltersClientType, page = 1) => {
+    const response = await fetchResources("clients", activeFilters, page);
+    setData(response.results);
+    setTotalCount(response.count);
   };
 
   useEffect(() => {
-    loadClients(filters);
-  }, [filters]);
+    loadClients(filters, currentPage);
+  }, [filters, currentPage]);
 
   return (
     <div className="flex">
@@ -32,7 +35,10 @@ export default function ClientsPage() {
           title="Clientes"
           filters={filters}
           setFilters={setFilters}
-          onResourceCreated={() => loadClients(filters)}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          totalCount={totalCount}
+          onResourceCreated={() => loadClients(filters, currentPage)}
         />
       </div>
     </div>

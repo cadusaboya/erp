@@ -20,6 +20,7 @@ from collections import defaultdict
 from functools import reduce
 from decimal import Decimal, ROUND_HALF_UP
 from rest_framework.pagination import PageNumberPagination
+
 import locale
 try:
     locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
@@ -38,8 +39,6 @@ class StandardResultsSetPagination(PageNumberPagination):
 @permission_classes([IsAuthenticated])
 def generate_bank_statement_report(request):
     from django.utils import timezone
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.units import mm
 
     def shorten_text(text, max_width, canvas, font_name="Helvetica", font_size=9):
         canvas.setFont(font_name, font_size)

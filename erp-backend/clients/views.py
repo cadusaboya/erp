@@ -2,9 +2,16 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from .models import Client, Supplier
 from .serializers import ClientSerializer, SupplierSerializer
+from rest_framework.pagination import PageNumberPagination
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 12
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 class ClientViewSet(viewsets.ModelViewSet):
     serializer_class = ClientSerializer
+    pagination_class = StandardResultsSetPagination
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
@@ -34,6 +41,7 @@ class ClientViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 class SupplierViewSet(viewsets.ModelViewSet):
+    pagination_class = StandardResultsSetPagination
     serializer_class = SupplierSerializer
     permission_classes = [IsAuthenticated]
 

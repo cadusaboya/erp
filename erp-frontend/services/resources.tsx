@@ -11,7 +11,12 @@ const getToken = () => {
   return token;
 };
 
-export const fetchResources = async (resource: ResourceType, filters: FiltersClientType = {}) => {
+export const fetchResources = async (
+  resource: ResourceType,
+  filters: FiltersClientType = {},
+  page: number = 1,
+  pageSize: number = 12
+) => {
   try {
     const token = getToken();
     const params = new URLSearchParams();
@@ -21,7 +26,10 @@ export const fetchResources = async (resource: ResourceType, filters: FiltersCli
     if (filters.email) params.append("email", filters.email);
     if (filters.telephone) params.append("telephone", filters.telephone);
 
-    const queryString = params.toString() ? `?${params.toString()}` : "";
+    // ✅ Paginação
+    params.append("page", page.toString());
+
+    const queryString = `?${params.toString()}`;
 
     const response = await fetch(`${API_BASE_URL}/clients/${resource}/${queryString}`, {
       headers: {
@@ -35,12 +43,13 @@ export const fetchResources = async (resource: ResourceType, filters: FiltersCli
     }
 
     const result = await response.json();
-    return result;
+    return result; // Expects { results, count }
   } catch (error) {
     console.error(`Erro ao buscar ${resource}:`, error);
-    return [];
+    return { results: [], count: 0 }; // Standard paginated fallback
   }
 };
+
 
 export const updateResource = async (
   resource: ResourceType,

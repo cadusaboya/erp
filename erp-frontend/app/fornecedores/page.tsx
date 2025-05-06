@@ -13,15 +13,18 @@ export default function SuppliersPage() {
     email: "",
     telephone: "",
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const loadSuppliers = async (activeFilters: FiltersClientType) => {
-    const suppliersData = await fetchResources("suppliers", activeFilters);
-    setData(suppliersData);
+  const loadSuppliers = async (activeFilters: FiltersClientType, page = 1) => {
+    const response = await fetchResources("suppliers", activeFilters, page);
+    setData(response.results);
+    setTotalCount(response.count);
   };
 
   useEffect(() => {
-    loadSuppliers(filters);
-  }, [filters]);
+    loadSuppliers(filters, currentPage);
+  }, [filters, currentPage]);
 
   return (
     <div className="flex">
@@ -30,9 +33,12 @@ export default function SuppliersPage() {
           resourceType="suppliers"
           data={data}
           title="Fornecedores"
-          filters={filters}                 // ✅ Inject filters
-          setFilters={setFilters}           // ✅ Inject filter setter
-          onResourceCreated={() => loadSuppliers(filters)} // reload on create/edit
+          filters={filters}
+          setFilters={setFilters}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          totalCount={totalCount}
+          onResourceCreated={() => loadSuppliers(filters, currentPage)}
         />
       </div>
     </div>

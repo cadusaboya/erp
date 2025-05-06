@@ -34,17 +34,19 @@ import {
   AlertDialogAction,
   AlertDialogDescription,
 } from "@/components/ui/alert-dialog";
-import { deleteResource } from "@/services/resources"; // ✅ make sure this is correct
+import { deleteResource } from "@/services/resources";
 
-type ResourceType = "clients" | "suppliers";
-
+// ✅ Suporte à paginação server-side
 interface TableResourcesProps {
-  resourceType: ResourceType;
+  resourceType: "clients" | "suppliers";
   data: Resource[];
   title: string;
   filters: FiltersClientType;
   setFilters: (filters: FiltersClientType) => void;
   onResourceCreated: () => void;
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  totalCount: number;
 }
 
 const TableResources: React.FC<TableResourcesProps> = ({
@@ -54,6 +56,9 @@ const TableResources: React.FC<TableResourcesProps> = ({
   filters,
   setFilters,
   onResourceCreated,
+  currentPage,
+  setCurrentPage,
+  totalCount,
 }) => {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -61,8 +66,9 @@ const TableResources: React.FC<TableResourcesProps> = ({
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const [resourceToDelete, setResourceToDelete] = useState<Resource | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+
   const itemsPerPage = 12;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   const handleEditClick = (resource: Resource) => {
     setSelectedResource(resource);
@@ -83,8 +89,6 @@ const TableResources: React.FC<TableResourcesProps> = ({
   };
 
   const resourceLabel = resourceType === "clients" ? "Cliente" : "Fornecedor";
-  const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-  const totalPages = Math.ceil(data.length / itemsPerPage);
 
   return (
     <div className="p-6 bg-white shadow-lg rounded-lg">
@@ -144,7 +148,7 @@ const TableResources: React.FC<TableResourcesProps> = ({
           </TableRow>
         </TableHeader>
         <tbody>
-          {paginatedData.map((resource) => (
+          {data.map((resource) => (
             <TableRow key={resource.id}>
               <TableCell>{resource.id}</TableCell>
               <TableCell>{resource.name}</TableCell>
@@ -186,38 +190,31 @@ const TableResources: React.FC<TableResourcesProps> = ({
             />
           </PaginationItem>
 
-          {(() => {
-            const pages = [];
-            const showPages = new Set<number>();
+          {currentPage > 2 && (
+            <>
+              <PaginationItem>
+                <PaginationLink onClick={() => setCurrentPage(1)}>1</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <span className="px-2">...</span>
+              </PaginationItem>
+            </>
+          )}
 
-            showPages.add(1);
-            showPages.add(totalPages);
-            showPages.add(currentPage);
-            if (currentPage > 1) showPages.add(currentPage - 1);
-            if (currentPage < totalPages) showPages.add(currentPage + 1);
+          <PaginationItem>
+            <PaginationLink isActive>{currentPage}</PaginationLink>
+          </PaginationItem>
 
-            let lastPage = 0;
-            for (let i = 1; i <= totalPages; i++) {
-              if (showPages.has(i)) {
-                if (lastPage && i - lastPage > 1) {
-                  pages.push(<PaginationItem key={`ellipsis-${i}`}><span className="px-2">...</span></PaginationItem>);
-                }
-                pages.push(
-                  <PaginationItem key={i}>
-                    <PaginationLink
-                      isActive={i === currentPage}
-                      onClick={() => setCurrentPage(i)}
-                    >
-                      {i}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-                lastPage = i;
-              }
-            }
-            return pages;
-          })()}
-
+          {currentPage < totalPages - 1 && (
+            <>
+              <PaginationItem>
+                <span className="px-2">...</span>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink onClick={() => setCurrentPage(totalPages)}>{totalPages}</PaginationLink>
+              </PaginationItem>
+            </>
+          )}
 
           <PaginationItem>
             <PaginationNext
@@ -228,7 +225,6 @@ const TableResources: React.FC<TableResourcesProps> = ({
         </PaginationContent>
       </Pagination>
 
-      {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
