@@ -81,13 +81,13 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
 
           {/* Cliente (Combobox) */}
           <div>
-            <Combobox
-              options={clients.map((c) => ({ label: c.name, value: String(c.id) }))}
-              value={watch("client")}
-              loadOptions={(query) => searchResources("clients", query)}
-              onChange={(val) => setValue("client", val)}
-              placeholder="Selecione um Cliente"
-            />
+          <Combobox
+            options={clients.map((c) => ({ label: c.name, value: String(c.id) }))}
+            value={String(watch("client") ?? "")} // converte number para string
+            loadOptions={(query) => searchResources("clients", query)}
+            onChange={(val) => setValue("client", Number(val))} // converte string para number
+            placeholder="Selecione um Cliente"
+          />
           </div>
 
           {/* Date */}

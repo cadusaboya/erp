@@ -146,7 +146,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
                 })}
               </TableCell>
               <TableCell className="w-4/17 min-w-[180px]">
-                <div className="truncate" title={payment.person_name}>
+                <div className="truncate" title={payment.person_name ?? ""}>
                   {payment.person_name}
                 </div>
               </TableCell>

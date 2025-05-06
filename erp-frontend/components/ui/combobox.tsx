@@ -24,12 +24,12 @@ interface ComboboxOption {
 }
 
 interface ComboboxProps {
-  options?: ComboboxOption[]; // deixa opcional
-  value: string;
-  onChange: (value: string) => void;
+  options?: ComboboxOption[];
+  value: string | number | undefined; // aceita mais formatos
+  onChange: (value: string) => void; // mantém como string (você força isso internamente)
   placeholder?: string;
   disabled?: boolean;
-  loadOptions?: (query: string) => Promise<ComboboxOption[]>; // nova prop
+  loadOptions?: (query: string) => Promise<ComboboxOption[]>;
 }
 
 export const Combobox: React.FC<ComboboxProps> = ({

@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { searchEvents } from "@/services/events";
 
-interface RateioItem {
+export interface RateioItem {
   id?: number;
   event?: string;
   chart_account?: string;
@@ -15,6 +15,7 @@ interface RateioTableProps {
   setAllocations: (data: RateioItem[]) => void;
   events?: { id: number; event_name: string }[];
   chartAccounts?: { id: number; name: string }[];
+  label?: string; // ✅ adicione essa linha
 }
 
 const RatioTable: React.FC<RateioTableProps> = ({

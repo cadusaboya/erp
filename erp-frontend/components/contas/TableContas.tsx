@@ -112,13 +112,20 @@ const TableComponent: React.FC<TableComponentProps> = ({
 
   const handleSubmitPayment = async (formData: Record<string, string>) => {
     if (!recordToPay) return;
+  
     const payload: PaymentCreatePayload = {
-      ...formData,
-      ...(type === "bill" ? { bill_id: Number(recordToPay.id) } : { income_id: Number(recordToPay.id) }),
+      value: formData.value,
+      date: formData.date,
+      doc_number: formData.doc_number,
+      description: formData.description,
+      bank: parseInt(formData.bank),
+      ...(type === "bill" ? { bill_id: recordToPay.id } : { income_id: recordToPay.id }),
     };
+  
     await createPayment(payload);
     onRecordUpdated();
   };
+  
 
   return (
     <div className="p-6 bg-white shadow-lg rounded-lg">
@@ -188,8 +195,8 @@ const TableComponent: React.FC<TableComponentProps> = ({
               </TableCell>
               <TableCell className="w-1/14 min-w-[100px]">
                 {record.status === "parcial"
-                  ? formatCurrencyBR(record.remaining_value)
-                  : formatCurrencyBR(record.value)}
+                  ? formatCurrencyBR(record.remaining_value ?? 0)
+                  : formatCurrencyBR(record.value ?? 0)}
               </TableCell>
               <TableCell className="w-1/14 min-w-[60px] text-center">
                 <DropdownMenu>
@@ -276,8 +283,9 @@ const TableComponent: React.FC<TableComponentProps> = ({
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeleteOpen(false)}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={async () => {
-              if (!selectedRecord) return;
-              await deleteRecord(type, selectedRecord.id);
+              const id = selectedRecord?.id;
+              if (id === undefined) return;
+              await deleteRecord(type, id);
               setDeleteOpen(false);
               setSelectedRecord(null);
               onRecordUpdated();

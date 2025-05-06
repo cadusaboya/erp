@@ -23,6 +23,7 @@ import {
   Resource,
   ChartAccount,
 } from "@/types/types";
+import { RateioItem } from "@/types/types";
 
 interface EditContaDialogProps {
   open: boolean;
@@ -43,8 +44,8 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([]);
-  const [eventAllocations, setEventAllocations] = useState<{ event: string; value: string }[]>([]);
-  const [accountAllocations, setAccountAllocations] = useState<{ chart_account: string; value: string }[]>([]);
+  const [eventAllocations, setEventAllocations] = useState<RateioItem[]>([]);
+  const [accountAllocations, setAccountAllocations] = useState<RateioItem[]>([]);  
   const [person, setPerson] = useState<string>("");
 
   useEffect(() => {
@@ -59,24 +60,27 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
         let eventsData = eventsResponse.results;
         let resourcesData = resourcesResponse.results;
         
-        // Load missing person if not in first page
-        if (record?.person && !resourcesData.find(r => r.id === record.person)) {
-          const fallback = await fetchSingleResource(type === "bill" ? "suppliers" : "clients", record.person);
+        if (record?.person && !resourcesData.find((r: Resource) => r.id === record.person)) {
+          const fallback = await fetchSingleResource(
+            type === "bill" ? "suppliers" : "clients",
+            record.person
+          );
           resourcesData = [...resourcesData, fallback];
         }
         
         // Load missing events used in allocations
         if (record?.event_allocations?.length) {
           const missingEventIds = record.event_allocations
-            .map(ea => ea.event)
-            .filter(id => !eventsData.find(e => e.id === id));
+            .map((ea) => Number(ea.event))
+            .filter((id) => !eventsData.find((e: Event) => e.id === id));
         
           const missingEvents = await Promise.all(
-            missingEventIds.map(id => fetchSingleEvent(id))
+            missingEventIds.map((id) => fetchSingleEvent(id))
           );
         
           eventsData = [...eventsData, ...missingEvents];
         }
+        
         
         setEvents(eventsData);
         setResources(resourcesData);

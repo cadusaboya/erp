@@ -190,7 +190,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => setTimeout(() => handleViewClick(event.id), 0)}>
+                    <DropdownMenuItem onClick={() => setTimeout(() => handleViewClick(String(event.id)), 0)}>
                       Ver Mais
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setTimeout(() => handleEditClick(event), 0)}>

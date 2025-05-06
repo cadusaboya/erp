@@ -9,6 +9,21 @@ export interface PaymentCreatePayload {
   doc_number: string;
 }
 
+export interface PaymentFormData {
+  value: string;
+  date: string;
+  doc_number: string;
+  description: string;
+  bank: string;
+}
+
+export interface RateioItem {
+  id?: number;
+  event?: string;
+  chart_account?: string;
+  value: string;
+}
+
 export interface PaymentRecord {
   id: number;
   bill_id?: number;              // ✅ Novo
@@ -51,20 +66,20 @@ export interface FilterPaymentType {
   };
 
   export type FiltersEventType = {
-    event_name: string;
-    client: string;
-    type: string[];
-    startDate: string;
-    endDate: string;
-    minValue: string;
-    maxValue: string;
+    event_name?: string;
+    client?: string;
+    type?: string[];
+    startDate?: string;
+    endDate?: string;
+    minValue?: string;
+    maxValue?: string;
   };
 
   export interface FiltersClientType {
-    name: string;
-    cpf_cnpj: string;
-    email: string;
-    telephone: string;
+    name?: string;
+    cpf_cnpj?: string;
+    email?: string;
+    telephone?: string;
   }
 
   export interface FinanceRecord {
@@ -74,6 +89,7 @@ export interface FilterPaymentType {
     person: number; // used by the form
     description: string;
     date_due: string;
+    date?: string;
     value: string;
     remaining_value?: string;
     cost_center: number;
@@ -83,6 +99,8 @@ export interface FilterPaymentType {
     bank?: number;
     bank_name: string;
     payment_doc_number?: number;
+    event_allocations?: RateioItem[];
+    account_allocations?: RateioItem[];
   };
 
   export interface Event {

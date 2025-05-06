@@ -30,6 +30,8 @@ import {
 } from "@/types/types";
 import RatioTable from "@/components/RatioTable";
 import { Combobox } from "@/components/ui/combobox";
+import { RateioItem } from "@/components/RatioTable";
+
 
 interface CreateContaDialogProps {
   open: boolean;
@@ -53,12 +55,8 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   const [person, setPerson] = useState("");
   const [status, setStatus] = useState("em aberto");
 
-  const [eventAllocations, setEventAllocations] = useState<
-    { event: string; value: string }[]
-  >([]);
-  const [accountAllocations, setAccountAllocations] = useState<
-    { chart_account: string; value: string }[]
-  >([]);
+  const [eventAllocations, setEventAllocations] = useState<RateioItem[]>([]);
+  const [accountAllocations, setAccountAllocations] = useState<RateioItem[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
