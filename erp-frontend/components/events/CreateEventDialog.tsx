@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Dialog,
@@ -18,7 +18,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { fetchResources, searchResources } from "@/services/resources";
+import { searchResources } from "@/services/resources";
 import { createEvent } from "@/services/events";
 import { Event, Resource } from "@/types/types";
 import { Combobox } from "@/components/ui/combobox";
@@ -35,7 +35,7 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
   onEventCreated,
 }) => {
   const { register, handleSubmit, reset, setValue, watch } = useForm<Event>();
-  const [clients, setClients] = useState<Resource[]>([]);
+  const [clients ] = useState<Resource[]>([]);
 
   const onSubmit = async (formData: Event) => {
     const success = await createEvent(formData);

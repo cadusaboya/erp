@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
-import { PlusCircle, Filter, Trash } from "lucide-react";
+import { PlusCircle, Filter } from "lucide-react";
 import EditResourceDialog from "@/components/clients/EditResourceDialog";
 import CreateResourceDialog from "./CreateResourceDialog";
 import FiltersDialog from "@/components/Filters";
@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/pagination";
 import {
   AlertDialog,
-  AlertDialogTrigger,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,

@@ -15,7 +15,6 @@ interface RateioTableProps {
   setAllocations: (data: RateioItem[]) => void;
   events?: { id: number; event_name: string }[];
   chartAccounts?: { id: number; name: string }[];
-  label: string;
 }
 
 const RatioTable: React.FC<RateioTableProps> = ({
@@ -23,7 +22,6 @@ const RatioTable: React.FC<RateioTableProps> = ({
   setAllocations,
   events = [],
   chartAccounts = [],
-  label
 }) => {
   const isEvent = events && events.length > 0;
 

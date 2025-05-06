@@ -49,7 +49,6 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   const { register, handleSubmit, reset } = useForm<FinanceRecord>();
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
-  const [banks, setBanks] = useState<Bank[]>([]);
   const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([]);
 
   const [costCenter, setCostCenter] = useState("1");
@@ -80,13 +79,11 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
           ]);
           setEvents(eventsData.results || []);
           setResources(resourceData.results || []);
-          setBanks(banksData || []);
           setChartAccounts(chartAccountsData || []);
         } catch (error) {
           console.error("Failed to load initial data:", error);
           setEvents([]);
           setResources([]);
-          setBanks([]);
           setChartAccounts([]);
         }
       }

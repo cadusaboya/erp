@@ -16,7 +16,7 @@ interface EditEventDialogProps {
 }
 
 const EditEventDialog: React.FC<EditEventDialogProps> = ({ open, onClose, onEventUpdated, event }) => {
-  const { register, handleSubmit, reset, control } = useForm<Event>();
+  const { register, handleSubmit, reset } = useForm<Event>();
 
   // Prefill form with selected event data
   useEffect(() => {

@@ -7,7 +7,7 @@ import EditContaDialog from "@/components/contas/EditContaDialog";
 import Filters from "@/components/Filters";
 import CreateContaDialog from "@/components/contas/CreateContaDialog";
 import { MoreVertical, PlusCircle } from "lucide-react";
-import { FinanceRecord, FilterFinanceRecordType, PaymentCreatePayload } from "@/types/types";
+import { FinanceRecord, FilterFinanceRecordType, PaymentCreatePayload, PaymentRecord } from "@/types/types";
 import { PaymentsDialog } from "@/components/lancamentos/ViewMoreDialog";
 import { fetchPayments, createPayment } from "@/services/lancamentos";
 import CreateDialog from "@/components/CreateDialog";
@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/pagination";
 import {
   AlertDialog,
-  AlertDialogTrigger,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -74,7 +73,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
   const [editOpen, setEditOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<FinanceRecord | null>(null);
   const [paymentsDialogOpen, setPaymentsDialogOpen] = useState(false);
-  const [payments, setPayments] = useState<any[]>([]);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [createPaymentOpen, setCreatePaymentOpen] = useState(false);
   const [recordToPay, setRecordToPay] = useState<FinanceRecord | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);

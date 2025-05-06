@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { FileText } from "lucide-react";
-import { Event, FinancialSummary } from "@/types/types";
+import { Event, FinancialSummary, FinanceRecord } from "@/types/types";
 import { formatCurrencyBR } from "@/lib/utils";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
@@ -19,8 +19,8 @@ interface EventDetailsDialogProps {
 
 export default function EventDetailsDialog({ open, onClose, eventId }: EventDetailsDialogProps) {
   const [event, setEvent] = useState<Event | null>(null);
-  const [bills, setBills] = useState<any[]>([]);
-  const [incomes, setIncomes] = useState<any[]>([]);
+  const [bills, setBills] = useState<FinanceRecord[]>([]);
+  const [incomes, setIncomes] = useState<FinanceRecord[]>([]);
   const [financialSummary, setFinancialSummary] = useState<FinancialSummary | null>(null);
 
   useEffect(() => {

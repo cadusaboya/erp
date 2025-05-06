@@ -14,6 +14,7 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { LayoutGrid, Menu, User } from "lucide-react";
+import Link from "next/link";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -30,66 +31,73 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
                 <SidebarMenu>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <a href="/dashboard">
+                      <Link href="/dashboard/">
                         <LayoutGrid className="h-4 w-4" />
                         <span>Eventos</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <a href="/clientes">
+                      <Link href="/clientes">
                         <User className="h-4 w-4" />
                         <span>Clientes</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <a href="/fornecedores">
+                      <Link href="/fornecedores">
                         <User className="h-4 w-4" />
                         <span>Fornecedores</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <a href="/lancamentos">
+                      <Link href="/lancamentos">
                         <Menu className="h-4 w-4" />
                         <span>Extrato</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <a href="/contas">
+                      <Link href="/contas">
                         <Menu className="h-4 w-4" />
                         <span>Contas a Pagar</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <a href="/contas/receber">
+                      <Link href="/contas/receber">
                         <Menu className="h-4 w-4" />
                         <span>Contas a Receber</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <a href="/bancos">
+                      <Link href="/bancos">
                         <Menu className="h-4 w-4" />
                         <span>Contas Bancárias</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <a href="/reports">
+                      <Link href="/reports">
                         <Menu className="h-4 w-4" />
                         <span>Relatórios</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>

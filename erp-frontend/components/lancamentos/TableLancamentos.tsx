@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/pagination";
 import {
   AlertDialog,
-  AlertDialogTrigger,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,

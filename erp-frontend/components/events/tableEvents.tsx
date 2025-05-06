@@ -6,7 +6,6 @@ import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { MoreVertical, PlusCircle, Filter } from "lucide-react";
 import CreateEventDialog from "./CreateEventDialog";
 import EditEventDialog from "./EditEventDialog";
-import Link from "next/link";
 import Filters from "@/components/Filters";
 import { Event } from "@/types/types";
 import { FiltersEventType } from "@/types/types";
@@ -29,7 +28,6 @@ import {
 
 import {
   AlertDialog,
-  AlertDialogTrigger,
   AlertDialogContent,
   AlertDialogHeader,
   AlertDialogTitle,
