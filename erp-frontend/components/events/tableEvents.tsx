@@ -89,6 +89,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
   const applyFilters = (newFilters: typeof filters) => {
     setFilters(newFilters);
     setFiltersOpen(false);
+    setCurrentPage(1);
   };
 
   return (

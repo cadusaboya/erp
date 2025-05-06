@@ -108,7 +108,10 @@ const TableResources: React.FC<TableResourcesProps> = ({
         setFilters={setFilters}
         open={filtersOpen}
         onClose={() => setFiltersOpen(false)}
-        applyFilters={setFilters}
+        applyFilters={(newFilters) => {
+          setFilters(newFilters);
+          setCurrentPage(1); // 👈 reset page when applying filters
+        }}
         clearFilters={() =>
           setFilters({ name: "", cpf_cnpj: "", email: "", telephone: "" })
         }
