@@ -13,6 +13,13 @@ from payments.models import Bill, Income
 from payments.serializers import BillSerializer, IncomeSerializer
 from collections import defaultdict
 from decimal import Decimal
+from rest_framework.pagination import PageNumberPagination
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 12
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 import locale
 try:
     locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
@@ -312,6 +319,7 @@ class EventDetailView(generics.RetrieveAPIView):
 
 class EventViewSet(viewsets.ModelViewSet):
     serializer_class = EventSerializer
+    pagination_class = StandardResultsSetPagination
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):

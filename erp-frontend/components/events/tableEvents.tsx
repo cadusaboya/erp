@@ -47,6 +47,9 @@ interface TableComponentProps {
   onEventCreated: () => void;
   filters: FiltersEventType;
   setFilters: (filters: FiltersEventType) => void;
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  totalCount: number;
 }
 
 const TableComponent: React.FC<TableComponentProps> = ({
@@ -55,6 +58,9 @@ const TableComponent: React.FC<TableComponentProps> = ({
   onEventCreated,
   filters,
   setFilters,
+  currentPage,
+  setCurrentPage,
+  totalCount,
 }) => {
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -63,11 +69,9 @@ const TableComponent: React.FC<TableComponentProps> = ({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
 
   const itemsPerPage = 12;
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-  const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   const handleEditClick = (event: Event) => {
     setSelectedEvent(event);
@@ -167,7 +171,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
           </TableRow>
         </TableHeader>
         <tbody>
-          {paginatedData.map((event) => (
+          {data.map((event) => (
             <TableRow key={event.id}>
               <TableCell>
                 {new Date(event.date + "T00:00:00").toLocaleDateString("pt-BR", {
@@ -207,47 +211,40 @@ const TableComponent: React.FC<TableComponentProps> = ({
         <PaginationContent>
           <PaginationItem>
             <PaginationPrevious
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
               className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
             />
           </PaginationItem>
 
-          {(() => {
-            const pages = [];
-            const showPages = new Set<number>();
+          {currentPage > 2 && (
+            <>
+              <PaginationItem>
+                <PaginationLink onClick={() => setCurrentPage(1)}>1</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <span className="px-2">...</span>
+              </PaginationItem>
+            </>
+          )}
 
-            showPages.add(1);
-            showPages.add(totalPages);
-            showPages.add(currentPage);
-            if (currentPage > 1) showPages.add(currentPage - 1);
-            if (currentPage < totalPages) showPages.add(currentPage + 1);
+          <PaginationItem>
+            <PaginationLink isActive>{currentPage}</PaginationLink>
+          </PaginationItem>
 
-            let lastPage = 0;
-            for (let i = 1; i <= totalPages; i++) {
-              if (showPages.has(i)) {
-                if (lastPage && i - lastPage > 1) {
-                  pages.push(<PaginationItem key={`ellipsis-${i}`}><span className="px-2">...</span></PaginationItem>);
-                }
-                pages.push(
-                  <PaginationItem key={i}>
-                    <PaginationLink
-                      isActive={i === currentPage}
-                      onClick={() => setCurrentPage(i)}
-                    >
-                      {i}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-                lastPage = i;
-              }
-            }
-            return pages;
-          })()}
-
+          {currentPage < totalPages - 1 && (
+            <>
+              <PaginationItem>
+                <span className="px-2">...</span>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink onClick={() => setCurrentPage(totalPages)}>{totalPages}</PaginationLink>
+              </PaginationItem>
+            </>
+          )}
 
           <PaginationItem>
             <PaginationNext
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
               className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
             />
           </PaginationItem>

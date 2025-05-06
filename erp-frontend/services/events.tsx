@@ -2,7 +2,11 @@ import { FiltersEventType } from "@/types/types";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
-export const fetchEvents = async (filters: FiltersEventType = {}) => {
+export const fetchEvents = async (
+  filters: FiltersEventType = {},
+  page: number = 1,
+  pageSize: number = 12
+) => {
   try {
     const token = localStorage.getItem("token");
     if (!token) throw new Error("Token não encontrado");
@@ -19,9 +23,10 @@ export const fetchEvents = async (filters: FiltersEventType = {}) => {
       filters.type.forEach((t) => params.append("type", t));
     }
 
-    const queryString = params.toString() ? `?${params.toString()}` : "";
+    // ✅ Paginação
+    params.append("page", page.toString());
 
-    const response = await fetch(`${API_BASE_URL}/events/${queryString}`, {
+    const response = await fetch(`${API_BASE_URL}/events/?${params.toString()}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -30,12 +35,13 @@ export const fetchEvents = async (filters: FiltersEventType = {}) => {
 
     if (!response.ok) throw new Error("Erro ao buscar eventos");
 
-    return await response.json(); // Assuming { events: [...] }
+    return await response.json(); // ✅ Esperado: { results: [...], count: N }
   } catch (error) {
     console.error("Erro ao buscar eventos:", error);
-    return [];
+    return { results: [], count: 0 };
   }
 };
+
 
 export const createEvent = async (eventData: any) => {
   try {

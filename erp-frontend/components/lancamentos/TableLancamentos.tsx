@@ -175,48 +175,47 @@ const TableComponent: React.FC<TableComponentProps> = ({
       </Table>
 
       <Pagination className="mt-4 justify-center">
-      <PaginationContent>
-        <PaginationItem>
-          <PaginationPrevious
-            onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
-            className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-          />
-        </PaginationItem>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+              className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+            />
+          </PaginationItem>
 
-        {currentPage > 2 && (
-          <>
-            <PaginationItem>
-              <PaginationLink onClick={() => setCurrentPage(1)}>1</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <span className="px-2">...</span>
-            </PaginationItem>
-          </>
-        )}
+          {currentPage > 2 && (
+            <>
+              <PaginationItem>
+                <PaginationLink onClick={() => setCurrentPage(1)}>1</PaginationLink>
+              </PaginationItem>
+              <PaginationItem>
+                <span className="px-2">...</span>
+              </PaginationItem>
+            </>
+          )}
 
-        <PaginationItem>
-          <PaginationLink isActive>{currentPage}</PaginationLink>
-        </PaginationItem>
+          <PaginationItem>
+            <PaginationLink isActive>{currentPage}</PaginationLink>
+          </PaginationItem>
 
-        {currentPage < totalPages - 1 && (
-          <>
-            <PaginationItem>
-              <span className="px-2">...</span>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink onClick={() => setCurrentPage(totalPages)}>{totalPages}</PaginationLink>
-            </PaginationItem>
-          </>
-        )}
+          {currentPage < totalPages - 1 && (
+            <>
+              <PaginationItem>
+                <span className="px-2">...</span>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink onClick={() => setCurrentPage(totalPages)}>{totalPages}</PaginationLink>
+              </PaginationItem>
+            </>
+          )}
 
-        <PaginationItem>
-          <PaginationNext
-            onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
-            className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-          />
-        </PaginationItem>
-      </PaginationContent>
-
+          <PaginationItem>
+            <PaginationNext
+              onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+              className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+            />
+          </PaginationItem>
+        </PaginationContent>
       </Pagination>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

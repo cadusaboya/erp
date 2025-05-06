@@ -16,24 +16,30 @@ export default function Page() {
     maxValue: "",
     type: [],
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const loadEvents = async (activeFilters: FiltersEventType) => {
-    const fetchedData = await fetchEvents(activeFilters);
-    setData(fetchedData);
+  const loadEvents = async (activeFilters: FiltersEventType, page = 1) => {
+    const response = await fetchEvents(activeFilters, page); // ✅ usa paginação
+    setData(response.results);
+    setTotalCount(response.count);
   };
 
   useEffect(() => {
-    loadEvents(filters);
-  }, [filters]);
+    loadEvents(filters, currentPage);
+  }, [filters, currentPage]);
 
   return (
     <div className="p-6">
       <TableComponent
         title="Eventos"
         data={data}
-        filters={filters}                  // ✅ Pass filters to child
-        setFilters={setFilters}            // ✅ Pass setter to child
-        onEventCreated={() => loadEvents(filters)} // Refresh events when needed
+        filters={filters}
+        setFilters={setFilters}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        totalCount={totalCount}
+        onEventCreated={() => loadEvents(filters, currentPage)}
       />
     </div>
   );
