@@ -15,7 +15,14 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical } from "lucide-react";
-import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext, PaginationLink } from "@/components/ui/pagination";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationLink,
+} from "@/components/ui/pagination";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -30,7 +37,6 @@ import {
 
 import { deletePayment } from "@/services/lancamentos";
 
-
 interface BankOption {
   id: number;
   name: string;
@@ -43,26 +49,36 @@ interface TableComponentProps {
   filters: FilterPaymentType;
   setFilters: (filters: FilterPaymentType) => void;
   bankOptions: BankOption[];
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
+  totalCount: number;
 }
 
-const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpdated, filters, setFilters, bankOptions }) => {
+const TableComponent: React.FC<TableComponentProps> = ({
+  data,
+  title,
+  onOrderUpdated,
+  filters,
+  setFilters,
+  bankOptions,
+  currentPage,
+  setCurrentPage,
+  totalCount,
+}) => {
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState<PaymentRecord | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
 
   const itemsPerPage = 12;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   const applyFilters = (newFilters: FilterPaymentType) => {
     setFilters(newFilters);
     setFiltersOpen(false);
     setCurrentPage(1);
   };
-
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-  const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleEdit = (payment: PaymentRecord) => {
     setSelectedPayment(payment);
@@ -71,7 +87,6 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
 
   return (
     <div className="p-6 bg-white shadow-lg rounded-lg">
-      {/* Header */}
       <div className="flex justify-between mb-4">
         <h2 className="text-xl font-semibold">{title}</h2>
         <div className="flex gap-4">
@@ -79,7 +94,6 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
         </div>
       </div>
 
-      {/* Filters */}
       <Filters<FilterPaymentType>
         filters={filters}
         setFilters={setFilters}
@@ -103,12 +117,11 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
           { key: "person", type: "text", label: "Pessoa", placeholder: "Pessoa" },
           { key: "minValue", type: "number", label: "Valor Mínimo", placeholder: "Valor Mínimo" },
           { key: "maxValue", type: "number", label: "Valor Máximo", placeholder: "Valor Máximo" },
-          { key: "bank_name", type: "checkboxes", label: "Banco", options: bankOptions.map(bank => bank.name)},
+          { key: "bank_name", type: "checkboxes", label: "Banco", options: bankOptions.map(bank => bank.name) },
           { key: "type", type: "checkboxes", label: "Tipo", options: ["Despesa", "Receita"] },
         ]}
       />
 
-      {/* Table */}
       <Table>
         <TableHeader>
           <TableRow>
@@ -123,7 +136,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
           </TableRow>
         </TableHeader>
         <tbody>
-          {paginatedData.map((payment) => (
+          {data.map((payment) => (
             <TableRow key={`${payment.id}`}>
               <TableCell>{payment.bill_id ? "Despesa" : "Receita"}</TableCell>
               <TableCell>
@@ -162,54 +175,48 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
       </Table>
 
       <Pagination className="mt-4 justify-center">
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-            />
-          </PaginationItem>
+      <PaginationContent>
+        <PaginationItem>
+          <PaginationPrevious
+            onClick={() => setCurrentPage(Math.max(currentPage - 1, 1))}
+            className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+          />
+        </PaginationItem>
 
-          {(() => {
-            const pages = [];
-            const showPages = new Set<number>();
+        {currentPage > 2 && (
+          <>
+            <PaginationItem>
+              <PaginationLink onClick={() => setCurrentPage(1)}>1</PaginationLink>
+            </PaginationItem>
+            <PaginationItem>
+              <span className="px-2">...</span>
+            </PaginationItem>
+          </>
+        )}
 
-            showPages.add(1);
-            showPages.add(totalPages);
-            showPages.add(currentPage);
-            if (currentPage > 1) showPages.add(currentPage - 1);
-            if (currentPage < totalPages) showPages.add(currentPage + 1);
+        <PaginationItem>
+          <PaginationLink isActive>{currentPage}</PaginationLink>
+        </PaginationItem>
 
-            let lastPage = 0;
-            for (let i = 1; i <= totalPages; i++) {
-              if (showPages.has(i)) {
-                if (lastPage && i - lastPage > 1) {
-                  pages.push(<PaginationItem key={`ellipsis-${i}`}><span className="px-2">...</span></PaginationItem>);
-                }
-                pages.push(
-                  <PaginationItem key={i}>
-                    <PaginationLink
-                      isActive={i === currentPage}
-                      onClick={() => setCurrentPage(i)}
-                    >
-                      {i}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-                lastPage = i;
-              }
-            }
-            return pages;
-          })()}
+        {currentPage < totalPages - 1 && (
+          <>
+            <PaginationItem>
+              <span className="px-2">...</span>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationLink onClick={() => setCurrentPage(totalPages)}>{totalPages}</PaginationLink>
+            </PaginationItem>
+          </>
+        )}
 
+        <PaginationItem>
+          <PaginationNext
+            onClick={() => setCurrentPage(Math.min(currentPage + 1, totalPages))}
+            className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+          />
+        </PaginationItem>
+      </PaginationContent>
 
-          <PaginationItem>
-            <PaginationNext
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-            />
-          </PaginationItem>
-        </PaginationContent>
       </Pagination>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -236,7 +243,6 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* EditDialog */}
       {selectedPayment && (
         <EditDialog
           open={editDialogOpen}
@@ -247,7 +253,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
             date: selectedPayment.date,
             description: selectedPayment.description || "",
             doc_number: selectedPayment.doc_number,
-            bank: String(selectedPayment.bank || ""), // ✅ bank ID as string
+            bank: String(selectedPayment.bank || ""),
           }}
           fields={[
             { key: "value", type: "number", label: "Valor", placeholder: "R$ 0,00" },
@@ -260,7 +266,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ data, title, onOrderUpd
               label: "Banco",
               options: bankOptions.map((bank) => ({
                 label: bank.name,
-                value: String(bank.id), // ✅ using real ID here
+                value: String(bank.id),
               })),
             },
           ]}

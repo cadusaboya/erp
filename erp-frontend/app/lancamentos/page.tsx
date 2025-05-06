@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import TableComponent from "@/components/lancamentos/TableLancamentos";
-import { fetchPayments } from "@/services/lancamentos"; // updated to use fetchPayments
+import { fetchPayments } from "@/services/lancamentos";
 import { fetchBanks } from "@/services/banks";
-import { PaymentRecord, FilterPaymentType } from "@/types/types"; // assuming you'll have a new type for payments
+import { PaymentRecord, FilterPaymentType } from "@/types/types";
 
 interface BankOption {
   id: number;
@@ -22,35 +22,41 @@ export default function Page() {
     minValue: "",
     maxValue: "",
     type: ["Despesa", "Receita"],
-    bank_name: [], // ⬅️ initially empty
+    bank_name: [],
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const loadPayments = async (appliedFilters: FilterPaymentType = filters) => {
-    const paymentsData = await fetchPayments(appliedFilters);
-    setData(paymentsData);
+  const loadPayments = async (appliedFilters: FilterPaymentType = filters, page = currentPage) => {
+    const response = await fetchPayments(appliedFilters, page);
+    setData(response.results);
+    setTotalCount(response.count);
   };
 
   const loadBanks = async () => {
     const banks = await fetchBanks();
-    setBankOptions(banks); // Don't map to just names
+    setBankOptions(banks);
   };
 
   useEffect(() => {
     loadBanks();
   }, []);
-  
+
   useEffect(() => {
-    loadPayments(filters);
-  }, [filters]);
+    loadPayments(filters, currentPage);
+  }, [filters, currentPage]);
 
   return (
     <div className="p-6">
-      <TableComponent 
-        data={data} 
-        title="Pagamentos" 
-        onOrderUpdated={() => loadPayments(filters)} 
-        filters={filters} 
+      <TableComponent
+        data={data}
+        title="Pagamentos"
+        onOrderUpdated={() => loadPayments(filters, currentPage)}
+        filters={filters}
         setFilters={setFilters}
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        totalCount={totalCount}
         bankOptions={bankOptions}
       />
     </div>

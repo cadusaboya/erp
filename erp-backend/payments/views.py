@@ -771,6 +771,7 @@ class IncomeViewSet(viewsets.ModelViewSet):
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
+    pagination_class = StandardResultsSetPagination
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):

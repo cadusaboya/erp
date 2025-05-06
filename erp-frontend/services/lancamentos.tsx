@@ -8,7 +8,11 @@ const getToken = () => {
   return token;
 };
 
-export const fetchPayments = async (filters: FilterPaymentType = {}) => {
+export const fetchPayments = async (
+  filters: FilterPaymentType = {},
+  page: number = 1,
+  pageSize: number = 12
+) => {
   const token = getToken();
   const params = new URLSearchParams();
 
@@ -17,7 +21,7 @@ export const fetchPayments = async (filters: FilterPaymentType = {}) => {
   if (filters.person) params.append("person", filters.person);
   if (filters.minValue) params.append("minValue", filters.minValue);
   if (filters.maxValue) params.append("maxValue", filters.maxValue);
-  
+
   if (filters.type && filters.type.length > 0) {
     filters.type.forEach((t) => params.append("type", t));
   }
@@ -26,9 +30,11 @@ export const fetchPayments = async (filters: FilterPaymentType = {}) => {
     filters.bank_name.forEach((b) => params.append("bank_name", b));
   }
 
-  // ✅ Agora usando os novos campos corretos:
   if (filters.bill_id) params.append("bill_id", filters.bill_id.toString());
   if (filters.income_id) params.append("income_id", filters.income_id.toString());
+
+  // ✅ Paginação
+  params.append("page", page.toString());
 
   const response = await fetch(`${API_BASE_URL}/payments/payments/?${params.toString()}`, {
     headers: {
@@ -38,8 +44,9 @@ export const fetchPayments = async (filters: FilterPaymentType = {}) => {
 
   if (!response.ok) throw new Error("Erro ao buscar pagamentos");
 
-  return await response.json();
+  return await response.json(); // ✅ Esperado: { results, count }
 };
+
 
 
 export const createPayment = async (data: PaymentCreatePayload) => {
