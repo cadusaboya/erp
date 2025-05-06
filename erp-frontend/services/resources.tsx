@@ -157,8 +157,7 @@ export const searchResources = async (
     const params = new URLSearchParams();
     if (query) params.append("name", query); // ou "name", dependendo da sua API
 
-    const response = await fetch(
-      `http://127.0.0.1:8000/clients/${type}/?${params.toString()}`,
+    const response = await fetch(`${API_URL}/clients/${type}/?${params.toString()}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
