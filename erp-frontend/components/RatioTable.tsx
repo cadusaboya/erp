@@ -27,7 +27,9 @@ const RatioTable: React.FC<RateioTableProps> = ({
 
   const handleChange = (index: number, field: keyof RateioItem, value: string) => {
     const updated = [...allocations];
-    updated[index][field] = value;
+    if (field === "event" || field === "chart_account" || field === "value") {
+      updated[index][field] = value;
+    }
     setAllocations(updated);
   };
 
