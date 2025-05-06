@@ -5,12 +5,14 @@ import TableComponent from "@/components/events/tableEvents";
 import { fetchEvents } from "@/services/events";
 import { Event, FiltersEventType } from "@/types/types";
 
+const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+
 export default function Page() {
   const [data, setData] = useState<Event[]>([]);
   const [filters, setFilters] = useState<FiltersEventType>({
     event_name: "",
     client: "",
-    startDate: "",
+    startDate: today,
     endDate: "",
     minValue: "",
     maxValue: "",

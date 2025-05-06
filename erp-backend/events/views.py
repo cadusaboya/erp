@@ -352,7 +352,7 @@ class EventViewSet(viewsets.ModelViewSet):
         if event_types:
             queryset = queryset.filter(type__in=event_types)
 
-        return queryset
+        return queryset.order_by("date")
 
     def perform_create(self, serializer):
         # Associate the new supplier with the authenticated user
