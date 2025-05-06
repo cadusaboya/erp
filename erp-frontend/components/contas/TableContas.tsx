@@ -46,6 +46,9 @@ interface BankOption {
 
 interface TableComponentProps {
   data: FinanceRecord[];
+  totalCount: number;
+  currentPage: number;
+  setCurrentPage: (page: number) => void;
   title: string;
   type: "bill" | "income";
   onRecordUpdated: () => void;
@@ -56,6 +59,9 @@ interface TableComponentProps {
 
 const TableComponent: React.FC<TableComponentProps> = ({
   data,
+  totalCount,
+  currentPage,
+  setCurrentPage,
   title,
   type,
   onRecordUpdated,
@@ -69,14 +75,12 @@ const TableComponent: React.FC<TableComponentProps> = ({
   const [selectedRecord, setSelectedRecord] = useState<FinanceRecord | null>(null);
   const [paymentsDialogOpen, setPaymentsDialogOpen] = useState(false);
   const [payments, setPayments] = useState<any[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
   const [createPaymentOpen, setCreatePaymentOpen] = useState(false);
   const [recordToPay, setRecordToPay] = useState<FinanceRecord | null>(null);
-  const [deleteOpen, setDeleteOpen] = useState(false); // 🧨 delete dialog
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const itemsPerPage = 12;
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-  const paginatedData = data.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   const handleEditClick = (record: FinanceRecord) => {
     setSelectedRecord(record);
@@ -109,19 +113,16 @@ const TableComponent: React.FC<TableComponentProps> = ({
 
   const handleSubmitPayment = async (formData: Record<string, any>) => {
     if (!recordToPay) return;
-
     const payload: PaymentCreatePayload = {
       ...formData,
       ...(type === "bill" ? { bill_id: Number(recordToPay.id) } : { income_id: Number(recordToPay.id) }),
     };
-
     await createPayment(payload);
     onRecordUpdated();
   };
 
   return (
     <div className="p-6 bg-white shadow-lg rounded-lg">
-      {/* Header */}
       <div className="flex justify-between mb-4">
         <h2 className="text-xl font-semibold">{title}</h2>
         <div className="flex gap-4">
@@ -132,7 +133,6 @@ const TableComponent: React.FC<TableComponentProps> = ({
         </div>
       </div>
 
-      {/* Filters */}
       <Filters<FilterFinanceRecordType>
         filters={filters}
         setFilters={setFilters}
@@ -140,15 +140,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
         onClose={() => setFiltersOpen(false)}
         applyFilters={applyFilters}
         clearFilters={() =>
-          setFilters({
-            startDate: "",
-            endDate: "",
-            person: "",
-            description: "",
-            status: ["em aberto", "vencido", "parcial"],
-            minValue: "",
-            maxValue: "",
-          })
+          setFilters({ startDate: "", endDate: "", person: "", description: "", status: ["em aberto", "vencido", "parcial"], minValue: "", maxValue: "" })
         }
         filterFields={[
           { key: "startDate", type: "date", label: "Data Inicial", placeholder: "Data Inicial" },
@@ -157,16 +149,10 @@ const TableComponent: React.FC<TableComponentProps> = ({
           { key: "description", type: "text", label: "Descrição", placeholder: "Descrição" },
           { key: "minValue", type: "number", label: "Valor Mínimo", placeholder: "Valor Mínimo" },
           { key: "maxValue", type: "number", label: "Valor Máximo", placeholder: "Valor Máximo" },
-          {
-            key: "status",
-            type: "checkboxes",
-            label: "Tipo",
-            options: ["em aberto", "vencido", "parcial", "pago"],
-          },
+          { key: "status", type: "checkboxes", label: "Tipo", options: ["em aberto", "vencido", "parcial", "pago"] },
         ]}
       />
 
-      {/* Table */}
       <Table>
         <TableHeader>
           <TableRow>
@@ -180,50 +166,28 @@ const TableComponent: React.FC<TableComponentProps> = ({
           </TableRow>
         </TableHeader>
         <tbody>
-          {paginatedData.map((record) => (
+          {data.map((record) => (
             <TableRow key={`${record.id}-${record.status}`}>
-              <TableCell>{new Date(record.date_due).toLocaleDateString("pt-BR")}</TableCell>
+              <TableCell>{new Date(record.date_due + "T00:00:00").toLocaleDateString("pt-BR", { timeZone: "UTC" })}</TableCell>
               <TableCell>{record.person_name}</TableCell>
-              <TableCell>{record.description}</TableCell>
+              <TableCell><div className="max-w-[200px] truncate" title={record.description}>{record.description}</div></TableCell>
               <TableCell>{record.doc_number || "N/A"}</TableCell>
               <TableCell>
-                <span
-                  className={`px-2 py-1 rounded-lg text-sm font-semibold ${
-                    record.status === "vencido"
-                      ? "bg-red-100 text-red-600"
-                      : record.status === "pago"
-                      ? "bg-green-100 text-green-600"
-                      : "bg-yellow-100 text-yellow-600"
-                  }`}
-                >
+                <span className={`px-2 py-1 rounded-lg text-sm font-semibold ${record.status === "vencido" ? "bg-red-100 text-red-600" : record.status === "pago" ? "bg-green-100 text-green-600" : "bg-yellow-100 text-yellow-600"}`}>
                   {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
                 </span>
               </TableCell>
-              <TableCell>
-                {record.status === "parcial"
-                  ? formatCurrencyBR(record.remaining_value)
-                  : formatCurrencyBR(record.value)}
-              </TableCell>
+              <TableCell>{record.status === "parcial" ? formatCurrencyBR(record.remaining_value) : formatCurrencyBR(record.value)}</TableCell>
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
+                    <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => setTimeout(() => handleEditClick(record), 0)}>
-                      Editar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTimeout(() => handlePaymentsClick(record), 0)}>
-                      Pagamentos
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTimeout(() => handleNewPayment(record), 0)}>
-                      Pagar
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTimeout(() => handleDelete(record), 0)}>
-                      Excluir
-                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeout(() => handleEditClick(record), 0)}>Editar</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeout(() => handlePaymentsClick(record), 0)}>Pagamentos</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeout(() => handleNewPayment(record), 0)}>Pagar</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTimeout(() => handleDelete(record), 0)}>Excluir</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -241,16 +205,31 @@ const TableComponent: React.FC<TableComponentProps> = ({
             />
           </PaginationItem>
 
-          {[...Array(totalPages)].map((_, index) => {
-            const page = index + 1;
-            return (
-              <PaginationItem key={page}>
-                <PaginationLink isActive={page === currentPage} onClick={() => setCurrentPage(page)}>
-                  {page}
-                </PaginationLink>
+          {currentPage > 2 && (
+            <>
+              <PaginationItem>
+                <PaginationLink onClick={() => setCurrentPage(1)}>1</PaginationLink>
               </PaginationItem>
-            );
-          })}
+              <PaginationItem>
+                <span className="px-2">...</span>
+              </PaginationItem>
+            </>
+          )}
+
+          <PaginationItem>
+            <PaginationLink isActive>{currentPage}</PaginationLink>
+          </PaginationItem>
+
+          {currentPage < totalPages - 1 && (
+            <>
+              <PaginationItem>
+                <span className="px-2">...</span>
+              </PaginationItem>
+              <PaginationItem>
+                <PaginationLink onClick={() => setCurrentPage(totalPages)}>{totalPages}</PaginationLink>
+              </PaginationItem>
+            </>
+          )}
 
           <PaginationItem>
             <PaginationNext
@@ -262,67 +241,32 @@ const TableComponent: React.FC<TableComponentProps> = ({
       </Pagination>
 
       {/* Dialogs */}
-      <EditContaDialog
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
-        onRecordUpdated={onRecordUpdated}
-        record={selectedRecord}
-        type={type}
-      />
-      <CreateContaDialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onRecordCreated={onRecordUpdated}
-        type={type}
-      />
-      <PaymentsDialog
-        open={paymentsDialogOpen}
-        onClose={() => setPaymentsDialogOpen(false)}
-        payments={payments}
-        totalValue={selectedRecord?.value || "0.00"}
-      />
-      <CreateDialog
-        open={createPaymentOpen}
-        onClose={() => setCreatePaymentOpen(false)}
-        title="Registrar Pagamento"
-        fields={[
-          { key: "date", type: "date", label: "Data", placeholder: "" },
-          { key: "value", type: "number", label: "Valor", placeholder: "R$ 0.00" },
-          { key: "description", type: "text", label: "Descrição", placeholder: "Motivo do pagamento" },
-          {
-            key: "bank",
-            type: "select",
-            label: "Banco",
-            options: bankOptions.map((bank) => ({
-              label: bank.name,
-              value: String(bank.id),
-            })),
-          },
-          { key: "doc_number", type: "text", label: "Documento", placeholder: "Nº do comprovante" },
-        ]}
-        onSubmit={handleSubmitPayment}
-      />
+      <EditContaDialog open={editOpen} onClose={() => setEditOpen(false)} onRecordUpdated={onRecordUpdated} record={selectedRecord} type={type} />
+      <CreateContaDialog open={createOpen} onClose={() => setCreateOpen(false)} onRecordCreated={onRecordUpdated} type={type} />
+      <PaymentsDialog open={paymentsDialogOpen} onClose={() => setPaymentsDialogOpen(false)} payments={payments} totalValue={selectedRecord?.value || "0.00"} />
+      <CreateDialog open={createPaymentOpen} onClose={() => setCreatePaymentOpen(false)} title="Registrar Pagamento" fields={[
+        { key: "date", type: "date", label: "Data", placeholder: "" },
+        { key: "value", type: "number", label: "Valor", placeholder: "R$ 0.00" },
+        { key: "description", type: "text", label: "Descrição", placeholder: "Motivo do pagamento" },
+        { key: "bank", type: "select", label: "Banco", options: bankOptions.map((bank) => ({ label: bank.name, value: String(bank.id) })) },
+        { key: "doc_number", type: "text", label: "Documento", placeholder: "Nº do comprovante" },
+      ]} onSubmit={handleSubmitPayment} />
 
-      {/* Delete Confirmation */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta conta será excluída permanentemente e não poderá ser recuperada.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Esta conta será excluída permanentemente e não poderá ser recuperada.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeleteOpen(false)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                if (!selectedRecord) return;
-                await deleteRecord(type, selectedRecord.id);
-                setDeleteOpen(false);
-                setSelectedRecord(null);
-                onRecordUpdated();
-              }}
-            >
+            <AlertDialogAction onClick={async () => {
+              if (!selectedRecord) return;
+              await deleteRecord(type, selectedRecord.id);
+              setDeleteOpen(false);
+              setSelectedRecord(null);
+              onRecordUpdated();
+            }}>
               Sim
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -33,6 +33,7 @@ class Accrual(models.Model):
 
 class Income(Accrual):
     person = models.ForeignKey('clients.Client', on_delete=models.PROTECT, related_name='incomes')
+    legacy = models.IntegerField(unique=False)
 
     def __str__(self):
         return f"Receita de {self.client.name} - {self.value}"
@@ -40,6 +41,7 @@ class Income(Accrual):
 
 class Bill(Accrual):
     person = models.ForeignKey('clients.Supplier', on_delete=models.PROTECT, related_name='bills')
+    legacy = models.IntegerField(unique=False)
 
     def __str__(self):
         return f"Conta de {self.supplier.name} - {self.value}"
@@ -50,8 +52,8 @@ class Payment(models.Model):
     income = models.ForeignKey('Income', on_delete=models.CASCADE, null=True, blank=True, related_name='payments')
     description = models.CharField(max_length=255, blank=True, null=True)
     date = models.DateField()
-    value = models.DecimalField(max_digits=10, decimal_places=2)
-    bank = models.ForeignKey('Bank', on_delete=models.PROTECT)
+    value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    bank = models.ForeignKey('Bank', on_delete=models.PROTECT, null=True, blank=True)
     doc_number = models.CharField(max_length=100, blank=True)
 
     @property
@@ -83,6 +85,7 @@ class Bank(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bank_accounts")
     name = models.CharField(max_length=255)
     balance = models.DecimalField(max_digits=12, decimal_places=2)
+    legacy = models.IntegerField(unique=False)
 
     def __str__(self):
         return f"{self.name} - R$ {self.balance:.2f}"

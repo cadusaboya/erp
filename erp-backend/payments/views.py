@@ -15,11 +15,11 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from events.utils.pdffunctions import draw_header, draw_rows, check_page_break
 from events.models import Event
-from decimal import Decimal
 from datetime import datetime
 from collections import defaultdict
 from functools import reduce
-
+from decimal import Decimal, ROUND_HALF_UP
+from rest_framework.pagination import PageNumberPagination
 import locale
 try:
     locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
@@ -28,6 +28,11 @@ except:
 
 def format_currency(value: Decimal) -> str:
     return locale.currency(value, grouping=True)
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 12
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -232,10 +237,7 @@ def generate_chart_account_balance(request):
             chartaccount_totals[allocation.chart_account_id] += proportional_paid
 
     # Buscar contas usadas + parents
-    used_accounts = ChartAccount.objects.filter(id__in=chartaccount_totals.keys()).select_related("parent")
-    parent_ids = [acc.parent_id for acc in used_accounts if acc.parent_id]
-    all_ids = set(chartaccount_totals.keys()) | set(parent_ids)
-    chart_accounts = ChartAccount.objects.filter(id__in=all_ids).select_related("parent")
+    chart_accounts = ChartAccount.objects.all().select_related("parent")
 
     account_map = {acc.id: acc for acc in chart_accounts}
     parent_children = defaultdict(list)
@@ -299,8 +301,6 @@ def generate_chart_account_balance(request):
             return
 
         total = totals_with_children.get(account_id, Decimal("0.00"))
-        if total == 0:
-            return
 
         font_size = 9
         if indent == 0:
@@ -690,6 +690,7 @@ def generate_payments_report(request):
 
 class BillViewSet(viewsets.ModelViewSet):   
     serializer_class = BillSerializer
+    pagination_class = StandardResultsSetPagination
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
@@ -730,6 +731,7 @@ class BillViewSet(viewsets.ModelViewSet):
 class IncomeViewSet(viewsets.ModelViewSet):
     serializer_class = IncomeSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
         user = self.request.user
@@ -842,7 +844,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
         total_paid = sum(p.value for p in existing_payments)
 
-        if total_paid > parent.value:
+        if total_paid > parent.value + Decimal("0.01"):
             raise ValidationError("Total pago excede o valor da conta/receita. Pagamento não registrado.")
 
         if total_paid == parent.value:
@@ -872,35 +874,17 @@ class PaymentViewSet(viewsets.ModelViewSet):
         old_bill = old_instance.bill
         old_income = old_instance.income
 
+        # Save updated payment
         payment = serializer.save(user=user)
 
         parent = payment.bill or payment.income
         if not parent:
             raise ValidationError("Pagamento inválido: objeto relacionado não encontrado.")
 
-        # 👇 Auto-fill description if not provided on update
+        # Auto-fill description if not provided
         if not payment.description and parent.description:
             payment.description = parent.description
             payment.save(update_fields=["description"])
-
-        # Recalculate total paid
-        existing_payments = Payment.objects.filter(
-            Q(bill=payment.bill) | Q(income=payment.income)
-        )
-
-        total_paid = sum(p.value for p in existing_payments)
-
-        if total_paid > parent.value:
-            raise ValidationError("Total pago excede o valor da conta/receita. Pagamento não atualizado.")
-
-        if total_paid == parent.value:
-            parent.status = "pago"
-        elif total_paid > 0:
-            parent.status = "parcial"
-        else:
-            parent.status = "em aberto"
-
-        parent.save()
 
         # Adjust bank balance
         value_diff = payment.value - old_value

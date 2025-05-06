@@ -148,11 +148,11 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
                     <SelectValue placeholder="Selecione o centro de custo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Operacional</SelectItem>
-                    <SelectItem value="2">Administração</SelectItem>
+                    <SelectItem value="1">Administração</SelectItem>
+                    <SelectItem value="2">Produção de Eventos</SelectItem>
                     <SelectItem value="3">Diretoria</SelectItem>
-                    <SelectItem value="4">Ordem de Pagamento</SelectItem>
-                    <SelectItem value="5">Produção de Eventos</SelectItem>
+                    <SelectItem value="11">Ordem de Pagamento</SelectItem>
+                    <SelectItem value="12">Boleto</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

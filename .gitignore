@@ -50,3 +50,5 @@ dist/
 *.swo
 *.bak
 *.orig
+
+data-migration/

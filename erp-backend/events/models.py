@@ -21,6 +21,7 @@ class Event(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)  # Link to Client model
     date = models.DateField()
     total_value = models.DecimalField(max_digits=10, decimal_places=2)
+    legacy = models.IntegerField(unique=False)
 
     def __str__(self):
         return f"{self.event_name} - {self.client.name} ({self.date})"

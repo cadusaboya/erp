@@ -31,15 +31,18 @@ export default function Page() {
     description: "",
     docNumber: "",
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   const loadBanks = async () => {
     const banks = await fetchBanks();
-    setBankOptions(banks); // Don't map to just names
+    setBankOptions(banks);
   };
 
-  const loadRecords = async (activeFilters: FiltersParams) => {
-    const fetchedData = await fetchRecords("bill", activeFilters);
-    setData(fetchedData);
+  const loadRecords = async (activeFilters: FiltersParams, page = 1) => {
+    const response = await fetchRecords("bill", activeFilters, page);
+    setData(response.results);
+    setTotalCount(response.count);
   };
 
   useEffect(() => {
@@ -47,8 +50,8 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    loadRecords(filters);
-  }, [filters]);
+    loadRecords(filters, currentPage);
+  }, [filters, currentPage]);
 
   return (
     <div className="flex">
@@ -57,9 +60,12 @@ export default function Page() {
           title="Contas a Pagar"
           data={data}
           type="bill"
-          filters={filters}                // ✅ Pass current filters
-          setFilters={setFilters}          // ✅ Pass setter to child
-          onRecordUpdated={() => loadRecords(filters)} // Refresh records when something changes
+          filters={filters}
+          setFilters={setFilters}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          totalCount={totalCount}
+          onRecordUpdated={() => loadRecords(filters, currentPage)}
           bankOptions={bankOptions}
         />
       </div>

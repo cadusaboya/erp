@@ -186,19 +186,38 @@ const TableResources: React.FC<TableResourcesProps> = ({
             />
           </PaginationItem>
 
-          {[...Array(totalPages)].map((_, index) => {
-            const page = index + 1;
-            return (
-              <PaginationItem key={page}>
-                <PaginationLink
-                  isActive={page === currentPage}
-                  onClick={() => setCurrentPage(page)}
-                >
-                  {page}
-                </PaginationLink>
-              </PaginationItem>
-            );
-          })}
+          {(() => {
+            const pages = [];
+            const showPages = new Set<number>();
+
+            showPages.add(1);
+            showPages.add(totalPages);
+            showPages.add(currentPage);
+            if (currentPage > 1) showPages.add(currentPage - 1);
+            if (currentPage < totalPages) showPages.add(currentPage + 1);
+
+            let lastPage = 0;
+            for (let i = 1; i <= totalPages; i++) {
+              if (showPages.has(i)) {
+                if (lastPage && i - lastPage > 1) {
+                  pages.push(<PaginationItem key={`ellipsis-${i}`}><span className="px-2">...</span></PaginationItem>);
+                }
+                pages.push(
+                  <PaginationItem key={i}>
+                    <PaginationLink
+                      isActive={i === currentPage}
+                      onClick={() => setCurrentPage(i)}
+                    >
+                      {i}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+                lastPage = i;
+              }
+            }
+            return pages;
+          })()}
+
 
           <PaginationItem>
             <PaginationNext

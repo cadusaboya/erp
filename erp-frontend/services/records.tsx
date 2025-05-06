@@ -18,11 +18,14 @@ const mapPersonId = (type: "bill" | "income", data: any) => {
   return mapped;
 };
 
-export const fetchRecords = async (type: "bill" | "income", filters: FilterFinanceRecordType = {}) => {
+export const fetchRecords = async (
+  type: "bill" | "income",
+  filters: FilterFinanceRecordType = {},
+  page = 1
+) => {
   try {
     const token = getToken();
 
-    // Build query params dynamically
     const params = new URLSearchParams();
 
     if (filters.startDate) params.append("start_date", filters.startDate);
@@ -30,13 +33,13 @@ export const fetchRecords = async (type: "bill" | "income", filters: FilterFinan
     if (filters.description) params.append("description", filters.description);
     if (filters.person) params.append("person", filters.person);
     if (filters.docNumber) params.append("doc_number", filters.docNumber);
-    if (filters.status && filters.status.length > 0) {
+    if (filters.status?.length) {
       filters.status.forEach((s) => params.append("status", s));
     }
 
-    const queryString = params.toString() ? `?${params.toString()}` : "";
+    params.append("page", page.toString());
 
-    const response = await fetch(`${API_BASE_URL}/payments/${type}s/${queryString}`, {
+    const response = await fetch(`${API_BASE_URL}/payments/${type}s/?${params.toString()}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -44,12 +47,14 @@ export const fetchRecords = async (type: "bill" | "income", filters: FilterFinan
     });
 
     if (!response.ok) throw new Error(`Erro ao buscar ${type}s`);
-    return await response.json();
+
+    return await response.json(); // Will return { count, next, previous, results }
   } catch (error) {
     console.error(`Erro ao buscar ${type}s:`, error);
-    return [];
+    return { count: 0, results: [] }; // safer fallback
   }
 };
+
 
 // ✅ Create record (bill or income)
 export const createRecord = async (type: "bill" | "income", formData: any) => {
