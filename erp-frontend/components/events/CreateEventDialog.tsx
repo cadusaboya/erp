@@ -18,7 +18,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { fetchResources } from "@/services/resources";
+import { fetchResources, searchResources } from "@/services/resources";
 import { createEvent } from "@/services/events";
 import { Event, Resource } from "@/types/types";
 import { Combobox } from "@/components/ui/combobox";
@@ -36,18 +36,6 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
 }) => {
   const { register, handleSubmit, reset, setValue, watch } = useForm<Event>();
   const [clients, setClients] = useState<Resource[]>([]);
-  const [clientsLoaded, setClientsLoaded] = useState(false);
-
-  useEffect(() => {
-    const loadEvents = async () => {
-      if (open && !clientsLoaded) {
-        const eventsData = await fetchResources("clients");
-        setClients(eventsData);
-        setClientsLoaded(true);
-      }
-    };
-    loadEvents();
-  }, [open, clientsLoaded]);
 
   const onSubmit = async (formData: Event) => {
     const success = await createEvent(formData);
@@ -96,6 +84,7 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
             <Combobox
               options={clients.map((c) => ({ label: c.name, value: String(c.id) }))}
               value={watch("client")}
+              loadOptions={(query) => searchResources("clients", query)}
               onChange={(val) => setValue("client", val)}
               placeholder="Selecione um Cliente"
             />

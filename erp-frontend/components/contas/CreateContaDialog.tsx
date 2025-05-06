@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { createRecord } from "@/services/records";
 import { fetchEvents } from "@/services/events";
-import { fetchResources } from "@/services/resources";
+import { fetchResources, searchResources } from "@/services/resources";
 import { fetchBanks } from "@/services/banks";
 import { fetchChartAccounts } from "@/services/chartaccounts";
 import {
@@ -131,6 +131,9 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
                   options={resources.map((r) => ({ label: r.name, value: String(r.id) }))}
                   value={person}
                   onChange={setPerson}
+                  loadOptions={(query) =>
+                                      searchResources(type === "income" ? "clients" : "suppliers", query)
+                                    }
                   placeholder={`Selecione ${type === "bill" ? "um Fornecedor" : "um Cliente"}`}
                 />
               </div>

@@ -24,23 +24,35 @@ interface ComboboxOption {
 }
 
 interface ComboboxProps {
-  options: ComboboxOption[]
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  disabled?: boolean
+  options?: ComboboxOption[]; // deixa opcional
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  loadOptions?: (query: string) => Promise<ComboboxOption[]>; // nova prop
 }
 
 export const Combobox: React.FC<ComboboxProps> = ({
-  options,
+  options = [],
   value,
   onChange,
   placeholder = "Selecione...",
   disabled = false,
+  loadOptions,
 }) => {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(false);
+  const [internalOptions, setInternalOptions] = React.useState<ComboboxOption[]>(options);
+  const [loading, setLoading] = React.useState(false);
 
-  const selectedLabel = options.find((o) => o.value === value)?.label
+  const selectedLabel = internalOptions.find((o) => o.value === value)?.label;
+
+  const handleSearch = async (query: string) => {
+    if (!loadOptions) return;
+    setLoading(true);
+    const results = await loadOptions(query);
+    setInternalOptions(results);
+    setLoading(false);
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -53,8 +65,8 @@ export const Combobox: React.FC<ComboboxProps> = ({
           className="justify-between px-3 py-2 text-sm font-normal"
           style={{
             width: `${Math.max(
-              ((selectedLabel || placeholder)?.length ?? 10) * 8 + 32, // +32 for padding & icon
-              150 // minimum width fallback
+              ((selectedLabel || placeholder)?.length ?? 10) * 8 + 32,
+              150
             )}px`,
           }}
         >
@@ -63,18 +75,25 @@ export const Combobox: React.FC<ComboboxProps> = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
-        <Command>
-          <CommandInput placeholder="Buscar..." className="h-9" />
+        <Command shouldFilter={!loadOptions}>
+          <CommandInput
+            placeholder="Buscar..."
+            className="h-9"
+            onValueChange={(query) => {
+              if (loadOptions) handleSearch(query);
+            }}
+          />
           <CommandList>
-            <CommandEmpty>Nenhum resultado.</CommandEmpty>
+            {loading && <CommandItem>Carregando...</CommandItem>}
+            {!loading && internalOptions.length === 0 && <CommandEmpty>Nenhum resultado.</CommandEmpty>}
             <CommandGroup>
-              {options.map((option) => (
+              {internalOptions.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label} // << ESSA é a mudança!
+                  value={option.label}
                   onSelect={() => {
-                    onChange(option.value) // mantém o id como resultado
-                    setOpen(false)
+                    onChange(option.value);
+                    setOpen(false);
                   }}
                 >
                   {option.label}
@@ -91,5 +110,5 @@ export const Combobox: React.FC<ComboboxProps> = ({
         </Command>
       </PopoverContent>
     </Popover>
-  )
-}
+  );
+};

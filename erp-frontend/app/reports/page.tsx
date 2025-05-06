@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
+import { searchEvents } from "@/services/events";
+import { searchResources } from "@/services/resources";
 
 export default function ReportsPage() {
   const [type, setType] = useState("bills");
@@ -147,6 +149,9 @@ export default function ReportsPage() {
                     label: p.name,
                     value: String(p.id),
                   }))}
+                  loadOptions={(query) =>
+                    searchResources(type === "incomes" ? "clients" : "suppliers", query)
+                  }
                   value={person}
                   onChange={setPerson}
                   placeholder={
@@ -163,6 +168,7 @@ export default function ReportsPage() {
                     label: ev.event_name,
                     value: String(ev.id),
                   }))}
+                  loadOptions={searchEvents}
                   value={eventId}
                   onChange={setEventId}
                   placeholder="Selecione um evento"

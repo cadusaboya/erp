@@ -145,3 +145,39 @@ export const fetchSingleResource = async (type: "clients" | "suppliers", id: num
 
   return await response.json();
 };
+
+export const searchResources = async (
+  type: "clients" | "suppliers",
+  query: string
+): Promise<{ label: string; value: string }[]> => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("Token não encontrado");
+
+    const params = new URLSearchParams();
+    if (query) params.append("name", query); // ou "name", dependendo da sua API
+
+    const response = await fetch(
+      `http://127.0.0.1:8000/clients/${type}/?${params.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) throw new Error("Erro ao buscar recursos");
+
+    const data = await response.json();
+
+    return (data.results || []).map((item: any) => ({
+      label: item.name,
+      value: String(item.id),
+    }));
+  } catch (error) {
+    console.error("Erro em searchResources:", error);
+    return [];
+  }
+};
+

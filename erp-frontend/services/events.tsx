@@ -42,6 +42,36 @@ export const fetchEvents = async (
   }
 };
 
+export const searchEvents = async (query: string) => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("Token não encontrado");
+
+    const params = new URLSearchParams();
+    if (query) params.append("event_name", query);
+    params.append("page", "1");
+    params.append("page_size", "10");
+
+    const response = await fetch(`${API_BASE_URL}/events/?${params.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) throw new Error("Erro ao buscar eventos");
+
+    const json = await response.json();
+    return json.results.map((ev: any) => ({
+      label: ev.event_name,
+      value: String(ev.id),
+    }));
+  } catch (error) {
+    console.error("Erro ao buscar eventos (search):", error);
+    return [];
+  }
+};
+
 
 export const createEvent = async (eventData: any) => {
   try {

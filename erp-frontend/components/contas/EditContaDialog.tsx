@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { fetchEvents, fetchSingleEvent } from "@/services/events";
-import { fetchResources, fetchSingleResource } from "@/services/resources";
+import { fetchResources, fetchSingleResource, searchResources } from "@/services/resources";
 import { fetchChartAccounts } from "@/services/chartaccounts";
 import { updateRecord } from "@/services/records";
 import RatioTable from "@/components/RatioTable";
@@ -148,6 +148,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
                     label: r.name,
                     value: String(r.id),
                   }))}
+                  loadOptions={(query) => searchResources(type === "income" ? "clients" : "suppliers", query)}
                   value={person}
                   onChange={setPerson}
                   placeholder={`Selecione ${type === "bill" ? "um Fornecedor" : "um Cliente"}`}
