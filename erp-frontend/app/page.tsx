@@ -5,7 +5,6 @@ import axios from "axios";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { API_URL } from "@/types/apiUrl";
-import { AxiosError } from "axios";
 
 export default function Home() {
   const [username, setUsername] = useState("");
