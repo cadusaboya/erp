@@ -52,7 +52,7 @@ export default function Home() {
         setMessage("Login successful! Redirecting...");
         setTimeout(() => (window.location.href = "/dashboard"), 1000);
       }
-    } catch (error) {
+    } catch (error: any) {
       const data = error.response?.data;
       const detailedError =
         data?.message ||
