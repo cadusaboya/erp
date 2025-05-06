@@ -122,34 +122,44 @@ const TableComponent: React.FC<TableComponentProps> = ({
         ]}
       />
 
-      <Table>
+      <Table className="table-fixed w-full">
         <TableHeader>
           <TableRow>
-            <TableCell>Tipo</TableCell>
-            <TableCell>Data</TableCell>
-            <TableCell>Pessoa</TableCell>
-            <TableCell>Descrição</TableCell>
-            <TableCell>Doc. de Pgto</TableCell>
-            <TableCell>Banco</TableCell>
-            <TableCell>Valor</TableCell>
-            <TableCell>Ações</TableCell>
+            <TableCell className="w-1/17 min-w-[40px]">Tipo</TableCell>
+            <TableCell className="w-1/17 min-w-[40px]">Data</TableCell>
+            <TableCell className="w-4/17 min-w-[180px]">Pessoa</TableCell>
+            <TableCell className="w-4/17 min-w-[180px]">Descrição</TableCell>
+            <TableCell className="w-1/17 min-w-[120px]">Doc. de Pgto</TableCell>
+            <TableCell className="w-1/17 min-w-[100px]">Banco</TableCell>
+            <TableCell className="w-1/17 min-w-[100px]">Valor</TableCell>
+            <TableCell className="w-1/17 min-w-[60px] text-center">Ações</TableCell>
           </TableRow>
         </TableHeader>
         <tbody>
           {data.map((payment) => (
-            <TableRow key={`${payment.id}`}>
-              <TableCell>{payment.bill_id ? "Despesa" : "Receita"}</TableCell>
-              <TableCell>
+            <TableRow key={payment.id} className="h-[56px] align-middle">
+              <TableCell className="w-1/17 min-w-[40px]">
+                {payment.bill_id ? "Despesa" : "Receita"}
+              </TableCell>
+              <TableCell className="w-1/17 min-w-[40px]">
                 {new Date(payment.date + "T00:00:00").toLocaleDateString("pt-BR", {
                   timeZone: "UTC",
                 })}
               </TableCell>
-              <TableCell>{payment.person_name}</TableCell>
-              <TableCell>{payment.description}</TableCell>
-              <TableCell>{payment.doc_number}</TableCell>
-              <TableCell>{payment.bank_name}</TableCell>
-              <TableCell>{formatCurrencyBR(payment.value)}</TableCell>
-              <TableCell>
+              <TableCell className="w-4/17 min-w-[180px]">
+                <div className="truncate" title={payment.person_name}>
+                  {payment.person_name}
+                </div>
+              </TableCell>
+              <TableCell className="w-4/17 min-w-[180px]">
+                <div className="truncate" title={payment.description}>
+                  {payment.description}
+                </div>
+              </TableCell>
+              <TableCell className="w-1/17 min-w-[120px]">{payment.doc_number}</TableCell>
+              <TableCell className="w-1/17 min-w-[100px]">{payment.bank_name}</TableCell>
+              <TableCell className="w-1/17 min-w-[100px]">{formatCurrencyBR(payment.value)}</TableCell>
+              <TableCell className="w-1/17 min-w-[60px] text-center">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">
@@ -160,10 +170,14 @@ const TableComponent: React.FC<TableComponentProps> = ({
                     <DropdownMenuItem onClick={() => setTimeout(() => handleEdit(payment), 0)}>
                       Editar
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTimeout(() => {
-                      setPaymentToDelete(payment);
-                      setDeleteDialogOpen(true);
-                    }, 0)}>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setTimeout(() => {
+                          setPaymentToDelete(payment);
+                          setDeleteDialogOpen(true);
+                        }, 0)
+                      }
+                    >
                       Excluir
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -173,6 +187,8 @@ const TableComponent: React.FC<TableComponentProps> = ({
           ))}
         </tbody>
       </Table>
+
+
 
       <Pagination className="mt-4 justify-center">
         <PaginationContent>

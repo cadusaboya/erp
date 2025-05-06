@@ -78,8 +78,8 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
             fetchBanks(),
             fetchChartAccounts(),
           ]);
-          setEvents(eventsData || []);
-          setResources(resourceData || []);
+          setEvents(eventsData.results || []);
+          setResources(resourceData.results || []);
           setBanks(banksData || []);
           setChartAccounts(chartAccountsData || []);
         } catch (error) {

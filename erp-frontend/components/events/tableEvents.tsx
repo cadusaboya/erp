@@ -159,30 +159,32 @@ const TableComponent: React.FC<TableComponentProps> = ({
         ]}
       />
 
-      <Table>
+    <Table className="table-fixed w-full">
         <TableHeader>
           <TableRow>
-            <TableCell>Data</TableCell>
-            <TableCell>Nome</TableCell>
-            <TableCell>Cliente</TableCell>
-            <TableCell>Tipo</TableCell>
-            <TableCell>Valor Total</TableCell>
-            <TableCell>Ações</TableCell>
+          <TableCell className="w-1/12 min-w-[80px]">Data</TableCell>
+          <TableCell className="w-3/12 min-w-[160px]">Cliente</TableCell>
+          <TableCell className="w-5/12 min-w-[240px]">Nome</TableCell>
+          <TableCell className="w-1/12 min-w-[80px]">Tipo</TableCell>
+          <TableCell className="w-2/12 min-w-[100px]">Valor Total</TableCell>
+          <TableCell className="w-1/12 min-w-[60px] text-center">Ações</TableCell>
           </TableRow>
         </TableHeader>
         <tbody>
           {data.map((event) => (
-            <TableRow key={event.id}>
-              <TableCell>
-                {new Date(event.date + "T00:00:00").toLocaleDateString("pt-BR", {
+            <TableRow key={event.id} className="h-[56px] align-middle">
+              <TableCell className="w-1/12 min-w-[80px]">{new Date(event.date + "T00:00:00").toLocaleDateString("pt-BR", {
                   timeZone: "UTC",
-                })}
+                })}</TableCell>
+              <TableCell className="w-3/12 min-w-[160px]">
+                <div className="truncate" title={event.client_name}>{event.client_name}</div>
               </TableCell>
-              <TableCell>{event.event_name}</TableCell>
-              <TableCell>{event.client_name}</TableCell>
-              <TableCell>{event.type.charAt(0).toUpperCase() + event.type.slice(1)}</TableCell>
-              <TableCell>{formatCurrencyBR(event.total_value)}</TableCell>
-              <TableCell>
+              <TableCell className="w-4/12 min-w-[240px]">
+                <div className="truncate" title={event.event_name}>{event.event_name}</div>
+              </TableCell>
+              <TableCell className="w-1/12 min-w-[80px]">{event.type.charAt(0).toUpperCase() + event.type.slice(1)}</TableCell>
+              <TableCell className="w-2/12 min-w-[100px]">{formatCurrencyBR(event.total_value)}</TableCell>
+              <TableCell className="w-1/12 min-w-[60px] text-center">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">

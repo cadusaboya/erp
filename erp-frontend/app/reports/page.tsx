@@ -46,9 +46,9 @@ export default function ReportsPage() {
   
         setCostCenters(await costCentersRes.json());
         setBanks(await banksRes.json());
-        setEvents(await eventsRes.json());
-        setClients(await clientsRes.json());
-        setSuppliers(await suppliersRes.json());
+        setEvents((await eventsRes.json()).results || []);
+        setClients((await clientsRes.json()).results || []);
+        setSuppliers((await suppliersRes.json()).results || []);
       } catch (err) {
         console.error("Erro ao buscar dados:", err);
       }

@@ -55,8 +55,8 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
           fetchResources(type === "bill" ? "suppliers" : "clients"),
           fetchChartAccounts()
         ]);
-        setEvents(eventsData);
-        setResources(resourcesData);
+        setEvents(eventsData.results || []);
+        setResources(resourcesData.results || []);
         setChartAccounts(chartAccountData);
 
         if (record) {

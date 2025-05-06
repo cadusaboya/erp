@@ -90,7 +90,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
   const handlePaymentsClick = async (record: FinanceRecord) => {
     const filters = type === "bill" ? { bill_id: record.id } : { income_id: record.id };
     const paymentData = await fetchPayments(filters);
-    setPayments(paymentData);
+    setPayments(paymentData.results || []);
     setSelectedRecord(record);
     setPaymentsDialogOpen(true);
   };
@@ -153,32 +153,46 @@ const TableComponent: React.FC<TableComponentProps> = ({
         ]}
       />
 
-      <Table>
+      <Table className="table-fixed w-full">
         <TableHeader>
           <TableRow>
-            <TableCell>Data de Vencimento</TableCell>
-            <TableCell>Pessoa</TableCell>
-            <TableCell>Descrição</TableCell>
-            <TableCell>Número do Doc.</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Valor</TableCell>
-            <TableCell>Ações</TableCell>
+            <TableCell className="w-2/14 min-w-[100px]">Data de Vencimento</TableCell>
+            <TableCell className="w-4/14 min-w-[140px]">Pessoa</TableCell>
+            <TableCell className="w-4/14 min-w-[180px]">Descrição</TableCell>
+            <TableCell className="w-1/14 min-w-[120px]">Doc. Núm.</TableCell>
+            <TableCell className="w-1/14 min-w-[100px]">Status</TableCell>
+            <TableCell className="w-1/14 min-w-[100px]">Valor</TableCell>
+            <TableCell className="w-1/14 min-w-[60px] text-center">Ações</TableCell>
           </TableRow>
         </TableHeader>
         <tbody>
           {data.map((record) => (
-            <TableRow key={`${record.id}-${record.status}`}>
-              <TableCell>{new Date(record.date_due + "T00:00:00").toLocaleDateString("pt-BR", { timeZone: "UTC" })}</TableCell>
-              <TableCell>{record.person_name}</TableCell>
-              <TableCell><div className="max-w-[200px] truncate" title={record.description}>{record.description}</div></TableCell>
-              <TableCell>{record.doc_number || "N/A"}</TableCell>
-              <TableCell>
-                <span className={`px-2 py-1 rounded-lg text-sm font-semibold ${record.status === "vencido" ? "bg-red-100 text-red-600" : record.status === "pago" ? "bg-green-100 text-green-600" : "bg-yellow-100 text-yellow-600"}`}>
+            <TableRow key={`${record.id}-${record.status}`} className="h-[56px] align-middle">
+              <TableCell className="w-2/14 min-w-[100px]">
+                {new Date(record.date_due + "T00:00:00").toLocaleDateString("pt-BR", { timeZone: "UTC" })}
+              </TableCell>
+              <TableCell className="w-4/14 min-w-[140px]">
+                <div className="truncate" title={record.person_name}>{record.person_name}</div>
+              </TableCell>
+              <TableCell className="w-4/14 min-w-[180px]">
+                <div className="truncate" title={record.description}>{record.description}</div>
+              </TableCell>
+              <TableCell className="w-1/14 min-w-[120px]">{record.doc_number || "N/A"}</TableCell>
+              <TableCell className="w-1/14 min-w-[100px]">
+                <span className={`px-2 py-1 rounded-lg text-sm font-semibold ${
+                  record.status === "vencido" ? "bg-red-100 text-red-600" :
+                  record.status === "pago" ? "bg-green-100 text-green-600" :
+                  "bg-yellow-100 text-yellow-600"
+                }`}>
                   {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
                 </span>
               </TableCell>
-              <TableCell>{record.status === "parcial" ? formatCurrencyBR(record.remaining_value) : formatCurrencyBR(record.value)}</TableCell>
-              <TableCell>
+              <TableCell className="w-1/14 min-w-[100px]">
+                {record.status === "parcial"
+                  ? formatCurrencyBR(record.remaining_value)
+                  : formatCurrencyBR(record.value)}
+              </TableCell>
+              <TableCell className="w-1/14 min-w-[60px] text-center">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
@@ -195,6 +209,8 @@ const TableComponent: React.FC<TableComponentProps> = ({
           ))}
         </tbody>
       </Table>
+
+
 
       <Pagination className="mt-4 justify-center">
         <PaginationContent>
