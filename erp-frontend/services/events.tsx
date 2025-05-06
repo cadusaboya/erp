@@ -121,3 +121,18 @@ export const deleteEvent = async (eventId: number) => {
     return false;
   }
 };
+
+export const fetchSingleEvent = async (id: number | string) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Token não encontrado");
+
+  const response = await fetch(`${API_BASE_URL}/events/${id}/`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) throw new Error("Erro ao buscar evento");
+
+  return await response.json();
+};

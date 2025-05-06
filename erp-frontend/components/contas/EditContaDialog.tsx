@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { fetchEvents } from "@/services/events";
-import { fetchResources } from "@/services/resources";
+import { fetchEvents, fetchSingleEvent } from "@/services/events";
+import { fetchResources, fetchSingleResource } from "@/services/resources";
 import { fetchChartAccounts } from "@/services/chartaccounts";
 import { updateRecord } from "@/services/records";
 import RatioTable from "@/components/RatioTable";
@@ -50,13 +50,36 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
   useEffect(() => {
     const load = async () => {
       if (open) {
-        const [eventsData, resourcesData, chartAccountData] = await Promise.all([
-          fetchEvents(),
-          fetchResources(type === "bill" ? "suppliers" : "clients"),
+        const [eventsResponse, resourcesResponse, chartAccountData] = await Promise.all([
+          fetchEvents({}, 1), // first page only
+          fetchResources(type === "bill" ? "suppliers" : "clients", {}, 1),
           fetchChartAccounts()
         ]);
-        setEvents(eventsData.results || []);
-        setResources(resourcesData.results || []);
+        
+        let eventsData = eventsResponse.results;
+        let resourcesData = resourcesResponse.results;
+        
+        // Load missing person if not in first page
+        if (record?.person && !resourcesData.find(r => r.id === record.person)) {
+          const fallback = await fetchSingleResource(type === "bill" ? "suppliers" : "clients", record.person);
+          resourcesData = [...resourcesData, fallback];
+        }
+        
+        // Load missing events used in allocations
+        if (record?.event_allocations?.length) {
+          const missingEventIds = record.event_allocations
+            .map(ea => ea.event)
+            .filter(id => !eventsData.find(e => e.id === id));
+        
+          const missingEvents = await Promise.all(
+            missingEventIds.map(id => fetchSingleEvent(id))
+          );
+        
+          eventsData = [...eventsData, ...missingEvents];
+        }
+        
+        setEvents(eventsData);
+        setResources(resourcesData);
         setChartAccounts(chartAccountData);
 
         if (record) {
@@ -106,7 +129,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-6xl">
         <DialogHeader>
           <DialogTitle>
             {type === "bill" ? "Editar Conta a Pagar" : "Editar Recebimento"}

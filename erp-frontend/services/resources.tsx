@@ -130,3 +130,18 @@ export const deleteResource = async (resource: ResourceType, resourceId: number)
     return false;
   }
 };
+
+export const fetchSingleResource = async (type: "clients" | "suppliers", id: number | string) => {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Token não encontrado");
+
+  const response = await fetch(`${API_BASE_URL}/clients/${type}/${id}/`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) throw new Error("Erro ao buscar recurso");
+
+  return await response.json();
+};
