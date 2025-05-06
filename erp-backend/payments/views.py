@@ -844,9 +844,6 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
         total_paid = sum(p.value for p in existing_payments)
 
-        if total_paid > parent.value + Decimal("0.01"):
-            raise ValidationError("Total pago excede o valor da conta/receita. Pagamento não registrado.")
-
         if total_paid == parent.value:
             parent.status = "pago"
         elif total_paid > 0:
