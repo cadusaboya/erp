@@ -11,6 +11,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { searchEvents } from "@/services/events";
 import { searchResources } from "@/services/resources";
 import { API_URL } from "@/types/apiUrl";
+import { Event, Resource, Bank, CostCenter } from "@/types/types";
 
 export default function ReportsPage() {
   const [type, setType] = useState("bills");
@@ -22,12 +23,12 @@ export default function ReportsPage() {
   const [year, setYear] = useState("");
   const [costCenter, setCostCenter] = useState("");
   const [bankId, setBankId] = useState("");
-  const [costCenters, setCostCenters] = useState([]);
-  const [banks, setBanks] = useState([]);
+  const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
+  const [banks, setBanks] = useState<Bank[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [clients, setClients] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
-  const [events, setEvents] = useState([]);
+  const [clients, setClients] = useState<Resource[]>([]);
+  const [suppliers, setSuppliers] = useState<Resource[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
 
   const getToken = () => {
     const token = localStorage.getItem("token");
@@ -94,6 +95,18 @@ export default function ReportsPage() {
       setIsLoading(false);
     }
   };
+
+  const people =
+  type === "incomes"
+    ? clients
+    : type === "bills"
+    ? suppliers
+    : [];
+
+  const options = (people as Array<{ id: number; name: string }>).map((p) => ({
+    label: p.name,
+    value: String(p.id),
+  }));
   
 
   return (
@@ -147,10 +160,7 @@ export default function ReportsPage() {
                 <label className="text-xs">Pessoa</label>
                 <Combobox
                   disabled={type === "both"}
-                  options={(type === "incomes" ? clients : type === "bills" ? suppliers : []).map(p => ({
-                    label: p.name,
-                    value: String(p.id),
-                  }))}
+                  options={options}
                   loadOptions={(query) =>
                     searchResources(type === "incomes" ? "clients" : "suppliers", query)
                   }

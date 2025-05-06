@@ -122,3 +122,8 @@ export interface FilterPaymentType {
     code: string;
     description: string;
   }
+
+  export interface CostCenter {
+    id: number;
+    name: string;
+  }
