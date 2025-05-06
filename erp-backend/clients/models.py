@@ -16,11 +16,11 @@ class Person(models.Model):
         return self.name
 
 class Client(Person):
-    legacy = models.IntegerField(unique=False)
+    legacy = models.IntegerField(null=True, unique=False)
     # Additional fields or methods specific to clients
     pass
 
 class Supplier(Person):
-    legacy = models.IntegerField(unique=False)
+    legacy = models.IntegerField(null=True, unique=False)
     # Additional fields or methods specific to suppliers
     pass

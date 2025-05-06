@@ -33,7 +33,7 @@ class Accrual(models.Model):
 
 class Income(Accrual):
     person = models.ForeignKey('clients.Client', on_delete=models.PROTECT, related_name='incomes')
-    legacy = models.IntegerField(unique=False)
+    legacy = models.IntegerField(null=True, unique=False)
 
     def __str__(self):
         return f"Receita de {self.client.name} - {self.value}"
@@ -41,7 +41,7 @@ class Income(Accrual):
 
 class Bill(Accrual):
     person = models.ForeignKey('clients.Supplier', on_delete=models.PROTECT, related_name='bills')
-    legacy = models.IntegerField(unique=False)
+    legacy = models.IntegerField(null=True, unique=False)
 
     def __str__(self):
         return f"Conta de {self.supplier.name} - {self.value}"
@@ -85,7 +85,7 @@ class Bank(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bank_accounts")
     name = models.CharField(max_length=255)
     balance = models.DecimalField(max_digits=12, decimal_places=2)
-    legacy = models.IntegerField(unique=False)
+    legacy = models.IntegerField(null=True, unique=False)
 
     def __str__(self):
         return f"{self.name} - R$ {self.balance:.2f}"
