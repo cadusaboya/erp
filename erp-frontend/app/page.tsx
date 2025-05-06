@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import axios from "axios";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [username, setUsername] = useState("");
@@ -11,6 +13,14 @@ export default function Home() {
   const [telefone, setTelefone] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [message, setMessage] = useState("");
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      router.replace("/dashboard");
+    }
+  }, []);
 
   const API_URL = "http://127.0.0.1:8000/accounts"; // Adjust to your Django backend
 
