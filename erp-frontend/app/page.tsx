@@ -28,40 +28,29 @@ export default function Home() {
     e.preventDefault();
     setMessage("");
 
-    try {
-      if (isRegistering) {
-        // Register a new user
-        await axios.post(`${API_URL}/accounts/register/`, {
-          username,
-          password,
-          email,
-          cpf,
-          telefone,
-        });
-        setMessage("User registered successfully! You can now log in.");
-      } else {
-        // Login existing user
-        const response = await axios.post(`${API_URL}/accounts/login/`, {
-          username,
-          password,
-        });
+    if (isRegistering) {
+      // Register a new user
+      await axios.post(`${API_URL}/accounts/register/`, {
+        username,
+        password,
+        email,
+        cpf,
+        telefone,
+      });
+      setMessage("User registered successfully! You can now log in.");
+    } else {
+      // Login existing user
+      const response = await axios.post(`${API_URL}/accounts/login/`, {
+        username,
+        password,
+      });
 
-        const token = response.data.token;
-        if (!token) throw new Error("Token not received");
+      const token = response.data.token;
+      if (!token) throw new Error("Token not received");
 
-        localStorage.setItem("token", token);
-        setMessage("Login successful! Redirecting...");
-        setTimeout(() => (window.location.href = "/dashboard"), 1000);
-      }
-    } catch (error) {
-      const err = error as AxiosError<any>;
-      const data = err.response?.data;
-      const detailedError =
-        data?.message ||
-        data?.errors ||
-        data?.detail ||
-        "An error occurred.";
-      setMessage(JSON.stringify(detailedError));
+      localStorage.setItem("token", token);
+      setMessage("Login successful! Redirecting...");
+      setTimeout(() => (window.location.href = "/dashboard"), 1000);
     }
   };
 
