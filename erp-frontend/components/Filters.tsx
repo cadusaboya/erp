@@ -57,7 +57,10 @@ const FiltersDialog = <T extends object>({
                         <label key={option} className="flex items-center space-x-2 cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={Array.isArray(draftFilters[field.key]) && draftFilters[field.key]?.includes(option)}
+                            checked={
+                              Array.isArray(draftFilters[field.key]) &&
+                              (draftFilters[field.key] as string[]).includes(option)
+                            }
                             onChange={() => handleCheckboxChange(field.key, option)}
                           />
                           <span>
