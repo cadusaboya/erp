@@ -18,6 +18,8 @@ export type FiltersParams = {
   person?: string;
   description?: string;
   docNumber?: string;
+  minValue?: string;
+  maxValue?: string;
 };
 
 export default function Page() {

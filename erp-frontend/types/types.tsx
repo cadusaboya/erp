@@ -27,6 +27,7 @@ export interface FilterPaymentType {
   startDate?: string;
   endDate?: string;
   person?: string;
+  description?: string;
   minValue?: string;
   maxValue?: string;
   type?: ("Despesa" | "Receita")[];
