@@ -10,6 +10,7 @@ from django.http import HttpResponse
 from .models import Event
 from .serializers import EventSerializer
 from payments.models import Bill, Income
+from events.utils.pdffunctions import truncate_text
 from payments.serializers import BillSerializer, IncomeSerializer
 from collections import defaultdict
 from decimal import Decimal
@@ -45,9 +46,7 @@ def generate_events_summary_report(request):
 
     events = events.order_by("date")
 
-    # Preparar dados
     event_data = []
-
     for event in events:
         incomes = Income.objects.filter(user=user, event_allocations__event=event).distinct()
         total_income = sum(income.value for income in incomes)
@@ -59,9 +58,8 @@ def generate_events_summary_report(request):
             "total_income": total_income
         })
 
-    # Iniciar PDF
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = "inline; filename=relatorio_completo_contas.pdf"
+    response["Content-Disposition"] = "inline; filename=resumo_eventos.pdf"
 
     pdf = canvas.Canvas(response, pagesize=landscape(A4))
     width, height = landscape(A4)
@@ -69,7 +67,6 @@ def generate_events_summary_report(request):
 
     pdf.setFont("Helvetica-Bold", 14)
     pdf.drawCentredString(width / 2, height - 40, "Arquitetura de Eventos")
-
     pdf.setFont("Helvetica", 12)
     pdf.drawCentredString(width / 2, height - 60, "Resumo de Eventos")
 
@@ -77,21 +74,19 @@ def generate_events_summary_report(request):
     periodo_text = f"Período {date_min or '--'} a {date_max or '--'}"
     pdf.drawString(margin, height - 90, periodo_text)
 
-    # Cabeçalho
-    y = height - 120
-    pdf.setFont("Helvetica-Bold", 9)
-
+    # ✅ Define better columns
     col_date = margin
-    col_client = margin + 100
+    col_client = margin + 55
     col_event = margin + 300
     col_value = width - margin
 
+    y = height - 120
+    pdf.setFont("Helvetica-Bold", 9)
     pdf.drawString(col_date, y, "Data")
     pdf.drawString(col_client, y, "Cliente")
     pdf.drawString(col_event, y, "Evento")
     pdf.drawRightString(col_value, y, "Valor Total")
     y -= 5
-
     pdf.line(margin, y, width - margin, y)
     y -= 15
 
@@ -102,9 +97,6 @@ def generate_events_summary_report(request):
         if y < 60:
             pdf.showPage()
             y = height - 50
-            pdf.setFont("Helvetica", 9)
-
-            # Reescreve cabeçalho nas novas páginas
             pdf.setFont("Helvetica-Bold", 9)
             pdf.drawString(col_date, y, "Data")
             pdf.drawString(col_client, y, "Cliente")
@@ -116,19 +108,18 @@ def generate_events_summary_report(request):
             pdf.setFont("Helvetica", 9)
 
         pdf.drawString(col_date, y, event["date"].strftime("%d/%m/%Y"))
-        pdf.drawString(col_client, y, event["client"])
-        pdf.drawString(col_event, y, event["name"])
+        # ✅ Apply truncation for overflow protection
+        pdf.drawString(col_client, y, truncate_text(event["client"], 40))
+        pdf.drawString(col_event, y, truncate_text(event["name"], 60))
         pdf.drawRightString(col_value, y, f"R$ {event['total_income']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
         total_geral += event["total_income"]
         y -= 20
 
-    # Linha Total
     pdf.setFont("Helvetica-Bold", 10)
     pdf.drawString(col_event, y, "Total")
     pdf.drawRightString(col_value, y, f"R$ {total_geral:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
-    # Footer
     pdf.setFont("Helvetica", 7)
     pdf.drawString(width - 100, 30, "Página 1 de 1")
     pdf.showPage()

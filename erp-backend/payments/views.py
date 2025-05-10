@@ -13,13 +13,17 @@ from django.http import HttpResponse
 from reportlab.lib.pagesizes import landscape, A4
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
-from events.utils.pdffunctions import draw_header, draw_rows, check_page_break
+from events.utils.pdffunctions import draw_header, draw_rows, check_page_break, truncate_text
 from events.models import Event
 from datetime import datetime
 from collections import defaultdict
 from functools import reduce
 from decimal import Decimal, ROUND_HALF_UP
+import logging
 from rest_framework.pagination import PageNumberPagination
+
+def safe_decimal(value):
+    return Decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 import locale
 try:
@@ -144,7 +148,7 @@ def generate_bank_statement_report(request):
     col_date = margin
     col_fav = margin + 60
     col_desc = margin + 180
-    col_value = width - margin - 100
+    col_value = width - margin - 90
     col_balance = width - margin
 
     pdf.drawString(col_date, y, "Data")
@@ -177,12 +181,9 @@ def generate_bank_statement_report(request):
             y -= 15
             pdf.setFont("Helvetica", 9)
 
-        # Descrição cortada se necessário
-        descricao_curta = shorten_text(line["descricao"], col_value - col_desc - 10, pdf)
-
         pdf.drawString(col_date, y, line["date"].strftime("%d/%m/%Y"))
-        pdf.drawString(col_fav, y, line["favorecido"])
-        pdf.drawString(col_desc, y, descricao_curta)
+        pdf.drawString(col_fav, y, truncate_text(line["favorecido"], 18))   # ✅ added truncate
+        pdf.drawString(col_desc, y, truncate_text(line["descricao"], 37))
         pdf.drawRightString(col_value, y, f"{'-' if line['value'] < 0 else ''}R$ {abs(line['value']):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         pdf.drawRightString(col_balance, y, f"R$ {line['balance']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
@@ -300,6 +301,8 @@ def generate_chart_account_balance(request):
             return
 
         total = totals_with_children.get(account_id, Decimal("0.00"))
+        if total == 0:
+            return
 
         font_size = 9
         if indent == 0:
@@ -612,7 +615,7 @@ def generate_payments_report(request):
 
     pdf = canvas.Canvas(response, pagesize=landscape(A4))
     width, height = landscape(A4)
-    cols = [50, width * 0.15, width * 0.3, width * 0.5, width * 0.75, width * 0.9]
+    cols = [50, width * 0.12, width * 0.2, width * 0.45, width * 0.8, width * 0.9]
 
     event_name = event.event_name if event else "Todos os Eventos"
 
@@ -652,8 +655,8 @@ def generate_payments_report(request):
             pdf.setFont("Helvetica", 9)
             pdf.drawString(cols[0], y, str(row["id"]))
             pdf.drawString(cols[1], y, row["date"].strftime("%d/%m/%y"))
-            pdf.drawString(cols[2], y, row["person"])
-            pdf.drawString(cols[3], y, row["description"])
+            pdf.drawString(cols[2], y, truncate_text(row["person"], 35))
+            pdf.drawString(cols[3], y, truncate_text(row["description"], 52))
             pdf.drawString(cols[4], y, row["doc_number"])
             pdf.drawString(cols[5], y, f"R$ {row['value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
             total += row["value"]
@@ -838,13 +841,19 @@ class PaymentViewSet(viewsets.ModelViewSet):
             payment.save(update_fields=["description"])
 
         # Get all existing payments for this bill/income
-        existing_payments = Payment.objects.filter(
-            Q(bill=payment.bill) | Q(income=payment.income)
-        )
+        if payment.bill:
+            existing_payments = Payment.objects.filter(bill=payment.bill)
+        elif payment.income:
+            existing_payments = Payment.objects.filter(income=payment.income)
+        else:
+            raise ValidationError("Pagamento inválido: sem bill ou income.")
 
-        total_paid = sum(p.value for p in existing_payments)
+        total_paid = sum(safe_decimal(p.value) for p in existing_payments)
+        parent_value = safe_decimal(parent.value)
 
-        if total_paid == parent.value:
+        if parent_value == 0:
+            parent.status = "pago"
+        elif abs(total_paid - parent_value) < Decimal("0.01"):
             parent.status = "pago"
         elif total_paid > 0:
             parent.status = "parcial"

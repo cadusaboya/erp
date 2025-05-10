@@ -56,16 +56,21 @@ def draw_header(pdf, width, height, event_name, event_id, title):
 
     pdf.setFont("Helvetica-Bold", 9)
     y = height - 140
-    cols = [50, width * 0.15, width * 0.3, width * 0.5, width * 0.75, width * 0.9]
+
+    # ✅ MATCH columns with your table body
+    cols = [50, width * 0.12, width * 0.2, width * 0.45, width * 0.8, width * 0.9]
+
     pdf.drawString(cols[0], y, "Nro.")
     pdf.drawString(cols[1], y, "Data")
     pdf.drawString(cols[2], y, "Favorecido")
     pdf.drawString(cols[3], y, "Memo")
     pdf.drawString(cols[4], y, "Doc.")
     pdf.drawString(cols[5], y, "Valor")
+
     y -= 5
     pdf.line(width * 0.05, y, width * 0.95, y)
     return y - 15
+
 
 def check_page_break(pdf, y, height, width, event_name, event_id, title):
     if y < 50:
@@ -97,3 +102,6 @@ def draw_rows(pdf, rows, y, width, height, section_title, cols, event_name, even
     pdf.drawString(cols[4], y, label)
     pdf.drawString(cols[5], y, f"{'-' if not is_income else ''}{total:.2f}")
     return y - 25, total
+
+def truncate_text(text, max_length):
+    return (text[:max_length] + '...') if len(text) > max_length else text
