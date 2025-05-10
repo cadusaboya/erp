@@ -48,8 +48,8 @@ const RatioTable: React.FC<RateioTableProps> = ({
   return (
     <div className="space-y-2">
       {allocations.map((item, index) => (
-        <div key={index} className="flex gap-2 items-center">
-          <div className="w-1/2">
+        <div className="flex items-center gap-2 w-full">
+          <div className="flex-grow">
           <Combobox
               options={
                 isEvent
@@ -63,11 +63,11 @@ const RatioTable: React.FC<RateioTableProps> = ({
             />
           </div>
           <input
-            type="number"
-            value={item.value}
-            onChange={(e) => handleChange(index, "value", e.target.value)}
-            placeholder="Valor"
-            className="p-2 border rounded w-1/3"
+              type="number"
+              value={item.value}
+              onChange={(e) => handleChange(index, "value", e.target.value)}
+              placeholder="Valor"
+              className="p-2 border rounded w-[100px]"   // ✅ use fixed width
           />
           <button
             type="button"

@@ -94,7 +94,7 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
           <Input type="date" {...register("date", { required: true })} />
 
           {/* Total Value */}
-          <Input type="number" placeholder="Valor Total" {...register("total_value", { required: true })} />
+          <Input type="number" step="0.01" placeholder="Valor Total" {...register("total_value", { required: true })} />
 
           <DialogFooter>
             <Button variant="outline" type="button" onClick={onClose}>

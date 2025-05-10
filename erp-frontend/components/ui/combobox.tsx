@@ -44,7 +44,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
   const [internalOptions, setInternalOptions] = React.useState<ComboboxOption[]>(options);
   const [loading, setLoading] = React.useState(false);
 
-  const selectedLabel = internalOptions.find((o) => o.value === value)?.label;
+  const selectedLabel = internalOptions.find((o) => String(o.value) === String(value))?.label;
 
   const handleSearch = async (query: string) => {
     if (!loadOptions) return;
@@ -62,12 +62,13 @@ export const Combobox: React.FC<ComboboxProps> = ({
           role="combobox"
           disabled={disabled}
           aria-expanded={open}
-          className="justify-between px-3 py-2 text-sm font-normal"
+          className="justify-between px-3 py-2 text-sm font-normal truncate"
           style={{
             width: `${Math.max(
-              ((selectedLabel || placeholder)?.length ?? 10) * 8 + 32,
+              ((selectedLabel || placeholder)?.length ?? 10) * 8 + 40,
               150
             )}px`,
+
           }}
         >
           {selectedLabel || placeholder}

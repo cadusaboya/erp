@@ -45,21 +45,24 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
   const [resources, setResources] = useState<Resource[]>([]);
   const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([]);
   const [eventAllocations, setEventAllocations] = useState<RateioItem[]>([]);
-  const [accountAllocations, setAccountAllocations] = useState<RateioItem[]>([]);  
+  const [accountAllocations, setAccountAllocations] = useState<RateioItem[]>([]);
   const [person, setPerson] = useState<string>("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
       if (open) {
+        setLoading(true);
+
         const [eventsResponse, resourcesResponse, chartAccountData] = await Promise.all([
-          fetchEvents({}, 1), // first page only
+          fetchEvents({}, 1),
           fetchResources(type === "bill" ? "suppliers" : "clients", {}, 1),
           fetchChartAccounts()
         ]);
-        
+
         let eventsData = eventsResponse.results;
         let resourcesData = resourcesResponse.results;
-        
+
         if (record?.person && !resourcesData.find((r: Resource) => r.id === record.person)) {
           const fallback = await fetchSingleResource(
             type === "bill" ? "suppliers" : "clients",
@@ -67,21 +70,19 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
           );
           resourcesData = [...resourcesData, fallback];
         }
-        
-        // Load missing events used in allocations
+
         if (record?.event_allocations?.length) {
           const missingEventIds = record.event_allocations
             .map((ea) => Number(ea.event))
             .filter((id) => !eventsData.find((e: Event) => e.id === id));
-        
+
           const missingEvents = await Promise.all(
             missingEventIds.map((id) => fetchSingleEvent(id))
           );
-        
+
           eventsData = [...eventsData, ...missingEvents];
         }
-        
-        
+
         setEvents(eventsData);
         setResources(resourcesData);
         setChartAccounts(chartAccountData);
@@ -111,6 +112,8 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
             );
           }
         }
+
+        setLoading(false);
       }
     };
     load();
@@ -139,78 +142,91 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
             {type === "bill" ? "Editar Conta a Pagar" : "Editar Recebimento"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left column */}
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium block mb-1">
-                  {type === "bill" ? "Fornecedor" : "Cliente"}
-                </label>
-                <Combobox
-                  options={resources.map((r) => ({
-                    label: r.name,
-                    value: String(r.id),
-                  }))}
-                  loadOptions={(query) => searchResources(type === "income" ? "clients" : "suppliers", query)}
-                  value={person}
-                  onChange={setPerson}
-                  placeholder={`Selecione ${type === "bill" ? "um Fornecedor" : "um Cliente"}`}
-                />
-              </div>
 
-              <Input placeholder="Descrição" {...register("description")} />
-              <Input type="date" {...register("date_due")} />
-              <Input type="number" placeholder="Valor" {...register("value")} />
-              <Input placeholder="Número do Documento" {...register("doc_number")} />
-
-              {/* Status */}
-              <div>
-                <label className="text-sm font-medium block mb-1">Status</label>
-                <select {...register("status")} className="p-2 border rounded w-full">
-                  <option value="em aberto">Em Aberto</option>
-                  <option value="vencido">Vencido</option>
-                  <option value="pago">Pago</option>
-                  <option value="parcial">Parcial</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Right column */}
-            <div className="space-y-6">
-              <div>
-                <label className="text-sm font-medium block mb-1">Rateio de Eventos</label>
-                <RatioTable
-                  allocations={eventAllocations}
-                  setAllocations={setEventAllocations}
-                  events={events}
-                  label="Rateio de Eventos"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium block mb-1">Rateio por Plano de Contas</label>
-                <RatioTable
-                  allocations={accountAllocations}
-                  setAllocations={setAccountAllocations}
-                  chartAccounts={chartAccounts.map((acc) => ({
-                    id: acc.id,
-                    name: acc.description,
-                  }))}
-                  label="Rateio por Conta"
-                />
-              </div>
-            </div>
+        {loading ? (
+          <div className="p-10 text-center text-muted-foreground">
+            Carregando dados...
           </div>
+        ) : (
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left column */}
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium block mb-1">
+                    {type === "bill" ? "Fornecedor" : "Cliente"}
+                  </label>
+                  <Combobox
+                    options={resources.map((r) => ({
+                      label: r.name,
+                      value: String(r.id),
+                    }))}
+                    loadOptions={(query) =>
+                      searchResources(
+                        type === "income" ? "clients" : "suppliers",
+                        query
+                      )
+                    }
+                    value={person}
+                    onChange={setPerson}
+                    placeholder={`Selecione ${type === "bill" ? "um Fornecedor" : "um Cliente"}`}
+                  />
+                </div>
 
-          <DialogFooter className="pt-4">
-            <Button variant="outline" type="button" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" className="ml-2">
-              Salvar
-            </Button>
-          </DialogFooter>
-        </form>
+                <Input placeholder="Descrição" {...register("description")} />
+                <Input type="date" {...register("date_due")} />
+                <Input type="number" step="0.01" placeholder="Valor" {...register("value")} />
+                <Input placeholder="Número do Documento" {...register("doc_number")} />
+
+                {/* Status */}
+                <div>
+                  <label className="text-sm font-medium block mb-1">Status</label>
+                  <select {...register("status")} className="p-2 border rounded w-full">
+                    <option value="em aberto">Em Aberto</option>
+                    <option value="vencido">Vencido</option>
+                    <option value="pago">Pago</option>
+                    <option value="parcial">Parcial</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Right column */}
+              <div className="space-y-6">
+                <div className="max-h-[35vh] overflow-y-auto pr-2">
+                    <label className="text-sm font-medium block mb-1">Rateio de Eventos</label>
+                    <RatioTable
+                        allocations={eventAllocations}
+                        setAllocations={setEventAllocations}
+                        events={events}
+                        label="Rateio de Eventos"
+                    />
+                </div>
+
+                <div className="max-h-[35vh] overflow-y-auto pr-2">
+                    <label className="text-sm font-medium block mb-1">Rateio por Plano de Contas</label>
+                    <RatioTable
+                        allocations={accountAllocations}
+                        setAllocations={setAccountAllocations}
+                        chartAccounts={chartAccounts.map((acc) => ({
+                            id: acc.id,
+                            name: acc.description,
+                        }))}
+                        label="Rateio por Conta"
+                    />
+                </div>
+            </div>
+            </div>
+
+            <DialogFooter className="pt-4">
+              <Button variant="outline" type="button" onClick={onClose}>
+                Cancelar
+              </Button>
+              <Button type="submit" className="ml-2">
+                Salvar
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

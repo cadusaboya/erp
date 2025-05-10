@@ -103,7 +103,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-6xl">
         <DialogHeader>
           <DialogTitle>
             {type === "bill" ? "Nova Conta a Pagar" : "Novo Recebimento"}
@@ -131,7 +131,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
 
               <Input placeholder="Descrição" {...register("description", { required: true })} />
               <Input type="date" {...register("date_due", { required: true })} />
-              <Input type="number" placeholder="Valor" {...register("value", { required: true })} />
+              <Input type="number" step="0.01" placeholder="Valor" {...register("value", { required: true })} />
               <Input placeholder="Número do Documento" {...register("doc_number")} />
 
               {/* Centro de Custo */}
@@ -167,7 +167,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
 
             {/* Right Column – Both Ratio Tables stacked */}
             <div className="space-y-6">
-              <div>
+              <div className="max-h-[35vh] overflow-y-auto pr-2">
                 <label className="text-sm font-medium block mb-1">Rateio de Eventos</label>
                 <RatioTable
                   allocations={eventAllocations}
@@ -176,7 +176,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
                   label="Rateio de Eventos"
                 />
               </div>
-              <div>
+              <div className="max-h-[35vh] overflow-y-auto pr-2">
                 <label className="text-sm font-medium block mb-1">Rateio por Plano de Contas</label>
                 <RatioTable
                   allocations={accountAllocations}
