@@ -29,6 +29,7 @@ export default function ReportsPage() {
   const [clients, setClients] = useState<Resource[]>([]);
   const [suppliers, setSuppliers] = useState<Resource[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [reportType, setReportType] = useState("espelho")
 
   const getToken = () => {
     const token = localStorage.getItem("token");
@@ -128,13 +129,14 @@ export default function ReportsPage() {
             setBankId("");
           }}
         >
-          <TabsList className="grid grid-cols-3 lg:grid-cols-6">
+          <TabsList className="grid grid-cols-3 lg:grid-cols-6 mb-10">
             <TabsTrigger value="contas">Contas</TabsTrigger>
             <TabsTrigger value="tipo">Receita por Tipo</TabsTrigger>
             <TabsTrigger value="custo">Centros de Custo</TabsTrigger>
             <TabsTrigger value="evento">Resumo Eventos</TabsTrigger>
             <TabsTrigger value="banco">Extrato Bancário</TabsTrigger>
             <TabsTrigger value="balancete">Balancete</TabsTrigger>
+            <TabsTrigger value="quadro">Quadro</TabsTrigger>
           </TabsList>
 
           {/* Contas */}
@@ -335,6 +337,58 @@ export default function ReportsPage() {
             <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
               <Button onClick={() => handleOpenPdf(`${API_URL}/payments/report/chartaccount/?${buildParams().toString()}`)} disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Balancete"}
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="quadro">
+            <Card>
+              <CardContent className="p-4 grid gap-4">
+                <div>
+                  <label className="text-xs">Data Inicial</label>
+                  <Input type="date" value={dateMin} onChange={(e) => setDateMin(e.target.value)} className="max-w-[150px]" />
+                </div>
+                <div>
+                  <label className="text-xs">Data Final</label>
+                  <Input type="date" value={dateMax} onChange={(e) => setDateMax(e.target.value)} className="max-w-[150px]" />
+                </div>
+
+                <div>
+                  <label className="text-xs block mb-1">Tipo de Relatório</label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        value="espelho"
+                        checked={reportType === "espelho"}
+                        onChange={() => setReportType("espelho")}
+                      />
+                      Espelho
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        value="realizado"
+                        checked={reportType === "realizado"}
+                        onChange={() => setReportType("realizado")}
+                      />
+                      Realizado
+                    </label>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
+              <Button
+                onClick={() =>
+                  handleOpenPdf(
+                    `${API_URL}/payments/report/${reportType}/?${buildParams().toString()}`
+                  )
+                }
+                disabled={isLoading}
+              >
+                {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
               </Button>
             </div>
           </TabsContent>

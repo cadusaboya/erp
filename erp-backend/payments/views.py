@@ -2,7 +2,7 @@ from rest_framework import status, filters, viewsets  # type: ignore
 from rest_framework.decorators import api_view, permission_classes  # type: ignore
 from rest_framework.response import Response  # type: ignore
 from rest_framework.permissions import IsAuthenticated  # type: ignore
-from django.db import transaction # type: ignore
+from django.db import transaction, models # type: ignore
 from django.db.models import Q # type: ignore
 from .models import Bill, Income, Bank, Payment, CostCenter, EventAllocation, ChartAccount
 from django.contrib.contenttypes.models import ContentType
@@ -13,6 +13,7 @@ from django.http import HttpResponse
 from reportlab.lib.pagesizes import landscape, A4
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
+from reportlab.lib.colors import red, blue, black
 from events.utils.pdffunctions import draw_header, draw_rows, check_page_break, truncate_text
 from events.models import Event
 from datetime import datetime
@@ -1104,3 +1105,246 @@ def combined_extract(request):
     combined.sort(key=lambda x: x["date_due"])
 
     return Response({"orders": combined})
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def generate_quadro_espelho_report(request):
+    date_min = request.query_params.get("date_min")
+    date_max = request.query_params.get("date_max")
+    user = request.user
+
+    payments = Payment.objects.filter(user=user)
+    if date_min:
+        payments = payments.filter(date__gte=date_min)
+    if date_max:
+        payments = payments.filter(date__lte=date_max)
+
+    events = Event.objects.filter(user=user)
+    if date_min:
+        events = events.filter(date__gte=date_min)
+    if date_max:
+        events = events.filter(date__lte=date_max)
+
+    total_faturamento_bruto = events.aggregate(total=models.Sum("total_value"))["total"] or Decimal("0.00")
+
+    event_ids = events.values_list("id", flat=True)
+    event_allocations = EventAllocation.objects.filter(event_id__in=event_ids)
+
+    accrual_ids = event_allocations.values_list("accrual_id", flat=True)
+    bill_ids = set(Bill.objects.filter(pk__in=accrual_ids).values_list("pk", flat=True))
+
+    total_despesas_eventos = Decimal("0.00")
+    for alloc in event_allocations:
+        if alloc.accrual_id in bill_ids:
+            total_despesas_eventos += alloc.value
+
+    despesas_fixas = Decimal("0.00")
+    pro_labore = Decimal("0.00")
+    investimentos = Decimal("0.00")
+    manutencoes = Decimal("0.00")
+
+    for payment in payments:
+        accrual = payment.payable
+        if not accrual:
+            continue
+        original_value = accrual.value or Decimal("0.00")
+        if original_value == 0:
+            continue
+
+        payment_ratio = payment.value / original_value
+
+        for allocation in accrual.allocations.all():
+            proportional_paid = allocation.value * payment_ratio
+            group = allocation.chart_account.group
+
+            if not group:
+                continue
+
+            if group.lower() == "despesas fixas":
+                despesas_fixas += proportional_paid
+            elif group.lower() == "pró-labore":
+                pro_labore += proportional_paid
+            elif group.lower() == "investimentos":
+                investimentos += proportional_paid
+            elif group.lower() == "manutenções":
+                manutencoes += proportional_paid
+
+    subtotal_despesas1 = despesas_fixas + pro_labore
+    subtotal_despesas2 = investimentos + manutencoes
+    saldo_bruto = total_faturamento_bruto - total_despesas_eventos
+    saldo_final = saldo_bruto - subtotal_despesas1 - subtotal_despesas2
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = "inline; filename=quadro_espelho.pdf"
+
+    pdf = canvas.Canvas(response, pagesize=A4)
+    width, height = A4
+    margin = 40
+    y = height - 50
+
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawCentredString(width / 2, y, "Arquitetura de Eventos")
+    y -= 30
+
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawCentredString(width / 2, y, "Quadro Espelho")
+    y -= 40
+
+    pdf.setFont("Helvetica", 11)
+    periodo_text = f"Período {date_min or '--'} a {date_max or '--'}"
+    pdf.drawString(margin, y, periodo_text)
+    y -= 30
+
+    def draw_line(label, value, color=black, bold=False, separator=False):
+        nonlocal y
+        if bold:
+            pdf.setFont("Helvetica-Bold", 12)
+        else:
+            pdf.setFont("Helvetica", 11)
+        pdf.setFillColor(color)
+        pdf.drawString(margin, y, label)
+        pdf.drawRightString(width - margin, y, f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        y -= 20
+        if separator:
+            y -= 10
+            pdf.line(margin, y, width - margin, y)
+            y -= 20
+
+    draw_line("Faturamento Bruto", total_faturamento_bruto, black, bold=True)
+    draw_line("Despesas Eventos", total_despesas_eventos, red, bold=True, separator=True)
+    draw_line("Saldo Bruto", saldo_bruto, blue, bold=True)
+    y -= 10
+
+    draw_line("Despesas Fixas", despesas_fixas, red, bold=True)
+    draw_line("Pró-Labore", pro_labore, black, bold=False)
+    draw_line("Sub Total Despesas 1", subtotal_despesas1, red, bold=True, separator=True)
+
+    draw_line("Investimentos", investimentos, black, bold=False)
+    draw_line("Manutenções", manutencoes, black, bold=False)
+    draw_line("SubTotal Despesas 2", subtotal_despesas2, red, bold=True, separator=True)
+
+    draw_line("Saldo Final", saldo_final, black, bold=True)
+
+    pdf.setFillColor(black)
+    pdf.setFont("Helvetica", 7)
+    pdf.drawString(width - 100, 30, "Página 1 de 1")
+    pdf.showPage()
+    pdf.save()
+
+    return response
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def generate_quadro_realizado_report(request):
+    date_min = request.query_params.get("date_min")
+    date_max = request.query_params.get("date_max")
+    user = request.user
+
+    payments = Payment.objects.filter(user=user)
+    if date_min:
+        payments = payments.filter(date__gte=date_min)
+    if date_max:
+        payments = payments.filter(date__lte=date_max)
+
+    total_recebimento_bruto = Decimal("0.00")
+    total_despesas_eventos = Decimal("0.00")
+    despesas_fixas = Decimal("0.00")
+    pro_labore = Decimal("0.00")
+    investimentos = Decimal("0.00")
+    manutencoes = Decimal("0.00")
+
+    for payment in payments:
+        accrual = payment.payable
+        if not accrual:
+            continue
+        original_value = accrual.value or Decimal("0.00")
+        if original_value == 0:
+            continue
+
+        payment_ratio = payment.value / original_value
+
+        for allocation in accrual.allocations.all():
+            proportional_paid = allocation.value * payment_ratio
+            account = allocation.chart_account
+
+            # Recebimento Bruto
+            if account.code == "10101":
+                total_recebimento_bruto += proportional_paid
+
+            # Despesas
+            elif account.group:
+                group = account.group.lower()
+                if group == "eventos":
+                    total_despesas_eventos += proportional_paid
+                elif group == "despesas fixas":
+                    despesas_fixas += proportional_paid
+                elif group == "pró-labore":
+                    pro_labore += proportional_paid
+                elif group == "investimentos":
+                    investimentos += proportional_paid
+                elif group == "manutenções":
+                    manutencoes += proportional_paid
+
+    subtotal_despesas1 = despesas_fixas + pro_labore
+    subtotal_despesas2 = investimentos + manutencoes
+    saldo_bruto = total_recebimento_bruto - total_despesas_eventos
+    saldo_final = saldo_bruto - subtotal_despesas1 - subtotal_despesas2
+
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = "inline; filename=quadro_realizado.pdf"
+
+    pdf = canvas.Canvas(response, pagesize=A4)
+    width, height = A4
+    margin = 40
+    y = height - 50
+
+    pdf.setFont("Helvetica-Bold", 16)
+    pdf.drawCentredString(width / 2, y, "Arquitetura de Eventos")
+    y -= 30
+
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawCentredString(width / 2, y, "Quadro Realizado")
+    y -= 40
+
+    pdf.setFont("Helvetica", 11)
+    periodo_text = f"Período {date_min or '--'} a {date_max or '--'}"
+    pdf.drawString(margin, y, periodo_text)
+    y -= 30
+
+    def draw_line(label, value, color=black, bold=False, separator=False):
+        nonlocal y
+        if bold:
+            pdf.setFont("Helvetica-Bold", 12)
+        else:
+            pdf.setFont("Helvetica", 11)
+        pdf.setFillColor(color)
+        pdf.drawString(margin, y, label)
+        pdf.drawRightString(width - margin, y, f"R$ {value:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        y -= 20
+        if separator:
+            y -= 10
+            pdf.line(margin, y, width - margin, y)
+            y -= 20
+
+    draw_line("Recebimento Bruto", total_recebimento_bruto, black, bold=True)
+    draw_line("Despesas Eventos", total_despesas_eventos, red, bold=True, separator=True)
+    draw_line("Saldo Bruto", saldo_bruto, blue, bold=True)
+    y -= 10
+
+    draw_line("Despesas Fixas", despesas_fixas, red, bold=True)
+    draw_line("Pró-labore", pro_labore, black, bold=False)
+    draw_line("Sub Total Despesas 1", subtotal_despesas1, red, bold=True, separator=True)
+
+    draw_line("Investimentos", investimentos, black, bold=False)
+    draw_line("Manutenções", manutencoes, black, bold=False)
+    draw_line("SubTotal Despesas 2", subtotal_despesas2, red, bold=True, separator=True)
+
+    draw_line("Saldo Final", saldo_final, black, bold=True)
+
+    pdf.setFillColor(black)
+    pdf.setFont("Helvetica", 7)
+    pdf.drawString(width - 100, 30, "Página 1 de 1")
+    pdf.showPage()
+    pdf.save()
+
+    return response
