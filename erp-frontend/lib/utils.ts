@@ -15,3 +15,7 @@ export function formatCurrencyBR(value: number | string): string {
     currency: "BRL",
   }).format(numericValue);
 }
+
+export const formatDateToInput = (date: Date) => {
+  return date.toISOString().split("T")[0];
+};

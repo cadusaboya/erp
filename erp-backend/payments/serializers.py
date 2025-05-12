@@ -152,7 +152,6 @@ class PaymentSerializer(serializers.ModelSerializer):
     )
     bank_name = serializers.CharField(source="bank.name", read_only=True)
     person_name = serializers.SerializerMethodField()
-    description = serializers.SerializerMethodField()
 
     class Meta:
         model = Payment
@@ -161,11 +160,6 @@ class PaymentSerializer(serializers.ModelSerializer):
     def get_person_name(self, obj):
         if obj.payable and obj.payable.person:
             return obj.payable.person.name
-        return None
-
-    def get_description(self, obj):
-        if obj.payable:
-            return obj.payable.description
         return None
 
     def validate(self, attrs):

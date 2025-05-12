@@ -887,15 +887,37 @@ class PaymentViewSet(viewsets.ModelViewSet):
         if not parent:
             raise ValidationError("Pagamento inválido: objeto relacionado não encontrado.")
 
-        # Auto-fill description if not provided
-        if not payment.description and parent.description:
-            payment.description = parent.description
-            payment.save(update_fields=["description"])
+        # ✅ If parent exists → auto-fill description + update parent status
+        if parent:
+            if not payment.description and parent.description:
+                payment.description = parent.description
+                payment.save(update_fields=["description"])
 
-        # Adjust bank balance
+            # Parent status update (same logic as perform_create)
+            if payment.bill:
+                existing_payments = Payment.objects.filter(bill=payment.bill)
+            elif payment.income:
+                existing_payments = Payment.objects.filter(income=payment.income)
+
+            total_paid = sum(safe_decimal(p.value) for p in existing_payments)
+            parent_value = safe_decimal(parent.value)
+
+            if parent_value == 0:
+                parent.status = "pago"
+            elif abs(total_paid - parent_value) < Decimal("0.01"):
+                parent.status = "pago"
+            elif total_paid > 0:
+                parent.status = "parcial"
+            else:
+                parent.status = "em aberto"
+
+            parent.save()
+
+        # ✅ Always update bank balance
         value_diff = payment.value - old_value
 
         if old_bank == payment.bank and old_bill == payment.bill and old_income == payment.income:
+            # Same bank + same parent (or no parent) → adjust balance
             if payment.bill:
                 payment.bank.balance -= value_diff
             elif payment.income:

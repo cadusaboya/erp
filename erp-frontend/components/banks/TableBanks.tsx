@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, PlusCircle } from "lucide-react";
+import { MoreVertical, PlusCircle, Repeat } from "lucide-react";
 import CreateBankDialog from "@/components/banks/CreateBankDialog";
 import EditBankDialog from "@/components/banks/EditBankDialog";
+import TransferDialog from "@/components/banks/TransferDialog"; // 👈 you'll create this soon
 import { Bank } from "@/types/types";
 import { formatCurrencyBR } from "@/lib/utils";
 import {
@@ -23,20 +24,27 @@ interface TableBanksProps {
 const TableBanks: React.FC<TableBanksProps> = ({ banks, onBankUpdated }) => {
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false); // 👈 new state
   const [selectedBank, setSelectedBank] = useState<Bank | null>(null);
 
   return (
     <div className="p-6 bg-white shadow-lg rounded-lg">
       <div className="flex justify-between mb-4">
         <h2 className="text-xl font-semibold">Contas Bancárias</h2>
-        <Button className="flex items-center gap-2" onClick={() => setCreateOpen(true)}>
-          <PlusCircle size={18} /> Nova Conta
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex items-center gap-2" onClick={() => setTransferOpen(true)}>
+            <Repeat size={18} /> Transferir Entre Bancos
+          </Button>
+          <Button className="flex items-center gap-2" onClick={() => setCreateOpen(true)}>
+            <PlusCircle size={18} /> Nova Conta
+          </Button>
+        </div>
       </div>
 
+      {/* Dialogs */}
       <CreateBankDialog open={createOpen} onClose={() => setCreateOpen(false)} onBankCreated={onBankUpdated} />
-
       <EditBankDialog open={editOpen} onClose={() => setEditOpen(false)} onBankUpdated={onBankUpdated} bank={selectedBank} />
+      <TransferDialog open={transferOpen} onClose={() => setTransferOpen(false)} banks={banks} onTransferCreated={onBankUpdated} />
 
       <Table>
         <TableHeader>
@@ -61,10 +69,14 @@ const TableBanks: React.FC<TableBanksProps> = ({ banks, onBankUpdated }) => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => setTimeout(() => {
-                      setSelectedBank(bank);
-                      setEditOpen(true);
-                    }, 0)}>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        setTimeout(() => {
+                          setSelectedBank(bank);
+                          setEditOpen(true);
+                        }, 0)
+                      }
+                    >
                       Editar
                     </DropdownMenuItem>
                   </DropdownMenuContent>

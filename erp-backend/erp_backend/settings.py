@@ -99,16 +99,29 @@ WSGI_APPLICATION = 'erp_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'erpvo',
-        'USER': 'postgres',
-        'PASSWORD': 'postgres',           # empty string if there's no password
+        'NAME': 'erp',
+        'USER': 'erpuser',  # or 'erpuser'
+        'PASSWORD': '',  # if postgres on local mac has no password
         'HOST': 'localhost',
         'PORT': '5432',
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'postgres',   # your RDS database name
+#         'USER': 'postgres',  # or erpuser if you created it
+#         'PASSWORD': 'cadu020197',  # your RDS password
+#         'HOST': 'database-1.cla0q80qed85.us-east-1.rds.amazonaws.com',  # your RDS endpoint
+#         'PORT': '5432',
+#     }
+# }
+
 
 
 # Password validation
