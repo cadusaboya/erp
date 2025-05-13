@@ -7,9 +7,10 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
+from django.db.models import Sum
 from .models import Event
 from .serializers import EventSerializer
-from payments.models import Bill, Income
+from payments.models import Bill, Income, EventAllocation
 from events.utils.pdffunctions import truncate_text
 from payments.serializers import BillSerializer, IncomeSerializer
 from collections import defaultdict
@@ -48,19 +49,35 @@ def generate_events_summary_report(request):
 
     event_data = []
     for event in events:
+        # Contract value
+        contract_value = event.total_value or Decimal('0.00')
+
+        # Allocated value
+        allocations = EventAllocation.objects.filter(
+            event=event,
+            accrual__in=Income.objects.filter(user=user)
+        )
+        allocated_value = allocations.aggregate(total=Sum('value'))['total'] or Decimal('0.00')
+
+        # Paid value
         incomes = Income.objects.filter(user=user, event_allocations__event=event).distinct()
-        total_income = sum(income.value for income in incomes)
+        total_paid = Decimal('0.00')
+        for income in incomes:
+            for payment in income.payments.all():
+                total_paid += Decimal(payment.get_allocated_value_to_event(event.id))
 
         event_data.append({
             "name": event.event_name,
             "date": event.date,
             "client": event.client.name if event.client else "-",
-            "total_income": total_income
+            "contract_value": contract_value,
+            "allocated_value": allocated_value,
+            "paid_value": total_paid
         })
 
+    # PDF generation
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = "inline; filename=resumo_eventos.pdf"
-
     pdf = canvas.Canvas(response, pagesize=landscape(A4))
     width, height = landscape(A4)
     margin = 40
@@ -74,23 +91,27 @@ def generate_events_summary_report(request):
     periodo_text = f"Período {date_min or '--'} a {date_max or '--'}"
     pdf.drawString(margin, height - 90, periodo_text)
 
-    # ✅ Define better columns
+    # Column positions
     col_date = margin
     col_client = margin + 55
-    col_event = margin + 300
-    col_value = width - margin
+    col_event = margin + 250
+    col_contract = margin + 550
+    col_allocated = margin + 650
+    col_paid = margin + 750
 
     y = height - 120
     pdf.setFont("Helvetica-Bold", 9)
     pdf.drawString(col_date, y, "Data")
     pdf.drawString(col_client, y, "Cliente")
     pdf.drawString(col_event, y, "Evento")
-    pdf.drawRightString(col_value, y, "Valor Total")
+    pdf.drawRightString(col_contract, y, "Contratado")
+    pdf.drawRightString(col_allocated, y, "Alocado")
+    pdf.drawRightString(col_paid, y, "Pago")
     y -= 5
     pdf.line(margin, y, width - margin, y)
     y -= 15
 
-    total_geral = Decimal("0.00")
+    totals = {"contract": Decimal('0.00'), "allocated": Decimal('0.00'), "paid": Decimal('0.00')}
     pdf.setFont("Helvetica", 9)
 
     for event in event_data:
@@ -101,24 +122,31 @@ def generate_events_summary_report(request):
             pdf.drawString(col_date, y, "Data")
             pdf.drawString(col_client, y, "Cliente")
             pdf.drawString(col_event, y, "Evento")
-            pdf.drawRightString(col_value, y, "Valor Total")
+            pdf.drawRightString(col_contract, y, "Contratado")
+            pdf.drawRightString(col_allocated, y, "Alocado")
+            pdf.drawRightString(col_paid, y, "Pago")
             y -= 5
             pdf.line(margin, y, width - margin, y)
             y -= 15
             pdf.setFont("Helvetica", 9)
 
         pdf.drawString(col_date, y, event["date"].strftime("%d/%m/%Y"))
-        # ✅ Apply truncation for overflow protection
-        pdf.drawString(col_client, y, truncate_text(event["client"], 40))
-        pdf.drawString(col_event, y, truncate_text(event["name"], 60))
-        pdf.drawRightString(col_value, y, f"R$ {event['total_income']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        pdf.drawString(col_client, y, truncate_text(event["client"], 30))
+        pdf.drawString(col_event, y, truncate_text(event["name"], 30))
+        pdf.drawRightString(col_contract, y, f"R$ {event['contract_value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        pdf.drawRightString(col_allocated, y, f"R$ {event['allocated_value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        pdf.drawRightString(col_paid, y, f"R$ {event['paid_value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
-        total_geral += event["total_income"]
+        totals["contract"] += event["contract_value"]
+        totals["allocated"] += event["allocated_value"]
+        totals["paid"] += event["paid_value"]
         y -= 20
 
     pdf.setFont("Helvetica-Bold", 10)
     pdf.drawString(col_event, y, "Total")
-    pdf.drawRightString(col_value, y, f"R$ {total_geral:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    pdf.drawRightString(col_contract, y, f"R$ {totals['contract']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    pdf.drawRightString(col_allocated, y, f"R$ {totals['allocated']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    pdf.drawRightString(col_paid, y, f"R$ {totals['paid']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
     pdf.setFont("Helvetica", 7)
     pdf.drawString(width - 100, 30, "Página 1 de 1")
