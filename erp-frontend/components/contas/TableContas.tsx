@@ -166,7 +166,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
             <TableCell className="w-4/14 min-w-[140px]">Pessoa</TableCell>
             <TableCell className="w-4/14 min-w-[180px]">Descrição</TableCell>
             <TableCell className="w-1/14 min-w-[120px]">Doc. Núm.</TableCell>
-            <TableCell className="w-1/14 min-w-[100px]">Status</TableCell>
+            <TableCell className="w-1/10 min-w-[120px]">Status</TableCell>
             <TableCell className="w-1/14 min-w-[100px]">Valor</TableCell>
             <TableCell className="w-1/14 min-w-[60px] text-center">Ações</TableCell>
           </TableRow>
@@ -184,7 +184,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
                 <div className="truncate" title={record.description}>{record.description}</div>
               </TableCell>
               <TableCell className="w-1/14 min-w-[120px]">{record.doc_number || "N/A"}</TableCell>
-              <TableCell className="w-1/14 min-w-[100px]">
+              <TableCell className="w-1/10 min-w-[120px]">
                 <span className={`px-2 py-1 rounded-lg text-sm font-semibold ${
                   record.status === "vencido" ? "bg-red-100 text-red-600" :
                   record.status === "pago" ? "bg-green-100 text-green-600" :

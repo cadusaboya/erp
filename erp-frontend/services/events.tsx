@@ -5,7 +5,6 @@ import { API_URL } from "@/types/apiUrl";
 export const fetchEvents = async (
   filters: FiltersEventType = {},
   page: number = 1,
-  pageSize: number = 12
 ) => {
   try {
     const token = localStorage.getItem("token");

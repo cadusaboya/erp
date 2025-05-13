@@ -129,7 +129,7 @@ export default function ReportsPage() {
             setBankId("");
           }}
         >
-          <TabsList className="grid grid-cols-3 lg:grid-cols-6 mb-10">
+          <TabsList className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 mb-10">
             <TabsTrigger value="contas">Contas</TabsTrigger>
             <TabsTrigger value="tipo">Receita por Tipo</TabsTrigger>
             <TabsTrigger value="custo">Centros de Custo</TabsTrigger>
