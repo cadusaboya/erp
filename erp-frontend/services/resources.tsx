@@ -15,7 +15,6 @@ export const fetchResources = async (
   resource: ResourceType,
   filters: FiltersClientType = {},
   page: number = 1,
-  pageSize: number = 12
 ) => {
   try {
     const token = getToken();

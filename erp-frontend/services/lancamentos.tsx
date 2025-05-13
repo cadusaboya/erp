@@ -11,7 +11,6 @@ const getToken = () => {
 export const fetchPayments = async (
   filters: FilterPaymentType = {},
   page: number = 1,
-  pageSize: number = 12
 ) => {
   const token = getToken();
   const params = new URLSearchParams();
