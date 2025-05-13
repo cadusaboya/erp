@@ -18,6 +18,7 @@ from django.core.mail import send_mail # type: ignore
 from django.http import JsonResponse # type: ignore
 from .models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator # type: ignore
+from rest_framework.permissions import IsAuthenticated  # type: ignore
 
 @api_view(['POST'])
 def login(request):
@@ -59,3 +60,9 @@ def register(request):
         return Response(response_data, status=status.HTTP_201_CREATED)
     else:
         return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def list_user_companies(request):
+    companies = request.user.companies.all().values("id", "name")
+    return Response(list(companies))
