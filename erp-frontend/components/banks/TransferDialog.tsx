@@ -39,7 +39,7 @@ const TransferDialog: React.FC<TransferDialogProps> = ({ open, onClose, banks, o
     try {
       // ✅ Create Payment saída (Despesas → dummy Bill)
       await createPayment({
-        value: parsedValue,
+        value: String(parsedValue),
         date,
         description: description || `Transferência para ${bankToName}`,
         doc_number: "",
@@ -49,7 +49,7 @@ const TransferDialog: React.FC<TransferDialogProps> = ({ open, onClose, banks, o
 
       // ✅ Create Payment entrada (Receitas → dummy Income)
       await createPayment({
-        value: parsedValue,
+        value: String(parsedValue),
         date,
         description: description || `Transferência de ${bankFromName}`,
         doc_number: "",
@@ -85,7 +85,7 @@ const TransferDialog: React.FC<TransferDialogProps> = ({ open, onClose, banks, o
         <div className="flex flex-col gap-4">
           <div>
             <label className="text-sm">Banco Origem</label>
-            <Select onValueChange={(value) => setBankFrom(parseInt(value))} value={bankFrom?.toString() ?? ""}>
+            <Select onValueChange={(value: string) => setBankFrom(parseInt(value))} value={bankFrom?.toString() ?? ""}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o banco de origem" />
               </SelectTrigger>
@@ -101,7 +101,7 @@ const TransferDialog: React.FC<TransferDialogProps> = ({ open, onClose, banks, o
 
           <div>
             <label className="text-sm">Banco Destino</label>
-            <Select onValueChange={(value) => setBankTo(parseInt(value))} value={bankTo?.toString() ?? ""}>
+            <Select onValueChange={(value: string) => setBankTo(parseInt(value))} value={bankTo?.toString() ?? ""}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o banco de destino" />
               </SelectTrigger>

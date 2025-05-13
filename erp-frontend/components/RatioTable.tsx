@@ -48,7 +48,7 @@ const RatioTable: React.FC<RateioTableProps> = ({
   return (
     <div className="space-y-2">
       {allocations.map((item, index) => (
-        <div className="flex items-center gap-2 w-full">
+        <div key={index} className="flex items-center gap-2 w-full">
           <div className="flex-grow">
           <Combobox
               options={
