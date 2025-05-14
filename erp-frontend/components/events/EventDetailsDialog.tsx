@@ -63,7 +63,7 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
     if (!token) return alert("Token não encontrado");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/payments/report/?type=both&status=pago&event_id=${eventId}`, {
+      const response = await fetch(`${API_URL}/payments/report/?type=both&status=pago&event_id=${eventId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) throw new Error("Erro ao gerar o PDF");
@@ -86,7 +86,7 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
     if (!token) return alert("Token não encontrado");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/payments/report/?type=both&status=todos&event_id=${eventId}`, {
+      const response = await fetch(`${API_URL}/payments/report/?type=both&status=todos&event_id=${eventId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) throw new Error("Erro ao gerar o PDF");
@@ -109,7 +109,7 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
     if (!token) return alert("Token não encontrado");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/payments/report/?type=em+aberto&status=todos&event_id=${eventId}`, {
+      const response = await fetch(`${API_URL}/payments/report/?type=em+aberto&status=todos&event_id=${eventId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) throw new Error("Erro ao gerar o PDF");
