@@ -335,7 +335,22 @@ def generate_chart_account_balance(request):
 
     # Imprimir contas raiz
     drawn = set()
-    for acc_id, acc in account_map.items():
+    # Get all root accounts safely
+    root_accounts = [acc for acc in account_map.values() if not acc.parent_id]
+
+    # Safely sort: receitas ("1") first, despesas ("2") second, others last
+    root_accounts.sort(
+        key=lambda acc: (
+            str(acc.code or "")[0] not in ("1", "2"),
+            str(acc.code or "")[0],
+            str(acc.code or "")
+        )
+    )
+
+    # Print in order
+    for acc in root_accounts:
+        draw_account(acc.id)
+
         if acc.parent_id is None and acc_id not in drawn:
             draw_account(acc_id)
             drawn.add(acc_id)
@@ -496,6 +511,7 @@ def generate_payments_report(request):
         payments = Payment.objects.filter(
             user=user,
         ).select_related('bill', 'income', 'bill__person', 'income__person').prefetch_related('bill__event_allocations', 'income__event_allocations')
+        payments = payments.order_by('date')
 
         if date_min:
             payments = payments.filter(date__gte=date_min)
@@ -550,8 +566,8 @@ def generate_payments_report(request):
                 })
 
     else:
-        bill_qs = Bill.objects.filter(user=user)
-        income_qs = Income.objects.filter(user=user)
+        bill_qs = Bill.objects.filter(user=user).order_by('date_due')
+        income_qs = Income.objects.filter(user=user).order_by('date_due')
 
         if date_min:
             bill_qs = bill_qs.filter(date_due__gte=date_min)
