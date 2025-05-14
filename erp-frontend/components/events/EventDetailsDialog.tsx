@@ -8,8 +8,7 @@ import { Table, TableHeader, TableRow, TableCell } from "@/components/ui/table";
 import { FileText } from "lucide-react";
 import { Event, FinancialSummary, FinanceRecord } from "@/types/types";
 import { formatCurrencyBR } from "@/lib/utils";
-
-const API_BASE_URL = "http://127.0.0.1:8000";
+import { API_URL } from "@/types/apiUrl";
 
 interface EventDetailsDialogProps {
   open: boolean;
@@ -32,8 +31,8 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
         if (!token) throw new Error("Token não encontrado");
 
         const [eventRes, paymentRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/events/view/${eventId}/`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_BASE_URL}/payments/event-allocations/${eventId}/`, { headers: { Authorization: `Bearer ${token}` } })
+          fetch(`${API_URL}/events/view/${eventId}/`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_URL}/payments/event-allocations/${eventId}/`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
 
         if (!eventRes.ok || !paymentRes.ok) throw new Error("Erro em alguma das requisições");
