@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
 from .models import Bill, Income, Bank, Payment, CostCenter, EventAllocation, AccountAllocation, ChartAccount
 
@@ -28,14 +27,13 @@ class BillSerializer(serializers.ModelSerializer):
     bank_name = serializers.CharField(source="bank.name", read_only=True)
     remaining_value = serializers.SerializerMethodField()
 
-    # Apenas para escrita
     event_allocations = EventAllocationSerializer(many=True, required=False, write_only=True)
     account_allocations = AccountAllocationSerializer(many=True, required=False, write_only=True)
 
     class Meta:
         model = Bill
         fields = '__all__'
-        read_only_fields = ('user', 'person_name', 'bank_name')
+        read_only_fields = ('company', 'person_name', 'bank_name')
 
     def get_remaining_value(self, obj):
         if obj.status != "parcial":
@@ -45,7 +43,6 @@ class BillSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        # ✅ Reinsere os rateios no retorno final
         data["event_allocations"] = EventAllocationSerializer(instance.event_allocations.all(), many=True).data
         data["account_allocations"] = AccountAllocationSerializer(instance.allocations.all(), many=True).data
         return data
@@ -84,14 +81,13 @@ class IncomeSerializer(serializers.ModelSerializer):
     bank_name = serializers.CharField(source="bank.name", read_only=True)
     remaining_value = serializers.SerializerMethodField()
 
-    # Writable via create/update
     event_allocations = EventAllocationSerializer(many=True, required=False, write_only=True)
     account_allocations = AccountAllocationSerializer(many=True, required=False, write_only=True)
 
     class Meta:
         model = Income
         fields = '__all__'
-        read_only_fields = ('user', 'person_name', 'bank_name')
+        read_only_fields = ('company', 'person_name', 'bank_name')
 
     def get_remaining_value(self, obj):
         if obj.status != "parcial":
@@ -101,7 +97,6 @@ class IncomeSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        # 👇 Here we re-add the allocations in the final response
         data["event_allocations"] = EventAllocationSerializer(instance.event_allocations.all(), many=True).data
         data["account_allocations"] = AccountAllocationSerializer(instance.allocations.all(), many=True).data
         return data
@@ -135,17 +130,15 @@ class IncomeSerializer(serializers.ModelSerializer):
 
         return instance
 
-
-
 class PaymentSerializer(serializers.ModelSerializer):
     bill_id = serializers.PrimaryKeyRelatedField(
-        source="bill",  # 👈 IMPORTANTE
+        source="bill",
         queryset=Bill.objects.all(),
         required=False,
         allow_null=True
     )
     income_id = serializers.PrimaryKeyRelatedField(
-        source="income",  # 👈 IMPORTANTE
+        source="income",
         queryset=Income.objects.all(),
         required=False,
         allow_null=True
@@ -155,7 +148,11 @@ class PaymentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Payment
-        fields = ['id', 'bill_id', 'income_id', 'value', 'bank', 'bank_name', 'doc_number', 'date', 'person_name', 'description']
+        fields = [
+            'id', 'bill_id', 'income_id', 'value', 'bank', 'bank_name',
+            'doc_number', 'date', 'person_name', 'description'
+        ]
+        read_only_fields = ('company',)
 
     def get_person_name(self, obj):
         if obj.payable and obj.payable.person:
@@ -174,17 +171,14 @@ class PaymentSerializer(serializers.ModelSerializer):
 
         return attrs
 
-
-
-
 class BankSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bank
         fields = '__all__'
-        read_only_fields = ('user',)
+        read_only_fields = ('company',)
 
 class CostCenterSerializer(serializers.ModelSerializer):
     class Meta:
         model = CostCenter
         fields = '__all__'
-        read_only_fields = ('user',)
+        read_only_fields = ('company',)

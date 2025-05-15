@@ -60,7 +60,8 @@ def generate_bank_statement_report(request):
     bank_id = request.query_params.get("bank_id")
     user = request.user
 
-    payments = Payment.objects.filter(user=user)
+    company = get_company_or_404(request)
+    payments = Payment.objects.filter(company=company)
 
     if date_min:
         payments = payments.filter(date__gte=date_min)
@@ -72,11 +73,11 @@ def generate_bank_statement_report(request):
     payments = payments.select_related('bank', 'bill__person', 'income__person').order_by("date", "id")  # Mais antigos primeiro
 
     if bank_id:
-        bank = Bank.objects.get(id=bank_id, user=user)
+        bank = Bank.objects.get(id=bank_id, company=company)
         initial_balance = bank.balance
         bank_name = bank.name
     else:
-        initial_balance = sum(bank.balance for bank in Bank.objects.filter(user=user))
+        initial_balance = sum(bank.balance for bank in Bank.objects.filter(company=company))
         bank_name = "Consolidado"
 
     # Retroagir saldo para o início do período
@@ -206,7 +207,9 @@ def generate_chart_account_balance(request):
     date_max = request.query_params.get("date_max")
     user = request.user
 
-    payments = Payment.objects.filter(user=user)
+    company = get_company_or_404(request)
+    payments = Payment.objects.filter(company=company)
+
 
     if date_min:
         payments = payments.filter(date__gte=date_min)
@@ -370,7 +373,9 @@ def generate_cost_center_consolidated_report(request):
     user = request.user
 
     # Filtrar pagamentos
-    payments = Payment.objects.filter(user=user)
+    company = get_company_or_404(request)
+    payments = Payment.objects.filter(company=company)
+
 
     if date_min:
         payments = payments.filter(date__gte=date_min)
@@ -488,14 +493,15 @@ def generate_payments_report(request):
     cost_center_id = request.query_params.get("cost_center")
 
     user = request.user
-    event = get_object_or_404(Event, id=event_id, user=user) if event_id else None
+    company = get_company_or_404(request)
+    event = get_object_or_404(Event, id=event_id, company=company) if event_id else None
 
     bills = []
     incomes = []
 
     if status == "pago":
         payments = Payment.objects.filter(
-            user=user,
+            company=company,
         ).select_related('bill', 'income', 'bill__person', 'income__person').prefetch_related('bill__event_allocations', 'income__event_allocations')
         payments = payments.order_by('date')
 
@@ -552,9 +558,8 @@ def generate_payments_report(request):
                 })
 
     else:
-        bill_qs = Bill.objects.filter(user=user).order_by('date_due')
-        income_qs = Income.objects.filter(user=user).order_by('date_due')
-
+        bill_qs = Bill.objects.filter(company=company).order_by('date_due')
+        income_qs = Income.objects.filter(company=company).order_by('date_due')
         if date_min:
             bill_qs = bill_qs.filter(date_due__gte=date_min)
             income_qs = income_qs.filter(date_due__gte=date_min)
@@ -728,10 +733,12 @@ class BillViewSet(viewsets.ModelViewSet):
         return queryset.order_by("date_due")
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        company = get_company_or_404(self.request)
+        serializer.save(user=self.request.user, company=company)
 
     def perform_update(self, serializer):
-        serializer.save(user=self.request.user)
+        company = get_company_or_404(self.request)
+        serializer.save(user=self.request.user, company=company)
 
 class IncomeViewSet(viewsets.ModelViewSet):
     serializer_class = IncomeSerializer
@@ -768,10 +775,12 @@ class IncomeViewSet(viewsets.ModelViewSet):
         return queryset.order_by("date_due")
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        company = get_company_or_404(self.request)
+        serializer.save(user=self.request.user, company=company)
 
     def perform_update(self, serializer):
-        serializer.save(user=self.request.user)
+        company = get_company_or_404(self.request)
+        serializer.save(user=self.request.user, company=company)
 
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
@@ -828,12 +837,14 @@ class PaymentViewSet(viewsets.ModelViewSet):
         if income_id:
             qs = qs.filter(income_id=income_id)
 
-        return qs.order_by("-date")  
+        return qs.order_by("-date")
 
     @transaction.atomic
     def perform_create(self, serializer):
         user = self.request.user
-        payment = serializer.save(user=user)
+        company = get_company_or_404(self.request)
+
+        payment = serializer.save(user=user, company=company)
 
         parent = payment.bill or payment.income
         if not parent:
@@ -845,11 +856,9 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
         # Get all existing payments for this bill/income
         if payment.bill:
-            existing_payments = Payment.objects.filter(bill=payment.bill)
+            existing_payments = Payment.objects.filter(bill=payment.bill, company=company)
         elif payment.income:
-            existing_payments = Payment.objects.filter(income=payment.income)
-        else:
-            raise ValidationError("Pagamento inválido: sem bill ou income.")
+            existing_payments = Payment.objects.filter(income=payment.income, company=company)
 
         total_paid = sum(safe_decimal(p.value) for p in existing_payments)
         parent_value = safe_decimal(parent.value)
@@ -873,10 +882,11 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 payment.bank.balance += payment.value
             payment.bank.save()
 
-
     @transaction.atomic
     def perform_update(self, serializer):
         user = self.request.user
+        company = get_company_or_404(self.request)
+
         old_instance = self.get_object()
         old_value = old_instance.value
         old_bank = old_instance.bank
@@ -884,43 +894,40 @@ class PaymentViewSet(viewsets.ModelViewSet):
         old_income = old_instance.income
 
         # Save updated payment
-        payment = serializer.save(user=user)
+        payment = serializer.save(user=user, company=company)
 
         parent = payment.bill or payment.income
         if not parent:
             raise ValidationError("Pagamento inválido: objeto relacionado não encontrado.")
 
-        # ✅ If parent exists → auto-fill description + update parent status
-        if parent:
-            if not payment.description and parent.description:
-                payment.description = parent.description
-                payment.save(update_fields=["description"])
+        if not payment.description and parent.description:
+            payment.description = parent.description
+            payment.save(update_fields=["description"])
 
-            # Parent status update (same logic as perform_create)
-            if payment.bill:
-                existing_payments = Payment.objects.filter(bill=payment.bill)
-            elif payment.income:
-                existing_payments = Payment.objects.filter(income=payment.income)
+        # Parent status update
+        if payment.bill:
+            existing_payments = Payment.objects.filter(bill=payment.bill, company=company)
+        elif payment.income:
+            existing_payments = Payment.objects.filter(income=payment.income, company=company)
 
-            total_paid = sum(safe_decimal(p.value) for p in existing_payments)
-            parent_value = safe_decimal(parent.value)
+        total_paid = sum(safe_decimal(p.value) for p in existing_payments)
+        parent_value = safe_decimal(parent.value)
 
-            if parent_value == 0:
-                parent.status = "pago"
-            elif abs(total_paid - parent_value) < Decimal("0.01"):
-                parent.status = "pago"
-            elif total_paid > 0:
-                parent.status = "parcial"
-            else:
-                parent.status = "em aberto"
+        if parent_value == 0:
+            parent.status = "pago"
+        elif abs(total_paid - parent_value) < Decimal("0.01"):
+            parent.status = "pago"
+        elif total_paid > 0:
+            parent.status = "parcial"
+        else:
+            parent.status = "em aberto"
 
-            parent.save()
+        parent.save()
 
-        # ✅ Always update bank balance
+        # Update bank balance
         value_diff = payment.value - old_value
 
         if old_bank == payment.bank and old_bill == payment.bill and old_income == payment.income:
-            # Same bank + same parent (or no parent) → adjust balance
             if payment.bill:
                 payment.bank.balance -= value_diff
             elif payment.income:
@@ -939,6 +946,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
                 elif payment.income:
                     payment.bank.balance += payment.value
                 payment.bank.save()
+
 
 
 class BankViewSet(viewsets.ModelViewSet):
@@ -990,7 +998,8 @@ def event_accruals_view(request, event_id):
     }
 
     # Get all payments related to those accruals
-    payments = Payment.objects.filter(user=user).select_related("bill", "income")
+    company = get_company_or_404(request)
+    payments = Payment.objects.filter(company=company).select_related("bill", "income")
 
     if start_date:
         payments = payments.filter(date__gte=start_date)
@@ -1059,7 +1068,8 @@ def combined_extract(request):
     types = request.GET.getlist("type")  # e.g. ?type=Despesa&type=Receita
 
     # Base filters
-    filters = Q(user=user, status="pago")
+    company = get_company_or_404(request)
+    filters = Q(company=company, status="pago")
 
     # Apply queryset filters
     if start_date and end_date:
@@ -1114,14 +1124,15 @@ def generate_quadro_espelho_report(request):
     date_min = request.query_params.get("date_min")
     date_max = request.query_params.get("date_max")
     user = request.user
+    company = get_company_or_404(request)
 
-    payments = Payment.objects.filter(user=user)
+    payments = Payment.objects.filter(company=company)
     if date_min:
         payments = payments.filter(date__gte=date_min)
     if date_max:
         payments = payments.filter(date__lte=date_max)
 
-    events = Event.objects.filter(user=user)
+    events = Event.objects.filter(company=company)
     if date_min:
         events = events.filter(date__gte=date_min)
     if date_max:
@@ -1241,8 +1252,9 @@ def generate_quadro_realizado_report(request):
     date_min = request.query_params.get("date_min")
     date_max = request.query_params.get("date_max")
     user = request.user
+    company = get_company_or_404(request)
 
-    payments = Payment.objects.filter(user=user)
+    payments = Payment.objects.filter(company=company)
     if date_min:
         payments = payments.filter(date__gte=date_min)
     if date_max:
