@@ -1,15 +1,11 @@
 import { FiltersEventType } from "@/types/types";
-
-import { API_URL } from "@/types/apiUrl";
+import { api } from "@/lib/axios";
 
 export const fetchEvents = async (
   filters: FiltersEventType = {},
-  page: number = 1,
+  page: number = 1
 ) => {
   try {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("Token não encontrado");
-
     const params = new URLSearchParams();
 
     if (filters.event_name) params.append("event_name", filters.event_name);
@@ -22,19 +18,10 @@ export const fetchEvents = async (
       filters.type.forEach((t) => params.append("type", t));
     }
 
-    // ✅ Paginação
     params.append("page", page.toString());
 
-    const response = await fetch(`${API_URL}/events/?${params.toString()}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) throw new Error("Erro ao buscar eventos");
-
-    return await response.json(); // ✅ Esperado: { results: [...], count: N }
+    const response = await api.get(`/events/?${params.toString()}`);
+    return response.data; // { results: [...], count: N }
   } catch (error) {
     console.error("Erro ao buscar eventos:", error);
     return { results: [], count: 0 };
@@ -43,25 +30,13 @@ export const fetchEvents = async (
 
 export const searchEvents = async (query: string) => {
   try {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("Token não encontrado");
-
     const params = new URLSearchParams();
     if (query) params.append("event_name", query);
     params.append("page", "1");
     params.append("page_size", "10");
 
-    const response = await fetch(`${API_URL}/events/?${params.toString()}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) throw new Error("Erro ao buscar eventos");
-
-    const json = await response.json();
-    return json.results.map((ev: any) => ({
+    const response = await api.get(`/events/?${params.toString()}`);
+    return response.data.results.map((ev: any) => ({
       label: ev.event_name,
       value: String(ev.id),
     }));
@@ -71,54 +46,19 @@ export const searchEvents = async (query: string) => {
   }
 };
 
-
 export const createEvent = async (eventData: any) => {
   try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      throw new Error("Token not found");
-    }
-
-    const response = await fetch(`${API_URL}/events/`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(eventData),
-    });
-
-    if (!response.ok) {
-      throw new Error("Error creating event");
-    }
-
+    await api.post("/events/", eventData);
     return true;
   } catch (error) {
-    console.error("Error creating event:", error);
+    console.error("Erro ao criar evento:", error);
     return false;
   }
 };
 
 export const updateEvent = async (eventId: number, updatedData: any) => {
   try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      throw new Error("Token não encontrado");
-    }
-
-    const response = await fetch(`${API_URL}/events/${eventId}/`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(updatedData),
-    });
-
-    if (!response.ok) {
-      throw new Error("Erro ao atualizar evento");
-    }
-
+    await api.put(`/events/${eventId}/`, updatedData);
     return true;
   } catch (error) {
     console.error("Erro ao atualizar evento:", error);
@@ -128,22 +68,7 @@ export const updateEvent = async (eventId: number, updatedData: any) => {
 
 export const deleteEvent = async (eventId: number) => {
   try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      throw new Error("Token não encontrado");
-    }
-
-    const response = await fetch(`${API_URL}/events/${eventId}/`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error("Erro ao deletar evento");
-    }
-
+    await api.delete(`/events/${eventId}/`);
     return true;
   } catch (error) {
     console.error("Erro ao deletar evento:", error);
@@ -152,16 +77,11 @@ export const deleteEvent = async (eventId: number) => {
 };
 
 export const fetchSingleEvent = async (id: number | string) => {
-  const token = localStorage.getItem("token");
-  if (!token) throw new Error("Token não encontrado");
-
-  const response = await fetch(`${API_URL}/events/${id}/`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) throw new Error("Erro ao buscar evento");
-
-  return await response.json();
+  try {
+    const response = await api.get(`/events/${id}/`);
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao buscar evento:", error);
+    throw new Error("Erro ao buscar evento");
+  }
 };

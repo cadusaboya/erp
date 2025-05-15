@@ -15,6 +15,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from reportlab.lib.colors import red, blue, black
 from events.utils.pdffunctions import draw_header, draw_rows, check_page_break, truncate_text
+from accounts.utils import get_company_or_404
 from events.models import Event
 from datetime import datetime
 from collections import defaultdict
@@ -205,7 +206,6 @@ def generate_chart_account_balance(request):
     date_max = request.query_params.get("date_max")
     user = request.user
 
-    # Filtrar pagamentos
     payments = Payment.objects.filter(user=user)
 
     if date_min:
@@ -213,13 +213,10 @@ def generate_chart_account_balance(request):
     if date_max:
         payments = payments.filter(date__lte=date_max)
 
-    # Só considerar pagamentos relacionados a bills ou incomes que têm alocação
-    payments = payments.filter(
-        Q(bill__isnull=False) | Q(income__isnull=False)
-    )
+    payments = payments.filter(Q(bill__isnull=False) | Q(income__isnull=False))
 
-    # Mapeamento ChartAccount -> valor pago proporcional
     chartaccount_totals = defaultdict(Decimal)
+    receitas_payments = []
 
     for payment in payments:
         accrual = payment.payable
@@ -228,28 +225,22 @@ def generate_chart_account_balance(request):
 
         original_value = accrual.value or Decimal("0.00")
         if original_value == 0:
-            continue  # evita divisão por zero
+            continue
 
-        # Razão proporcional de pagamento sobre o valor total
         payment_ratio = payment.value / original_value
 
         for allocation in accrual.allocations.all():
             proportional_paid = allocation.value * payment_ratio
             chartaccount_totals[allocation.chart_account_id] += proportional_paid
 
-    # Buscar contas usadas + parents
     chart_accounts = ChartAccount.objects.all().select_related("parent")
-
     account_map = {acc.id: acc for acc in chart_accounts}
     parent_children = defaultdict(list)
-
     for acc in chart_accounts:
         if acc.parent_id:
             parent_children[acc.parent_id].append(acc.id)
 
-    # Somar valores recursivamente
     totals_with_children = {}
-
     def sum_children(account_id):
         total = chartaccount_totals.get(account_id, Decimal("0.00"))
         for child_id in parent_children.get(account_id, []):
@@ -261,7 +252,6 @@ def generate_chart_account_balance(request):
         if account_map[acc_id].parent_id is None:
             sum_children(acc_id)
 
-    # Iniciar PDF
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = "inline; filename=relatorio_completo_contas.pdf"
 
@@ -271,46 +261,35 @@ def generate_chart_account_balance(request):
 
     pdf.setFont("Helvetica-Bold", 14)
     pdf.drawCentredString(width / 2, height - 50, "Arquitetura de Eventos")
-
     pdf.setFont("Helvetica", 12)
     pdf.drawCentredString(width / 2, height - 70, "Balancete por Plano de Contas")
-
     pdf.setFont("Helvetica", 9)
     periodo_text = f"Período {date_min or '--'} a {date_max or '--'}"
     pdf.drawString(margin, height - 100, periodo_text)
 
-    # Cabeçalho
     y = height - 130
     pdf.setFont("Helvetica-Bold", 9)
     pdf.drawString(margin, y, "Conta")
     pdf.drawString(margin + 80, y, "Descrição")
     pdf.drawRightString(width - margin, y, "Valor")
     y -= 5
-
-    # Linha horizontal abaixo do cabeçalho
     pdf.line(margin, y, width - margin, y)
     y -= 15
 
     total_receitas = Decimal("0.00")
     total_despesas = Decimal("0.00")
 
-    # Função para desenhar
     def draw_account(account_id, indent=0):
         nonlocal y
         acc = account_map.get(account_id)
         if not acc:
             return
-
         total = totals_with_children.get(account_id, Decimal("0.00"))
         if total == 0:
             return
 
         font_size = 9
-        if indent == 0:
-            pdf.setFont("Helvetica-Bold", font_size)
-        else:
-            pdf.setFont("Helvetica", font_size)
-
+        pdf.setFont("Helvetica-Bold" if indent == 0 else "Helvetica", font_size)
         pdf.drawString(margin + indent * 20, y, acc.code)
         pdf.drawString(margin + 80 + indent * 20, y, acc.description.upper() if indent == 0 else acc.description)
         pdf.drawRightString(width - margin, y, f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
@@ -324,7 +303,6 @@ def generate_chart_account_balance(request):
                 total_despesas += total
 
         y -= 15
-
         if y < 60:
             pdf.showPage()
             y = height - 50
@@ -333,12 +311,7 @@ def generate_chart_account_balance(request):
         for child_id in parent_children.get(account_id, []):
             draw_account(child_id, indent + 1)
 
-    # Imprimir contas raiz
-    drawn = set()
-    # Get all root accounts safely
     root_accounts = [acc for acc in account_map.values() if not acc.parent_id]
-
-    # Safely sort: receitas ("1") first, despesas ("2") second, others last
     root_accounts.sort(
         key=lambda acc: (
             str(acc.code or "")[0] not in ("1", "2"),
@@ -347,21 +320,33 @@ def generate_chart_account_balance(request):
         )
     )
 
-    # Print in order
     for acc in root_accounts:
         draw_account(acc.id)
 
-        if acc.parent_id is None and acc_id not in drawn:
-            draw_account(acc_id)
-            drawn.add(acc_id)
-
-    # Resultado
     resultado = total_receitas - total_despesas
-
     y -= 20
     pdf.setFont("Helvetica-Bold", 10)
     pdf.drawString(margin, y, "Resultado")
     pdf.drawRightString(width - margin, y, f"R$ {resultado:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+
+    # 👉 NEW BLOCK: print receitas payments
+    y -= 30
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawString(margin, y, "Pagamentos lançados em Receitas")
+    y -= 20
+
+    pdf.setFont("Helvetica", 8)
+    for item in receitas_payments:
+        if y < 60:
+            pdf.showPage()
+            y = height - 50
+            pdf.setFont("Helvetica", 8)
+
+        pdf.drawString(margin, y, f"{item['date'].strftime('%d/%m/%Y')}")
+        pdf.drawString(margin + 60, y, f"{item['account_code']} - {item['account_desc']}")
+        pdf.drawString(margin + 220, y, item['description'][:40])  # limit long descriptions
+        pdf.drawRightString(width - margin, y, f"R$ {item['value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        y -= 12
 
     pdf.setFont("Helvetica", 7)
     pdf.drawString(width - 100, 30, "Página 1 de 1")
@@ -369,6 +354,7 @@ def generate_chart_account_balance(request):
     pdf.save()
 
     return response
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -713,8 +699,8 @@ class BillViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
-        queryset = Bill.objects.filter(user=user)
+        company = get_company_or_404(self.request)
+        queryset = Bill.objects.filter(company=company)
         params = self.request.query_params
 
         # Filters
@@ -753,8 +739,8 @@ class IncomeViewSet(viewsets.ModelViewSet):
     pagination_class = StandardResultsSetPagination
 
     def get_queryset(self):
-        user = self.request.user
-        queryset = Income.objects.filter(user=user)
+        company = get_company_or_404(self.request)
+        queryset = Income.objects.filter(company=company)
         params = self.request.query_params
 
         # Filters
@@ -794,10 +780,10 @@ class PaymentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
+        company = get_company_or_404(self.request)
         params = self.request.query_params
 
-        qs = Payment.objects.filter(user=user)
+        qs = Payment.objects.filter(company=company)
 
         # Filters
         start_date = params.get("startDate")
@@ -960,12 +946,12 @@ class BankViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Ensure only Bank Accounts associated with the authenticated user are returned
-        return Bank.objects.filter(user=self.request.user)
+        company = get_company_or_404(self.request)
+        return Bank.objects.filter(company=company)
 
     def perform_create(self, serializer):
-        # Associate the new Bank account with the authenticated user
-        serializer.save(user=self.request.user)
+        company = get_company_or_404(self.request)
+        serializer.save(company=company)
 
 class CostCenterViewSet(viewsets.ModelViewSet):
     serializer_class = CostCenterSerializer

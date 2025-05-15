@@ -1,16 +1,12 @@
+import { api } from "@/lib/axios";
 import { ChartAccount } from "@/types/types";
 
-import { API_URL } from "@/types/apiUrl";
-
 export const fetchChartAccounts = async (): Promise<ChartAccount[]> => {
-  const token = localStorage.getItem("token");
-  const response = await fetch(`${API_URL}/payments/chartaccounts/`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  if (!response.ok) {
+  try {
+    const response = await api.get<ChartAccount[]>("/payments/chartaccounts/");
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao buscar plano de contas:", error);
     throw new Error("Erro ao buscar plano de contas");
   }
-  return response.json();
 };

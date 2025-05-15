@@ -1,13 +1,12 @@
-# accounts/utils.py
-from rest_framework.exceptions import ValidationError, PermissionDenied
-from .models import Company
+from rest_framework.exceptions import ValidationError
+from accounts.models import Company
 
-def get_current_company(request):
-    company_id = request.query_params.get("company_id")
+def get_company_or_404(request):
+    company_id = request.headers.get("X-Company-ID")
     if not company_id:
-        raise ValidationError("company_id is required in query params")
+        raise ValidationError({"detail": "Company ID not provided."})
 
     try:
-        return Company.objects.get(id=company_id, user=request.user)
+        return Company.objects.get(id=company_id)
     except Company.DoesNotExist:
-        raise PermissionDenied("You do not have access to this company")
+        raise ValidationError({"detail": "Company not found."})

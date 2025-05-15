@@ -5,6 +5,7 @@ import TableComponent from "@/components/lancamentos/TableLancamentos";
 import { fetchPayments } from "@/services/lancamentos";
 import { fetchBanks } from "@/services/banks";
 import { PaymentRecord, FilterPaymentType } from "@/types/types";
+import { useCompany } from "@/contexts/CompanyContext";
 
 interface BankOption {
   id: number;
@@ -26,8 +27,12 @@ export default function Page() {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const { selectedCompany } = useCompany();     // ✅ you already have this
 
-  const loadPayments = async (appliedFilters: FilterPaymentType = filters, page = currentPage) => {
+  const loadPayments = async (
+    appliedFilters: FilterPaymentType = filters,
+    page = currentPage
+  ) => {
     const response = await fetchPayments(appliedFilters, page);
     setData(response.results);
     setTotalCount(response.count);
@@ -38,13 +43,16 @@ export default function Page() {
     setBankOptions(banks);
   };
 
+  // ✅ Fetch banks once on page load
   useEffect(() => {
     loadBanks();
   }, []);
 
+  // ✅ Fetch payments on filter/page changes
   useEffect(() => {
+    if (!selectedCompany) return;        // ✅ wait for company to be selected
     loadPayments(filters, currentPage);
-  }, [filters, currentPage]);
+  }, [filters, currentPage, selectedCompany]);   // ✅ ✅ ✅ ADD selectedCompany here
 
   return (
     <div className="p-6">

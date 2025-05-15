@@ -16,7 +16,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode # typ
 from django.utils.encoding import force_bytes # type: ignore
 from django.core.mail import send_mail # type: ignore
 from django.http import JsonResponse # type: ignore
-from .models import User
+from .models import User, Company
 from django.contrib.auth.tokens import PasswordResetTokenGenerator # type: ignore
 from rest_framework.permissions import IsAuthenticated  # type: ignore
 
@@ -64,5 +64,5 @@ def register(request):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def list_user_companies(request):
-    companies = request.user.companies.all().values("id", "name")
+    companies = Company.objects.all().values("id", "name")
     return Response(list(companies))

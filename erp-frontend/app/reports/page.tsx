@@ -12,6 +12,7 @@ import { searchEvents } from "@/services/events";
 import { searchResources } from "@/services/resources";
 import { API_URL } from "@/types/apiUrl";
 import { Event, Resource, Bank, CostCenter } from "@/types/types";
+import { api } from "@/lib/axios";   // ✅ ADD THIS
 
 export default function ReportsPage() {
   const [type, setType] = useState("bills");
@@ -30,30 +31,22 @@ export default function ReportsPage() {
   const [suppliers, setSuppliers] = useState<Resource[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [reportType, setReportType] = useState("espelho")
-
-  const getToken = () => {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("Token não encontrado");
-    return token;
-  };
-
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = getToken();
         const [costCentersRes, banksRes, eventsRes, clientsRes, suppliersRes] = await Promise.all([
-          fetch(`${API_URL}/payments/costcenter/`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_URL}/payments/banks/`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_URL}/events/`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_URL}/clients/clients/`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_URL}/clients/suppliers/`, { headers: { Authorization: `Bearer ${token}` } }),
+          api.get("/payments/costcenter/"),
+          api.get("/payments/banks/"),
+          api.get("/events/"),
+          api.get("/clients/clients/"),
+          api.get("/clients/suppliers/"),
         ]);
   
-        setCostCenters(await costCentersRes.json());
-        setBanks(await banksRes.json());
-        setEvents((await eventsRes.json()).results || []);
-        setClients((await clientsRes.json()).results || []);
-        setSuppliers((await suppliersRes.json()).results || []);
+        setCostCenters(costCentersRes.data);
+        setBanks(banksRes.data);
+        setEvents(eventsRes.data.results || []);
+        setClients(clientsRes.data.results || []);
+        setSuppliers(suppliersRes.data.results || []);
       } catch (err) {
         console.error("Erro ao buscar dados:", err);
       }
@@ -80,11 +73,11 @@ export default function ReportsPage() {
   const handleOpenPdf = async (url: string) => {
     try {
       setIsLoading(true);
-      const token = getToken();
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) throw new Error("Erro ao gerar relatório");
   
-      const blob = await res.blob();
+      // ✅ Axios + blob + X-Company-ID + Authorization
+      const res = await api.get(url, { responseType: "blob" });
+      const blob = res.data;
+  
       const pdfUrl = window.URL.createObjectURL(blob);
   
       // Open the PDF in a new browser tab
@@ -92,6 +85,8 @@ export default function ReportsPage() {
   
       // Optional: revoke the object URL later to avoid memory leaks
       setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 10000); // after 10 seconds
+    } catch (error) {
+      console.error("Erro ao gerar relatório", error);
     } finally {
       setIsLoading(false);
     }

@@ -6,6 +6,7 @@ from reportlab.lib.pagesizes import landscape, A4
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from django.shortcuts import get_object_or_404
+from accounts.utils import get_company_or_404 
 from django.http import HttpResponse
 from django.db.models import Sum
 from .models import Event
@@ -342,8 +343,8 @@ class EventViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
-        queryset = Event.objects.filter(user=user)
+        company = get_company_or_404(self.request)
+        queryset = Event.objects.filter(company=company)
         params = self.request.query_params
 
         # Filters from query params

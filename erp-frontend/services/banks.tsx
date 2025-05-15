@@ -1,55 +1,46 @@
-import { API_URL } from "@/types/apiUrl";
+import { api } from "@/lib/axios";
 
-const getToken = () => {
-  const token = localStorage.getItem("token");
-  if (!token) throw new Error("Token não encontrado");
-  return token;
+type Bank = {
+  name: string;
+  balance: number;
 };
 
 export const fetchBanks = async () => {
-  const token = getToken();
-  const response = await fetch(`${API_URL}/payments/banks/`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.ok ? await response.json() : [];
+  try {
+    const response = await api.get("/payments/banks/");
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao buscar bancos:", error);
+    return [];
+  }
 };
 
-export const createBank = async (data: { name: string; balance: number }) => {
-  const token = getToken();
-  const response = await fetch(`${API_URL}/payments/banks/`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-  return response.ok;
+export const createBank = async (data: Bank) => {
+  try {
+    await api.post("/payments/banks/", data);
+    return true;
+  } catch (error) {
+    console.error("Erro ao criar banco:", error);
+    return false;
+  }
 };
 
-export const updateBank = async (id: number, data: { name: string; balance: number }) => {
-  const token = getToken();
-  const response = await fetch(`${API_URL}/payments/banks/${id}/`, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-  return response.ok;
+export const updateBank = async (id: number, data: Bank) => {
+  try {
+    await api.put(`/payments/banks/${id}/`, data);
+    return true;
+  } catch (error) {
+    console.error("Erro ao atualizar banco:", error);
+    return false;
+  }
 };
 
 export const deleteBank = async (id: number) => {
-  const token = getToken();
-  const response = await fetch(`${API_URL}/payments/banks/${id}/`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.ok;
+  try {
+    await api.delete(`/payments/banks/${id}/`);
+    return true;
+  } catch (error) {
+    console.error("Erro ao deletar banco:", error);
+    return false;
+  }
 };
-

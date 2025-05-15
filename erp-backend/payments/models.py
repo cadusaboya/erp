@@ -34,19 +34,19 @@ class Accrual(models.Model):
 
 
 class Income(Accrual):
-    person = models.ForeignKey('clients.Client', on_delete=models.PROTECT, related_name='incomes')
+    person = models.ForeignKey('clients.Client', on_delete=models.CASCADE, related_name='incomes')
     legacy = models.IntegerField(null=True, unique=False)
 
     def __str__(self):
-        return f"Receita de {self.client.name} - {self.value}"
+        return f"Receita de {self.person.name} - {self.value}"
 
 
 class Bill(Accrual):
-    person = models.ForeignKey('clients.Supplier', on_delete=models.PROTECT, related_name='bills')
+    person = models.ForeignKey('clients.Supplier', on_delete=models.CASCADE, related_name='bills')
     legacy = models.IntegerField(null=True, unique=False)
 
     def __str__(self):
-        return f"Conta de {self.supplier.name} - {self.value}"
+        return f"Conta de {self.person.name} - {self.value}"
     
 class Payment(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -55,7 +55,7 @@ class Payment(models.Model):
     description = models.CharField(max_length=255, blank=True, null=True)
     date = models.DateField()
     value = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    bank = models.ForeignKey('Bank', on_delete=models.PROTECT, null=True, blank=True)
+    bank = models.ForeignKey('Bank', on_delete=models.CASCADE, null=True, blank=True)
     doc_number = models.CharField(max_length=100, blank=True)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True)
 

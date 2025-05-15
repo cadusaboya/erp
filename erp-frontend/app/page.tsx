@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import axios from "axios";
+import { api } from "@/lib/axios";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { API_URL } from "@/types/apiUrl";
@@ -29,7 +29,7 @@ export default function Home() {
 
     if (isRegistering) {
       // Register a new user
-      await axios.post(`${API_URL}/accounts/register/`, {
+      await api.post(`${API_URL}/accounts/register/`, {
         username,
         password,
         email,
@@ -39,7 +39,7 @@ export default function Home() {
       setMessage("User registered successfully! You can now log in.");
     } else {
       // Login existing user
-      const response = await axios.post(`${API_URL}/accounts/login/`, {
+      const response = await api.post(`${API_URL}/accounts/login/`, {
         username,
         password,
       });

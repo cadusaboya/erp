@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/sidebar";
 import { LayoutGrid, Menu, User, LogOut } from "lucide-react";
 import Link from "next/link";
+import CompanySelector from "@/components/CompanySelector";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -34,6 +35,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
               {/* Top content */}
               <div>
                 <SidebarContent>
+                  {/* ✅ Company Selector */}
+                  <CompanySelector />
+
                   <SidebarGroup>
                     <SidebarGroupLabel>Sistema Financeiro</SidebarGroupLabel>
                     <SidebarMenu>

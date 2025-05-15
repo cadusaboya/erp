@@ -1,23 +1,14 @@
-import { API_URL } from "@/types/apiUrl";
-
-type ResourceType = "clients" | "suppliers";
+import { api } from "@/lib/axios";
 import { FiltersClientType } from "@/types/types";
 
-const getToken = () => {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    throw new Error("Token não encontrado");
-  }
-  return token;
-};
+type ResourceType = "clients" | "suppliers";
 
 export const fetchResources = async (
   resource: ResourceType,
   filters: FiltersClientType = {},
-  page: number = 1,
+  page: number = 1
 ) => {
   try {
-    const token = getToken();
     const params = new URLSearchParams();
 
     if (filters.name) params.append("name", filters.name);
@@ -25,30 +16,15 @@ export const fetchResources = async (
     if (filters.email) params.append("email", filters.email);
     if (filters.telephone) params.append("telephone", filters.telephone);
 
-    // ✅ Paginação
     params.append("page", page.toString());
 
-    const queryString = `?${params.toString()}`;
-
-    const response = await fetch(`${API_URL}/clients/${resource}/${queryString}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Erro ao buscar ${resource}`);
-    }
-
-    const result = await response.json();
-    return result; // Expects { results, count }
+    const response = await api.get(`/clients/${resource}/?${params.toString()}`);
+    return response.data;
   } catch (error) {
     console.error(`Erro ao buscar ${resource}:`, error);
-    return { results: [], count: 0 }; // Standard paginated fallback
+    return { results: [], count: 0 };
   }
 };
-
 
 export const updateResource = async (
   resource: ResourceType,
@@ -56,24 +32,7 @@ export const updateResource = async (
   updatedData: any
 ) => {
   try {
-    const token = getToken();
-
-    const response = await fetch(
-      `${API_URL}/clients/${resource}/${resourceId}/`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updatedData),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Erro ao atualizar ${resource}`);
-    }
-
+    await api.put(`/clients/${resource}/${resourceId}/`, updatedData);
     return true;
   } catch (error) {
     console.error(`Erro ao atualizar ${resource}:`, error);
@@ -86,21 +45,7 @@ export const createResource = async (
   resourceData: any
 ) => {
   try {
-    const token = getToken();
-
-    const response = await fetch(`${API_URL}/clients/${resource}/`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(resourceData),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Erro ao criar ${resource}`);
-    }
-
+    await api.post(`/clients/${resource}/`, resourceData);
     return true;
   } catch (error) {
     console.error(`Erro ao criar ${resource}:`, error);
@@ -108,21 +53,12 @@ export const createResource = async (
   }
 };
 
-export const deleteResource = async (resource: ResourceType, resourceId: number) => {
+export const deleteResource = async (
+  resource: ResourceType,
+  resourceId: number
+) => {
   try {
-    const token = getToken();
-
-    const response = await fetch(`${API_URL}/clients/${resource}/${resourceId}/`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Erro ao deletar ${resource}`);
-    }
-
+    await api.delete(`/clients/${resource}/${resourceId}/`);
     return true;
   } catch (error) {
     console.error(`Erro ao deletar ${resource}:`, error);
@@ -130,46 +66,29 @@ export const deleteResource = async (resource: ResourceType, resourceId: number)
   }
 };
 
-export const fetchSingleResource = async (type: "clients" | "suppliers", id: number | string) => {
-  const token = localStorage.getItem("token");
-  if (!token) throw new Error("Token não encontrado");
-
-  const response = await fetch(`${API_URL}/clients/${type}/${id}/`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) throw new Error("Erro ao buscar recurso");
-
-  return await response.json();
+export const fetchSingleResource = async (
+  type: ResourceType,
+  id: number | string
+) => {
+  try {
+    const response = await api.get(`/clients/${type}/${id}/`);
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao buscar recurso:", error);
+    throw new Error("Erro ao buscar recurso");
+  }
 };
 
 export const searchResources = async (
-  type: "clients" | "suppliers",
+  type: ResourceType,
   query: string
 ): Promise<{ label: string; value: string }[]> => {
   try {
-    const token = localStorage.getItem("token");
-    if (!token) throw new Error("Token não encontrado");
-
     const params = new URLSearchParams();
-    if (query) params.append("name", query); // ou "name", dependendo da sua API
+    if (query) params.append("name", query);
 
-    const response = await fetch(`${API_URL}/clients/${type}/?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!response.ok) throw new Error("Erro ao buscar recursos");
-
-    const data = await response.json();
-
-    return (data.results || []).map((item: any) => ({
+    const response = await api.get(`/clients/${type}/?${params.toString()}`);
+    return (response.data.results || []).map((item: any) => ({
       label: item.name,
       value: String(item.id),
     }));
@@ -178,4 +97,3 @@ export const searchResources = async (
     return [];
   }
 };
-

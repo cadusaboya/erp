@@ -1,12 +1,5 @@
-import { API_URL } from "@/types/apiUrl";
-
+import { api } from "@/lib/axios";
 import { FilterFinanceRecordType } from "@/types/types";
-
-const getToken = () => {
-  const token = localStorage.getItem("token");
-  if (!token) throw new Error("Token não encontrado");
-  return token;
-};
 
 // 🟢 Util to map person_id to correct field
 const mapPersonId = (type: "bill" | "income", data: any) => {
@@ -24,8 +17,6 @@ export const fetchRecords = async (
   page = 1
 ) => {
   try {
-    const token = getToken();
-
     const params = new URLSearchParams();
 
     if (filters.startDate) params.append("start_date", filters.startDate);
@@ -39,39 +30,18 @@ export const fetchRecords = async (
 
     params.append("page", page.toString());
 
-    const response = await fetch(`${API_URL}/payments/${type}s/?${params.toString()}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) throw new Error(`Erro ao buscar ${type}s`);
-
-    return await response.json(); // Will return { count, next, previous, results }
+    const response = await api.get(`/payments/${type}s/?${params.toString()}`);
+    return response.data; // { count, next, previous, results }
   } catch (error) {
     console.error(`Erro ao buscar ${type}s:`, error);
-    return { count: 0, results: [] }; // safer fallback
+    return { count: 0, results: [] };
   }
 };
 
-
-// ✅ Create record (bill or income)
 export const createRecord = async (type: "bill" | "income", formData: any) => {
   try {
-    const token = getToken();
     const payload = mapPersonId(type, formData);
-
-    const response = await fetch(`${API_URL}/payments/${type}s/`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) throw new Error(`Erro ao criar ${type}`);
+    await api.post(`/payments/${type}s/`, payload);
     return true;
   } catch (error) {
     console.error(`Erro ao criar ${type}:`, error);
@@ -79,22 +49,14 @@ export const createRecord = async (type: "bill" | "income", formData: any) => {
   }
 };
 
-// ✅ Update record (bill or income)
-export const updateRecord = async (type: "bill" | "income", recordId: number, updatedData: any) => {
+export const updateRecord = async (
+  type: "bill" | "income",
+  recordId: number,
+  updatedData: any
+) => {
   try {
-    const token = getToken();
     const payload = mapPersonId(type, updatedData);
-
-    const response = await fetch(`${API_URL}/payments/${type}s/${recordId}/`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) throw new Error(`Erro ao atualizar ${type}`);
+    await api.put(`/payments/${type}s/${recordId}/`, payload);
     return true;
   } catch (error) {
     console.error(`Erro ao atualizar ${type}:`, error);
@@ -104,16 +66,7 @@ export const updateRecord = async (type: "bill" | "income", recordId: number, up
 
 export const deleteRecord = async (type: "bill" | "income", recordId: number) => {
   try {
-    const token = getToken();
-
-    const response = await fetch(`${API_URL}/payments/${type}s/${recordId}/`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) throw new Error(`Erro ao deletar ${type}`);
+    await api.delete(`/payments/${type}s/${recordId}/`);
     return true;
   } catch (error) {
     console.error(`Erro ao deletar ${type}:`, error);

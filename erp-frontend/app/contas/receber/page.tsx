@@ -5,6 +5,7 @@ import TableComponent from "@/components/contas/TableContas";
 import { fetchRecords } from "@/services/records";
 import { fetchBanks } from "@/services/banks";
 import { FinanceRecord } from "@/types/types";
+import { useCompany } from "@/contexts/CompanyContext";   // ✅ ADD THIS
 
 interface BankOption {
   id: number;
@@ -35,6 +36,7 @@ export default function Page() {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const { selectedCompany } = useCompany();               // ✅ ADD THIS
 
   const loadBanks = async () => {
     const banks = await fetchBanks();
@@ -47,13 +49,16 @@ export default function Page() {
     setTotalCount(response.count);
   };
 
+  // ✅ Fetch banks only once on page load
   useEffect(() => {
     loadBanks();
   }, []);
 
+  // ✅ Refetch records when filters, page, OR company changes
   useEffect(() => {
+    if (!selectedCompany) return;                         // ✅ avoid calling if company is not selected yet
     loadRecords(filters, currentPage);
-  }, [filters, currentPage]);
+  }, [filters, currentPage, selectedCompany]);            // ✅ ✅ ✅ ADD selectedCompany dependency
 
   return (
     <div className="flex">
