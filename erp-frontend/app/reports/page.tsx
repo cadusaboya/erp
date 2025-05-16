@@ -13,6 +13,12 @@ import { searchResources } from "@/services/resources";
 import { API_URL } from "@/types/apiUrl";
 import { Event, Resource, Bank, CostCenter } from "@/types/types";
 import { api } from "@/lib/axios";   // ✅ ADD THIS
+import { transformDates } from "@/lib/dateFormat";
+
+const withAllOption = (options: { label: string; value: string }[]) => [
+  { label: "*", value: "" },
+  ...options,
+];
 
 export default function ReportsPage() {
   const [type, setType] = useState("bills");
@@ -31,6 +37,7 @@ export default function ReportsPage() {
   const [suppliers, setSuppliers] = useState<Resource[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [reportType, setReportType] = useState("espelho")
+  
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -56,17 +63,24 @@ export default function ReportsPage() {
   
 
   const buildParams = (extraParams: Record<string, string> = {}) => {
+    const rawParams = {
+      type,
+      status: status !== "todos" ? status : "",
+      person,
+      event_id: eventId,
+      cost_center: costCenter !== "todos" ? costCenter : "",
+      date_min: dateMin,
+      date_max: dateMax,
+      ...extraParams,
+    };
+  
+    const transformed = transformDates(rawParams);
     const params = new URLSearchParams();
-    if (type) params.append("type", type);
-    if (status && status !== "todos") params.append("status", status);
-    if (person) params.append("person", person);
-    if (eventId) params.append("event_id", eventId);
-    if (costCenter && costCenter !== "todos") params.append("cost_center", costCenter);
-    if (dateMin) params.append("date_min", dateMin);
-    if (dateMax) params.append("date_max", dateMax);
-    for (const key in extraParams) {
-      params.append(key, extraParams[key]);
-    }
+  
+    Object.entries(transformed).forEach(([key, value]) => {
+      if (value) params.append(key, value);
+    });
+  
     return params;
   };
 
@@ -157,10 +171,11 @@ export default function ReportsPage() {
                 <label className="text-xs">Pessoa</label>
                 <Combobox
                   disabled={type === "both"}
-                  options={options}
-                  loadOptions={(query) =>
-                    searchResources(type === "incomes" ? "clients" : "suppliers", query)
-                  }
+                  options={withAllOption(options)}
+                  loadOptions={async (query) => {
+                    const results = await searchResources(type === "incomes" ? "clients" : "suppliers", query);
+                    return withAllOption(results);
+                  }}
                   value={person}
                   onChange={setPerson}
                   placeholder={
@@ -173,15 +188,19 @@ export default function ReportsPage() {
               <div className="flex flex-col gap-1 w-fit">
                 <label className="text-xs">Evento</label>
                 <Combobox
-                  options={events.map(ev => ({
+                  options={withAllOption(events.map(ev => ({
                     label: ev.event_name,
                     value: String(ev.id),
-                  }))}
-                  loadOptions={searchEvents}
+                  })))}
+                  loadOptions={async (query) => {
+                    const results = await searchEvents(query);
+                    return withAllOption(results);
+                  }}
                   value={eventId}
                   onChange={setEventId}
                   placeholder="Selecione um evento"
                 />
+
               </div>
               
               <div>
