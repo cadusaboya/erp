@@ -9,6 +9,7 @@ import { FileText } from "lucide-react";
 import { Event, FinancialSummary, FinanceRecord } from "@/types/types";
 import { formatCurrencyBR } from "@/lib/utils";
 import { API_URL } from "@/types/apiUrl";
+import { api } from "@/lib/axios";
 
 interface EventDetailsDialogProps {
   open: boolean;
@@ -27,19 +28,14 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
 
     const fetchEventData = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("Token não encontrado");
-
         const [eventRes, paymentRes] = await Promise.all([
-          fetch(`${API_URL}/events/view/${eventId}/`, { headers: { Authorization: `Bearer ${token}` } }),
-          fetch(`${API_URL}/payments/event-allocations/${eventId}/`, { headers: { Authorization: `Bearer ${token}` } })
+          api.get(`/events/view/${eventId}/`),
+          api.get(`/payments/event-allocations/${eventId}/`)
         ]);
-
-        if (!eventRes.ok || !paymentRes.ok) throw new Error("Erro em alguma das requisições");
-
-        const eventData = await eventRes.json();
-        const paymentData = await paymentRes.json();
-
+    
+        const eventData = eventRes.data;
+        const paymentData = paymentRes.data;
+    
         setEvent(eventData.event);
         setFinancialSummary({
           total_despesas: paymentData.total_despesas,
@@ -49,11 +45,11 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
         });
         setIncomes(paymentData.payments_incomes || []);
         setBills(paymentData.payments_bills || []);
-        
       } catch (error) {
         console.error("Erro ao buscar dados do evento:", error);
       }
     };
+    
 
     fetchEventData();
   }, [eventId, open]);

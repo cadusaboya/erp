@@ -31,6 +31,8 @@ import {
 import RatioTable from "@/components/RatioTable";
 import { Combobox } from "@/components/ui/combobox";
 import { RateioItem } from "@/components/RatioTable";
+import { Controller } from "react-hook-form";
+
 
 
 interface CreateContaDialogProps {
@@ -46,7 +48,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   onRecordCreated,
   type,
 }) => {
-  const { register, handleSubmit, reset } = useForm<FinanceRecord>();
+  const { register, handleSubmit, reset, control } = useForm<FinanceRecord>();
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([]);
@@ -130,7 +132,19 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
               </div>
 
               <Input placeholder="Descrição" {...register("description", { required: true })} />
-              <Input type="date" {...register("date_due", { required: true })} />
+              <Controller
+                name="date_due"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Input
+                    type="date"
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="dd/mm/aa"
+                  />
+                )}
+              />
               <Input type="number" step="0.01" placeholder="Valor" {...register("value", { required: true })} />
               <Input placeholder="Número do Documento" {...register("doc_number")} />
 

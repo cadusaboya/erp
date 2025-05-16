@@ -1,4 +1,5 @@
 export interface PaymentCreatePayload {
+  [key: string]: unknown; // ✅ this fixes the error
   bill_id?: number;
   income_id?: number;
   income?: number;
@@ -39,17 +40,18 @@ export interface PaymentRecord {
 }
 
 export interface FilterPaymentType {
+  [key: string]: unknown; // ✅ this fixes the error
   startDate?: string;
   endDate?: string;
   person?: string;
-  description?: string;
   minValue?: string;
   maxValue?: string;
-  type?: ("Despesa" | "Receita")[];
+  type?: string[];
   bank_name?: string[];
-  bill_id?: number;   // ✅ Novo campo para despesa
-  income_id?: number; // ✅ Novo campo para receita
+  bill_id?: number;
+  income_id?: number;
 }
+
 
   
   export type FilterFinanceRecordType = {
