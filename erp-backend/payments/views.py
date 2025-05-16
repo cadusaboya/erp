@@ -61,49 +61,56 @@ def generate_bank_statement_report(request):
     user = request.user
 
     company = get_company_or_404(request)
-    payments = Payment.objects.filter(company=company)
 
-    if date_min:
-        payments = payments.filter(date__gte=date_min)
+    # 🔵 1. Obter saldo atual do banco
+    if bank_id:
+        bank = Bank.objects.get(id=bank_id, company=company)
+        saldo_atual = bank.balance
+        bank_name = bank.name
+    else:
+        saldo_atual = sum(bank.balance for bank in Bank.objects.filter(company=company))
+        bank_name = "Consolidado"
+
+    # 🔵 2. Obter todos os pagamentos de date_min até hoje
+    today = timezone.now().date()
+    payments_range = Payment.objects.filter(company=company, date__gte=date_min, date__lte=today)
+    if bank_id:
+        payments_range = payments_range.filter(bank_id=bank_id)
+
+    payments_range = payments_range.select_related('bill__person', 'income__person').order_by('-date', '-id')  # do mais recente ao mais antigo
+
+    saldo = saldo_atual
+    for p in payments_range:
+        if p.bill:
+            saldo += p.value  # desfaz o pagamento
+        elif p.income:
+            saldo -= p.value  # desfaz o recebimento
+
+    saldo_inicial = saldo
+
+    # 🔵 3. Filtrar apenas os pagamentos do período solicitado (para mostrar no extrato)
+    payments = Payment.objects.filter(company=company, date__gte=date_min)
     if date_max:
         payments = payments.filter(date__lte=date_max)
     if bank_id:
         payments = payments.filter(bank_id=bank_id)
 
-    payments = payments.select_related('bank', 'bill__person', 'income__person').order_by("date", "id")  # Mais antigos primeiro
+    payments = payments.select_related('bill__person', 'income__person').order_by("date", "id")
 
-    if bank_id:
-        bank = Bank.objects.get(id=bank_id, company=company)
-        initial_balance = bank.balance
-        bank_name = bank.name
-    else:
-        initial_balance = sum(bank.balance for bank in Bank.objects.filter(company=company))
-        bank_name = "Consolidado"
-
-    # Retroagir saldo para o início do período
-    balance = initial_balance
-    for p in reversed(list(payments)):
-        if p.bill:
-            balance += p.value
-        elif p.income:
-            balance -= p.value
-
-    # Montar extrato
-    balance_moving = balance
+    # 🔵 4. Montar extrato
+    balance_moving = saldo_inicial
     lines = []
     for p in payments:
         if p.bill:
-            tipo = "Despesa"
             favorecido = p.bill.person.name if p.bill.person else "-"
             descricao = p.bill.description
             balance_moving -= p.value
-            value_display = -p.value  # Negativo
+            value_display = -p.value
         elif p.income:
-            tipo = "Receita"
             favorecido = p.income.person.name if p.income.person else "-"
             descricao = p.income.description
             balance_moving += p.value
-            value_display = p.value  # Positivo
+            value_display = p.value
         else:
             continue
 
@@ -115,19 +122,19 @@ def generate_bank_statement_report(request):
             "balance": balance_moving
         })
 
-    # Definir data do saldo
-    if date_max:
-        saldo_date = timezone.datetime.strptime(date_max, "%Y-%m-%d").date()
-    else:
-        saldo_date = timezone.now().date()
-
-    # Criar PDF
+    # 🔵 5. Gerar PDF
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = "inline; filename=relatorio_completo_contas.pdf"
+    response["Content-Disposition"] = "inline; filename=extrato_bancario.pdf"
 
     pdf = canvas.Canvas(response, pagesize=A4)
     width, height = A4
     margin = 30
+
+    col_date = margin
+    col_fav = margin + 60
+    col_desc = margin + 180
+    col_value = width - margin - 90
+    col_balance = width - margin
 
     pdf.setFont("Helvetica-Bold", 14)
     pdf.drawCentredString(width / 2, height - 40, "Arquitetura de Eventos")
@@ -139,21 +146,14 @@ def generate_bank_statement_report(request):
     periodo_text = f"Período: {date_min or '--'} a {date_max or '--'}"
     pdf.drawString(margin, height - 90, periodo_text)
 
-    saldo_text = f"Saldo Atual: R$ {initial_balance:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    data_saldo_text = f"Data do Saldo: {saldo_date.strftime('%d/%m/%Y')}"
-    pdf.drawString(margin, height - 110, saldo_text)
-    pdf.drawString(margin, height - 125, data_saldo_text)
+    data_saldo_text = f"Data do Saldo: {date_min}"
+    saldo_text = f"Saldo Inicial: R$ {saldo_inicial:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    pdf.drawRightString(col_balance, height - 125, data_saldo_text)
+    pdf.drawRightString(col_balance, height - 110, saldo_text)
+    
 
-    # Cabeçalho
     y = height - 155
     pdf.setFont("Helvetica-Bold", 9)
-
-    col_date = margin
-    col_fav = margin + 60
-    col_desc = margin + 180
-    col_value = width - margin - 90
-    col_balance = width - margin
-
     pdf.drawString(col_date, y, "Data")
     pdf.drawString(col_fav, y, "Favorecido")
     pdf.drawString(col_desc, y, "Descrição")
@@ -163,16 +163,12 @@ def generate_bank_statement_report(request):
 
     pdf.line(margin, y, width - margin, y)
     y -= 15
-
     pdf.setFont("Helvetica", 9)
 
     for line in lines:
         if y < 60:
             pdf.showPage()
             y = height - 50
-            pdf.setFont("Helvetica", 9)
-
-            # Reescrever cabeçalho
             pdf.setFont("Helvetica-Bold", 9)
             pdf.drawString(col_date, y, "Data")
             pdf.drawString(col_fav, y, "Favorecido")
@@ -185,8 +181,8 @@ def generate_bank_statement_report(request):
             pdf.setFont("Helvetica", 9)
 
         pdf.drawString(col_date, y, line["date"].strftime("%d/%m/%Y"))
-        pdf.drawString(col_fav, y, truncate_text(line["favorecido"], 18))   # ✅ added truncate
-        pdf.drawString(col_desc, y, truncate_text(line["descricao"], 37))
+        pdf.drawString(col_fav, y, shorten_text(line["favorecido"], 100, pdf))
+        pdf.drawString(col_desc, y, shorten_text(line["descricao"], 180, pdf))
         pdf.drawRightString(col_value, y, f"{'-' if line['value'] < 0 else ''}R$ {abs(line['value']):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         pdf.drawRightString(col_balance, y, f"R$ {line['balance']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
@@ -199,6 +195,137 @@ def generate_bank_statement_report(request):
 
     return response
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def generate_chartaccount_summary_report(request):
+    from django.utils import timezone
+
+    code = request.query_params.get("code")
+    date_min = request.query_params.get("date_min")
+    date_max = request.query_params.get("date_max")
+
+    user = request.user
+    company = get_company_or_404(request)
+
+    if not code:
+        return Response({"error": "chart_account_code is required"}, status=400)
+
+    # 1. Buscar conta base e suas descendentes
+    root = get_object_or_404(ChartAccount, code=code)
+    accounts = ChartAccount.objects.select_related("parent")
+
+    descendants = []
+
+    def collect_descendants(acc_id):
+        children = [a for a in accounts if a.parent_id == acc_id]
+        for c in children:
+            descendants.append(c.id)
+            collect_descendants(c.id)
+
+    collect_descendants(root.id)
+    all_ids = [root.id] + descendants
+
+    # 2. Filtrar pagamentos alocados a essas contas
+    payments = Payment.objects.filter(company=company).order_by("date")
+    if date_min:
+        payments = payments.filter(date__gte=date_min)
+    if date_max:
+        payments = payments.filter(date__lte=date_max)
+
+    payments = payments.select_related("bill__person", "income__person").prefetch_related("bill__allocations", "income__allocations")
+    results = []
+
+    for p in payments:
+        accrual = p.payable
+        if not accrual:
+            continue
+
+        allocations = accrual.allocations.filter(chart_account_id__in=all_ids)
+        for allocation in allocations:
+            ratio = allocation.value / accrual.value if accrual.value else 0
+            paid_value = round(p.value * ratio, 2)
+
+            results.append({
+                "date": p.date,
+                "type": "Despesa" if p.bill else "Receita",
+                "person": accrual.person.name if accrual.person else "-",
+                "description": accrual.description,
+                "doc_number": p.doc_number or "DN",
+                "value": paid_value,
+            })
+
+    # 3. Gerar PDF
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f"inline; filename=relatorio_resumo_plano_{code}.pdf"
+
+    pdf = canvas.Canvas(response, pagesize=landscape(A4))
+    width, height = landscape(A4)
+    margin = 40
+
+    # X positions
+    cols = [
+        margin,
+        margin + 100,
+        margin + 290,
+        width - 200,
+        width - margin - 70
+    ]
+
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawCentredString(width / 2, height - 50, "Arquitetura de Eventos")
+    pdf.setFont("Helvetica", 12)
+    pdf.drawCentredString(width / 2, height - 70, f"Resumo Plano de Conta - {root.code} - {root.description}")
+    pdf.setFont("Helvetica", 9)
+    periodo_text = f"Período {date_min or '--'} a {date_max or '--'}"
+    pdf.drawString(margin, height - 100, periodo_text)
+
+    # Cabeçalho
+    y = height - 130
+    def draw_header():
+        nonlocal y
+        pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(cols[0], y, "Data")
+        pdf.drawString(cols[1], y, "Pessoa")
+        pdf.drawString(cols[2], y, "Descrição")
+        pdf.drawString(cols[3], y, "Doc.")
+        pdf.drawString(cols[4], y, "Valor")
+        y -= 5
+        pdf.line(margin, y, width - margin, y)
+        y -= 15
+
+    draw_header()
+
+    total = Decimal("0.00")
+    pdf.setFont("Helvetica", 9)
+
+    for row in results:
+        if y < 60:
+            pdf.showPage()
+            y = height - 50
+            draw_header()
+            pdf.setFont("Helvetica", 9)
+
+        pdf.drawString(cols[0], y, row["date"].strftime("%d/%m/%Y"))
+        pdf.drawString(cols[1], y, truncate_text(row["person"], 30))
+        pdf.drawString(cols[2], y, truncate_text(row["description"], 45))
+        pdf.drawString(cols[3], y, row["doc_number"])
+        pdf.drawString(cols[4], y, f"R$ {row['value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+
+        total += row["value"]
+        y -= 15
+
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawString(cols[3], y - 10, "Total")
+    pdf.drawString(cols[4], y - 10, f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+
+    pdf.setFont("Helvetica", 7)
+    pdf.drawString(width - 100, 30, "Página 1 de 1")
+    pdf.showPage()
+    pdf.save()
+
+    return response
+
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -209,7 +336,6 @@ def generate_chart_account_balance(request):
 
     company = get_company_or_404(request)
     payments = Payment.objects.filter(company=company)
-
 
     if date_min:
         payments = payments.filter(date__gte=date_min)
@@ -331,25 +457,6 @@ def generate_chart_account_balance(request):
     pdf.setFont("Helvetica-Bold", 10)
     pdf.drawString(margin, y, "Resultado")
     pdf.drawRightString(width - margin, y, f"R$ {resultado:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-
-    # 👉 NEW BLOCK: print receitas payments
-    y -= 30
-    pdf.setFont("Helvetica-Bold", 10)
-    pdf.drawString(margin, y, "Pagamentos lançados em Receitas")
-    y -= 20
-
-    pdf.setFont("Helvetica", 8)
-    for item in receitas_payments:
-        if y < 60:
-            pdf.showPage()
-            y = height - 50
-            pdf.setFont("Helvetica", 8)
-
-        pdf.drawString(margin, y, f"{item['date'].strftime('%d/%m/%Y')}")
-        pdf.drawString(margin + 60, y, f"{item['account_code']} - {item['account_desc']}")
-        pdf.drawString(margin + 220, y, item['description'][:40])  # limit long descriptions
-        pdf.drawRightString(width - margin, y, f"R$ {item['value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        y -= 12
 
     pdf.setFont("Helvetica", 7)
     pdf.drawString(width - 100, 30, "Página 1 de 1")
@@ -485,10 +592,10 @@ def generate_cost_center_consolidated_report(request):
 @permission_classes([IsAuthenticated])
 def generate_payments_report(request):
     type_filter = request.query_params.get("type", "both")
+    status = request.query_params.get("status")
     date_min = request.query_params.get("date_min")
     date_max = request.query_params.get("date_max")
     person_id = request.query_params.get("person")
-    status = request.query_params.get("status")
     event_id = request.query_params.get("event_id")
     cost_center_id = request.query_params.get("cost_center")
 
@@ -496,15 +603,55 @@ def generate_payments_report(request):
     company = get_company_or_404(request)
     event = get_object_or_404(Event, id=event_id, company=company) if event_id else None
 
-    bills = []
-    incomes = []
+    def get_open_accruals():
+        bill_qs = Bill.objects.filter(company=company).order_by("date_due")
+        income_qs = Income.objects.filter(company=company).order_by("date_due")
+        if date_min:
+            bill_qs = bill_qs.filter(date_due__gte=date_min)
+            income_qs = income_qs.filter(date_due__gte=date_min)
+        if date_max:
+            bill_qs = bill_qs.filter(date_due__lte=date_max)
+            income_qs = income_qs.filter(date_due__lte=date_max)
+        if person_id:
+            bill_qs = bill_qs.filter(person_id=person_id)
+            income_qs = income_qs.filter(person_id=person_id)
+        if cost_center_id:
+            bill_qs = bill_qs.filter(cost_center_id=cost_center_id)
+            income_qs = income_qs.filter(cost_center_id=cost_center_id)
+        if event_id:
+            bill_qs = bill_qs.filter(event_allocations__event_id=event_id).distinct()
+            income_qs = income_qs.filter(event_allocations__event_id=event_id).distinct()
 
-    if status == "pago":
-        payments = Payment.objects.filter(
-            company=company,
-        ).select_related('bill', 'income', 'bill__person', 'income__person').prefetch_related('bill__event_allocations', 'income__event_allocations')
-        payments = payments.order_by('date')
+        def get_rows(qs):
+            rows = []
+            for item in qs:
+                if event:
+                    allocation = item.event_allocations.filter(event_id=event.id).first()
+                    if not allocation:
+                        continue
+                    original_value = allocation.value
+                    ratio = allocation.value / item.value if item.value else 0
+                    total_paid = sum(p.value for p in item.payments.all()) * ratio
+                else:
+                    original_value = item.value
+                    total_paid = sum(p.value for p in item.payments.all())
+                value = round(original_value - total_paid, 2)
+                if value <= 0:
+                    continue
+                rows.append({
+                    "id": item.id,
+                    "date": item.date_due,
+                    "person": item.person.name if item.person else "-",
+                    "description": item.description,
+                    "doc_number": item.doc_number or "DN",
+                    "value": value,
+                })
+            return rows
 
+        return get_rows(bill_qs), get_rows(income_qs)
+
+    def get_paid_payments():
+        payments = Payment.objects.filter(company=company).order_by("date")
         if date_min:
             payments = payments.filter(date__gte=date_min)
         if date_max:
@@ -524,107 +671,46 @@ def generate_payments_report(request):
                 Q(income__cost_center_id=cost_center_id)
             )
 
-        for p in payments:
-            accrual = p.payable  # Bill or Income
-
-            # Find event allocation for the selected event
+        bills, incomes = [], []
+        for p in payments.select_related('bill', 'income', 'bill__person', 'income__person').prefetch_related('bill__event_allocations', 'income__event_allocations'):
+            accrual = p.payable
             if event:
                 allocation = accrual.event_allocations.filter(event_id=event.id).first()
                 if allocation:
                     ratio = allocation.value / accrual.value if accrual.value else 0
                     adjusted_value = round(p.value * ratio, 2)
                 else:
-                    continue  # this payment has no allocation to the event, skip
+                    continue
             else:
                 adjusted_value = round(p.value, 2)
+            row = {
+                "id": p.id,
+                "date": p.date,
+                "person": accrual.person.name if accrual.person else "-",
+                "description": p.description,
+                "doc_number": p.doc_number or "DN",
+                "value": adjusted_value,
+            }
+            if p.bill:
+                bills.append(row)
+            elif p.income:
+                incomes.append(row)
+        return bills, incomes
 
-            if p.bill and type_filter in ["both", "bills"]:
-                bills.append({
-                    "id": p.id,
-                    "date": p.date,
-                    "person": accrual.person.name if accrual.person else "-",
-                    "description": p.description,
-                    "doc_number": p.doc_number or "DN",
-                    "value": adjusted_value,
-                })
-            elif p.income and type_filter in ["both", "incomes"]:
-                incomes.append({
-                    "id": p.id,
-                    "date": p.date,
-                    "person": accrual.person.name if accrual.person else "-",
-                    "description": p.description,
-                    "doc_number": p.doc_number or "DN",
-                    "value": adjusted_value,
-                })
+    # --- Data
+    bills_open, incomes_open, bills_paid, incomes_received = [], [], [], []
+    if not status or status == "em aberto":
+        bills_open, incomes_open = get_open_accruals()
+    if not status or status == "pago":
+        bills_paid, incomes_received = get_paid_payments()
 
-    else:
-        bill_qs = Bill.objects.filter(company=company).order_by('date_due')
-        income_qs = Income.objects.filter(company=company).order_by('date_due')
-        if date_min:
-            bill_qs = bill_qs.filter(date_due__gte=date_min)
-            income_qs = income_qs.filter(date_due__gte=date_min)
-        if date_max:
-            bill_qs = bill_qs.filter(date_due__lte=date_max)
-            income_qs = income_qs.filter(date_due__lte=date_max)
-        if person_id:
-            bill_qs = bill_qs.filter(person_id=person_id)
-            income_qs = income_qs.filter(person_id=person_id)
-        if status == "em aberto":
-            bill_qs = bill_qs.filter(status__in=["em aberto", "parcial"])
-            income_qs = income_qs.filter(status__in=["em aberto", "parcial"])
-        if event_id:
-            bill_qs = bill_qs.filter(event_allocations__event_id=event_id).distinct()
-            income_qs = income_qs.filter(event_allocations__event_id=event_id).distinct()
-        if cost_center_id:
-            bill_qs = bill_qs.filter(cost_center_id=cost_center_id)
-            income_qs = income_qs.filter(cost_center_id=cost_center_id)
-
-        def get_rows(qs):
-            rows = []
-            for item in qs:
-                if event:
-                    allocation = item.event_allocations.filter(event_id=event.id).first()
-                    if not allocation:
-                        continue
-                    original_value = allocation.value
-                    ratio = allocation.value / item.value if item.value else 0
-                    total_paid = sum(p.value for p in item.payments.all()) * ratio
-                else:
-                    original_value = item.value
-                    total_paid = sum(p.value for p in item.payments.all()) if hasattr(item, "payments") else 0
-
-                if status == "em aberto":
-                    value = round(original_value - total_paid, 2)
-                else:
-                    value = round(original_value, 2)
-
-                if status == "em aberto" and value <= 0:
-                    continue
-
-                rows.append({
-                    "id": item.id,
-                    "date": item.date_due,
-                    "person": item.person.name if item.person else "-",
-                    "description": item.description,
-                    "doc_number": item.doc_number or "DN",
-                    "value": value,
-                })
-            return rows
-
-        if type_filter in ["both", "bills"]:
-            bills = get_rows(bill_qs)
-        if type_filter in ["both", "incomes"]:
-            incomes = get_rows(income_qs)
-
-    # ------------------------- PDF ---------------------------------
-
+    # --- PDF
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = "inline; filename=relatorio_completo_contas.pdf"
 
     pdf = canvas.Canvas(response, pagesize=landscape(A4))
     width, height = landscape(A4)
     cols = [50, width * 0.12, width * 0.2, width * 0.45, width * 0.8, width * 0.9]
-
     event_name = event.event_name if event else "Todos os Eventos"
 
     if status == "pago":
@@ -643,21 +729,18 @@ def generate_payments_report(request):
         title = {
             "bills": "Despesas",
             "incomes": "Receitas"
-        }.get(type_filter, "Lançamentos Contábeis")
-        
+        }.get(type_filter, "Lançamentos")
+
     y = draw_header(pdf, width, height, event_name, event.id if event else "Geral", title)
 
     def draw_table(pdf, items, label, y):
         if not items:
             return y, Decimal("0.00")
-
         pdf.setFont("Helvetica-Bold", 10)
         pdf.drawString(cols[0], y, label)
         y -= 20
-
         total = Decimal("0.00")
         pdf.setFont("Helvetica", 8)
-
         for row in items:
             y = check_page_break(pdf, y, height, width, event_name, event_id, title)
             pdf.setFont("Helvetica", 9)
@@ -669,31 +752,47 @@ def generate_payments_report(request):
             pdf.drawString(cols[5], y, f"R$ {row['value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
             total += row["value"]
             y -= 15
-
         pdf.setFont("Helvetica-Bold", 9)
-        pdf.drawString(cols[4], y, f"Total {label}")
+        pdf.drawString(cols[4], y, f"Total")
         pdf.drawString(cols[5], y, f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        y -= 15
+        y -= 20
         return y, total
 
-    total_bills = Decimal("0.00")
-    total_incomes = Decimal("0.00")
+    total_bills = total_incomes = total_paid = total_received = Decimal("0.00")
 
-    if bills:
-        y, total_bills = draw_table(pdf, bills, "Despesas", y)
-    if incomes:
-        y, total_incomes = draw_table(pdf, incomes, "Receitas", y)
+    if type_filter in ["incomes", "both"]:
+        if incomes_open:
+            y, total_incomes = draw_table(pdf, incomes_open, "Contas a Receber", y)
+        if incomes_received:
+            y, total_received = draw_table(pdf, incomes_received, "Contas Recebidas", y)
+    if type_filter in ["bills", "both"]:
+        if bills_open:
+            y, total_bills = draw_table(pdf, bills_open, "Contas a Pagar", y)
+        if bills_paid:
+            y, total_paid = draw_table(pdf, bills_paid, "Contas Pagas", y)
 
-    # Saldo
-    if status == "pago" and event:
-        saldo = total_incomes - total_bills
+
+    if event and type_filter == "both":
+        total_receitas = total_received + total_incomes
+        total_despesas = total_paid + total_bills
+        saldo = total_receitas - total_despesas
+
         pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(cols[4], y, "Total Receitas")
+        pdf.drawString(cols[5], y, f"R$ {total_receitas:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        y -= 15
+
+        pdf.drawString(cols[4], y, "Total Despesas")
+        pdf.drawString(cols[5], y, f"R$ {total_despesas:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        y -= 15
+
         pdf.drawString(cols[4], y, "Saldo do Evento")
         pdf.drawString(cols[5], y, f"R$ {saldo:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         y -= 20
 
     pdf.setFont("Helvetica", 7)
     pdf.drawString(width - 100, 30, "Página 1 de 1")
+    pdf.showPage()
     pdf.save()
     return response
 
