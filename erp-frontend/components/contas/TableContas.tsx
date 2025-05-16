@@ -37,6 +37,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 
 interface BankOption {
   id: number;
@@ -131,7 +132,37 @@ const TableComponent: React.FC<TableComponentProps> = ({
     <div className="p-6 bg-white shadow-lg rounded-lg">
       <div className="flex justify-between mb-4">
         <h2 className="text-xl font-semibold">{title}</h2>
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
+          <Input
+            type="number"
+            placeholder="ID"
+            className="w-[120px]"
+            value={filters.id ?? ""}
+            onChange={(e) => {
+              const val = e.target.value;
+            
+              if (val === "") {
+                setFilters({ startDate: "", endDate: "", person: "", description: "", id: "", status: ["em aberto", "vencido", "parcial"], minValue: "", maxValue: "" })
+              } else {
+                const updatedStatus = filters.status?.includes("pago")
+                  ? filters.status
+                  : [...(filters.status || []), "pago"];
+            
+                setFilters({
+                  ...filters,
+                  id: parseInt(val),
+                  status: updatedStatus,
+                });
+              }
+            }}
+            
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setCurrentPage(1);
+                onRecordUpdated();
+              }
+            }}
+          />
           <Button onClick={() => setFiltersOpen(true)}>Filtros Avançados</Button>
           <Button onClick={() => setCreateOpen(true)} className="flex items-center gap-2">
             <PlusCircle size={18} /> {type === "bill" ? "Nova Conta" : "Novo Recebimento"}
@@ -146,7 +177,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
         onClose={() => setFiltersOpen(false)}
         applyFilters={applyFilters}
         clearFilters={() =>
-          setFilters({ startDate: "", endDate: "", person: "", description: "", status: ["em aberto", "vencido", "parcial"], minValue: "", maxValue: "" })
+          setFilters({ startDate: "", endDate: "", person: "", description: "", id: "", status: ["em aberto", "vencido", "parcial"], minValue: "", maxValue: "" })
         }
         filterFields={[
           { key: "startDate", type: "date", label: "Data Inicial", placeholder: "Data Inicial" },

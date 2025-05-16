@@ -21,6 +21,7 @@ export const fetchRecords = async (
     const parsed = transformDates(filters); // ✅ Converte datas
     const params = new URLSearchParams();
 
+    if (filters.id !== undefined) params.append("id", filters.id.toString());
     if (parsed.startDate) params.append("start_date", parsed.startDate);
     if (parsed.endDate) params.append("end_date", parsed.endDate);
     if (parsed.description) params.append("description", parsed.description);

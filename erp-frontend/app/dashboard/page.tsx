@@ -18,6 +18,7 @@ export default function Page() {
     minValue: "",
     maxValue: "",
     type: [],
+    id: "",
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);

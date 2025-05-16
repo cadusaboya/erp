@@ -33,7 +33,7 @@ import {
   AlertDialogAction,
   AlertDialogDescription,
 } from "@/components/ui/alert-dialog";
-
+import { Input } from "@/components/ui/input";
 import { deletePayment } from "@/services/lancamentos";
 
 interface BankOption {
@@ -88,7 +88,23 @@ const TableComponent: React.FC<TableComponentProps> = ({
     <div className="p-6 bg-white shadow-lg rounded-lg">
       <div className="flex justify-between mb-4">
         <h2 className="text-xl font-semibold">{title}</h2>
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
+          <Input
+            type="number"
+            placeholder="ID"
+            className="w-[120px]"
+            value={filters.id ?? ""}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFilters({ ...filters, id: val === "" ? undefined : parseInt(val) });
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setCurrentPage(1);
+                onOrderUpdated(); // ou função de busca
+              }
+            }}
+          />
           <Button onClick={() => setFiltersOpen(true)}>Filtros Avançados</Button>
         </div>
       </div>
