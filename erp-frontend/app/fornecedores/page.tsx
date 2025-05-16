@@ -12,7 +12,6 @@ export default function SuppliersPage() {
     cpf_cnpj: "",
     email: "",
     telephone: "",
-    id: "",
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);

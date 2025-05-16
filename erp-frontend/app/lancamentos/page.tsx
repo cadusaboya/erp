@@ -24,7 +24,6 @@ export default function Page() {
     maxValue: "",
     type: ["Despesa", "Receita"],
     bank_name: [],
-    id: "",
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);

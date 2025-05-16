@@ -124,6 +124,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
             minValue: "",
             maxValue: "",
             bank_name: [],
+            id: undefined
           })
         }
         filterFields={[

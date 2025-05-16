@@ -130,7 +130,7 @@ const TableResources: React.FC<TableResourcesProps> = ({
           setCurrentPage(1); // 👈 reset page when applying filters
         }}
         clearFilters={() =>
-          setFilters({ name: "", cpf_cnpj: "", email: "", telephone: "", id: ""})
+          setFilters({ name: "", cpf_cnpj: "", email: "", telephone: "", id: undefined})
         }
         filterFields={[
           { key: "name", type: "text", label: "Nome", placeholder: "Nome" },

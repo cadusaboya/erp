@@ -142,7 +142,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
               const val = e.target.value;
             
               if (val === "") {
-                setFilters({ startDate: "", endDate: "", person: "", description: "", id: "", status: ["em aberto", "vencido", "parcial"], minValue: "", maxValue: "" })
+                setFilters({ startDate: "", endDate: "", person: "", description: "", id: undefined, status: ["em aberto", "vencido", "parcial"], minValue: "", maxValue: "" })
               } else {
                 const updatedStatus = filters.status?.includes("pago")
                   ? filters.status
@@ -177,7 +177,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
         onClose={() => setFiltersOpen(false)}
         applyFilters={applyFilters}
         clearFilters={() =>
-          setFilters({ startDate: "", endDate: "", person: "", description: "", id: "", status: ["em aberto", "vencido", "parcial"], minValue: "", maxValue: "" })
+          setFilters({ startDate: "", endDate: "", person: "", description: "", id: undefined, status: ["em aberto", "vencido", "parcial"], minValue: "", maxValue: "" })
         }
         filterFields={[
           { key: "startDate", type: "date", label: "Data Inicial", placeholder: "Data Inicial" },

@@ -157,7 +157,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
             minValue: "",
             maxValue: "",
             type: [],
-            id: "",
+            id: undefined,
           })
         }
         filterFields={[
