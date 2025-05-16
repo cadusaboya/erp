@@ -1,4 +1,5 @@
 export interface PaymentCreatePayload {
+  [key: string]: unknown; // ✅ this fixes the error
   bill_id?: number;
   income_id?: number;
   income?: number;
