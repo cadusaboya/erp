@@ -36,7 +36,8 @@ export default function ReportsPage() {
   const [clients, setClients] = useState<Resource[]>([]);
   const [suppliers, setSuppliers] = useState<Resource[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
-  const [reportType, setReportType] = useState("espelho")
+  const [reportType, setReportType] = useState("espelho");
+  const [chartAccountCode, setChartAccountCode] = useState("");
   
   useEffect(() => {
     const fetchData = async () => {
@@ -138,7 +139,7 @@ export default function ReportsPage() {
             setBankId("");
           }}
         >
-          <TabsList className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 mb-10">
+          <TabsList className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 mb-10">
             <TabsTrigger value="contas">Contas</TabsTrigger>
             <TabsTrigger value="tipo">Receita por Tipo</TabsTrigger>
             <TabsTrigger value="custo">Centros de Custo</TabsTrigger>
@@ -146,6 +147,7 @@ export default function ReportsPage() {
             <TabsTrigger value="banco">Extrato Bancário</TabsTrigger>
             <TabsTrigger value="balancete">Balancete</TabsTrigger>
             <TabsTrigger value="quadro">Quadro</TabsTrigger>
+            <TabsTrigger value="resumo-conta">Resumo Plano Conta</TabsTrigger>
           </TabsList>
 
           {/* Contas */}
@@ -406,6 +408,55 @@ export default function ReportsPage() {
               </Button>
             </div>
           </TabsContent>
+
+          <TabsContent value="resumo-conta">
+            <Card>
+              <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-2">
+                <div>
+                  <label className="text-xs">Código da Conta</label>
+                  <Input
+                    placeholder="Ex: 1.01.01"
+                    value={chartAccountCode}
+                    onChange={(e) => setChartAccountCode(e.target.value)}
+                    className="max-w-[200px]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs">Data Inicial</label>
+                  <Input
+                    type="date"
+                    value={dateMin}
+                    onChange={(e) => setDateMin(e.target.value)}
+                    className="max-w-[150px]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs">Data Final</label>
+                  <Input
+                    type="date"
+                    value={dateMax}
+                    onChange={(e) => setDateMax(e.target.value)}
+                    className="max-w-[150px]"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+            <div className="sticky bottom-0 bg-white p-4 border-t flex justify-end">
+              <Button
+                onClick={() =>
+                  handleOpenPdf(
+                    `${API_URL}/payments/report/chartaccountsummary/?${buildParams({
+                      code: chartAccountCode,
+                    }).toString()}`
+                  )
+                }
+                disabled={isLoading}
+              >
+                {isLoading ? <Loader2 className="animate-spin" /> : "Gerar Relatório"}
+              </Button>
+            </div>
+          </TabsContent>
+
 
         </Tabs>
       </div>

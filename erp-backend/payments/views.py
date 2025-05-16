@@ -195,6 +195,136 @@ def generate_bank_statement_report(request):
 
     return response
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def generate_chartaccount_summary_report(request):
+    from django.utils import timezone
+
+    code = request.query_params.get("code")
+    date_min = request.query_params.get("date_min")
+    date_max = request.query_params.get("date_max")
+
+    user = request.user
+    company = get_company_or_404(request)
+
+    if not code:
+        return Response({"error": "chart_account_code is required"}, status=400)
+
+    # 1. Buscar conta base e suas descendentes
+    root = get_object_or_404(ChartAccount, code=code)
+    accounts = ChartAccount.objects.select_related("parent")
+
+    descendants = []
+
+    def collect_descendants(acc_id):
+        children = [a for a in accounts if a.parent_id == acc_id]
+        for c in children:
+            descendants.append(c.id)
+            collect_descendants(c.id)
+
+    collect_descendants(root.id)
+    all_ids = [root.id] + descendants
+
+    # 2. Filtrar pagamentos alocados a essas contas
+    payments = Payment.objects.filter(company=company).order_by("date")
+    if date_min:
+        payments = payments.filter(date__gte=date_min)
+    if date_max:
+        payments = payments.filter(date__lte=date_max)
+
+    payments = payments.select_related("bill__person", "income__person").prefetch_related("bill__allocations", "income__allocations")
+    results = []
+
+    for p in payments:
+        accrual = p.payable
+        if not accrual:
+            continue
+
+        allocations = accrual.allocations.filter(chart_account_id__in=all_ids)
+        for allocation in allocations:
+            ratio = allocation.value / accrual.value if accrual.value else 0
+            paid_value = round(p.value * ratio, 2)
+
+            results.append({
+                "date": p.date,
+                "type": "Despesa" if p.bill else "Receita",
+                "person": accrual.person.name if accrual.person else "-",
+                "description": accrual.description,
+                "doc_number": p.doc_number or "DN",
+                "value": paid_value,
+            })
+
+    # 3. Gerar PDF
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = f"inline; filename=relatorio_resumo_plano_{code}.pdf"
+
+    pdf = canvas.Canvas(response, pagesize=landscape(A4))
+    width, height = landscape(A4)
+    margin = 40
+
+    # X positions
+    cols = [
+        margin,
+        margin + 100,
+        margin + 290,
+        width - 200,
+        width - margin - 70
+    ]
+
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawCentredString(width / 2, height - 50, "Arquitetura de Eventos")
+    pdf.setFont("Helvetica", 12)
+    pdf.drawCentredString(width / 2, height - 70, f"Resumo Plano de Conta - {root.code} - {root.description}")
+    pdf.setFont("Helvetica", 9)
+    periodo_text = f"Período {date_min or '--'} a {date_max or '--'}"
+    pdf.drawString(margin, height - 100, periodo_text)
+
+    # Cabeçalho
+    y = height - 130
+    def draw_header():
+        nonlocal y
+        pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(cols[0], y, "Data")
+        pdf.drawString(cols[1], y, "Pessoa")
+        pdf.drawString(cols[2], y, "Descrição")
+        pdf.drawString(cols[3], y, "Doc.")
+        pdf.drawString(cols[4], y, "Valor")
+        y -= 5
+        pdf.line(margin, y, width - margin, y)
+        y -= 15
+
+    draw_header()
+
+    total = Decimal("0.00")
+    pdf.setFont("Helvetica", 9)
+
+    for row in results:
+        if y < 60:
+            pdf.showPage()
+            y = height - 50
+            draw_header()
+            pdf.setFont("Helvetica", 9)
+
+        pdf.drawString(cols[0], y, row["date"].strftime("%d/%m/%Y"))
+        pdf.drawString(cols[1], y, truncate_text(row["person"], 30))
+        pdf.drawString(cols[2], y, truncate_text(row["description"], 45))
+        pdf.drawString(cols[3], y, row["doc_number"])
+        pdf.drawString(cols[4], y, f"R$ {row['value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+
+        total += row["value"]
+        y -= 15
+
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawString(cols[3], y - 10, "Total")
+    pdf.drawString(cols[4], y - 10, f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+
+    pdf.setFont("Helvetica", 7)
+    pdf.drawString(width - 100, 30, "Página 1 de 1")
+    pdf.showPage()
+    pdf.save()
+
+    return response
+
 
 
 @api_view(["GET"])
@@ -206,7 +336,6 @@ def generate_chart_account_balance(request):
 
     company = get_company_or_404(request)
     payments = Payment.objects.filter(company=company)
-
 
     if date_min:
         payments = payments.filter(date__gte=date_min)
@@ -328,25 +457,6 @@ def generate_chart_account_balance(request):
     pdf.setFont("Helvetica-Bold", 10)
     pdf.drawString(margin, y, "Resultado")
     pdf.drawRightString(width - margin, y, f"R$ {resultado:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-
-    # 👉 NEW BLOCK: print receitas payments
-    y -= 30
-    pdf.setFont("Helvetica-Bold", 10)
-    pdf.drawString(margin, y, "Pagamentos lançados em Receitas")
-    y -= 20
-
-    pdf.setFont("Helvetica", 8)
-    for item in receitas_payments:
-        if y < 60:
-            pdf.showPage()
-            y = height - 50
-            pdf.setFont("Helvetica", 8)
-
-        pdf.drawString(margin, y, f"{item['date'].strftime('%d/%m/%Y')}")
-        pdf.drawString(margin + 60, y, f"{item['account_code']} - {item['account_desc']}")
-        pdf.drawString(margin + 220, y, item['description'][:40])  # limit long descriptions
-        pdf.drawRightString(width - margin, y, f"R$ {item['value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-        y -= 12
 
     pdf.setFont("Helvetica", 7)
     pdf.drawString(width - 100, 30, "Página 1 de 1")
