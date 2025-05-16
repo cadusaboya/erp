@@ -26,18 +26,21 @@ export function convertToISO(dateStr: string): string {
   return `20${yy}-${mm}-${dd}`; // assumes 21st century
 }
 
-export function transformDates(obj: Record<string, any>) {
+export function transformDates<T extends Record<string, unknown>>(obj: T): T {
   if (!obj || typeof obj !== "object") return obj;
 
-  const newObj = { ...obj };
+  const newObj: Record<string, unknown> = { ...obj };
+
   Object.keys(newObj).forEach((key) => {
+    const value = newObj[key];
     if (
       key.toLowerCase().includes("date") &&
-      typeof newObj[key] === "string" &&
-      /^\d{2}\/\d{2}\/\d{2}$/.test(newObj[key])
+      typeof value === "string" &&
+      /^\d{2}\/\d{2}\/\d{2}$/.test(value)
     ) {
-      newObj[key] = convertToISO(newObj[key]);
+      newObj[key] = convertToISO(value);
     }
   });
-  return newObj;
+
+  return newObj as T;
 }
