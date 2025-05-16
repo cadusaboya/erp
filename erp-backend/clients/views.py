@@ -20,11 +20,14 @@ class ClientViewSet(viewsets.ModelViewSet):
 
         queryset = Client.objects.filter(user=user)
 
+        id = params.get("id")
         name = params.get("name")
         cpf_cnpj = params.get("cpf_cnpj")
         email = params.get("email")
         telephone = params.get("telephone")
 
+        if id:
+            queryset = queryset.filter(id=id)
         if name:
             queryset = queryset.filter(name__icontains=name)
         if cpf_cnpj:
@@ -51,11 +54,15 @@ class SupplierViewSet(viewsets.ModelViewSet):
 
         queryset = Supplier.objects.filter(user=user)
 
+        id = params.get("id")
         name = params.get("name")
         cpf_cnpj = params.get("cpf_cnpj")
         email = params.get("email")
         telephone = params.get("telephone")
 
+
+        if id:
+            queryset = queryset.filter(id=id)
         if name:
             queryset = queryset.filter(name__icontains=name)
         if cpf_cnpj:

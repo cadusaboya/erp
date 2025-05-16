@@ -808,6 +808,7 @@ class BillViewSet(viewsets.ModelViewSet):
         params = self.request.query_params
 
         # Filters
+        id = params.get("id")
         start_date = params.get("start_date")
         end_date = params.get("end_date")
         status = params.getlist("status")  # ["pago", "vencido", "em aberto"]
@@ -816,6 +817,8 @@ class BillViewSet(viewsets.ModelViewSet):
         doc_number = params.get("doc_number")
         
         # Apply filters dynamically
+        if id:
+            queryset = queryset.filter(id=id)
         if start_date:
             queryset = queryset.filter(date_due__gte=start_date)
         if end_date:
@@ -850,6 +853,7 @@ class IncomeViewSet(viewsets.ModelViewSet):
         params = self.request.query_params
 
         # Filters
+        id = params.get("id")
         start_date = params.get("start_date")
         end_date = params.get("end_date")
         status = params.getlist("status")  # ["pago", "vencido", "em aberto"]
@@ -858,6 +862,8 @@ class IncomeViewSet(viewsets.ModelViewSet):
         doc_number = params.get("doc_number")
         
         # Apply filters dynamically
+        if id:
+            queryset = queryset.filter(id = id)
         if start_date:
             queryset = queryset.filter(date_due__gte=start_date)
         if end_date:
@@ -903,7 +909,10 @@ class PaymentViewSet(viewsets.ModelViewSet):
         type_filter = params.getlist("type")
         bill_id = params.get("bill_id")
         income_id = params.get("income_id")
+        id = params.get("id")
 
+        if id:
+            qs = qs.filter(id = id)
         if start_date:
             qs = qs.filter(date__gte=start_date)
         if end_date:

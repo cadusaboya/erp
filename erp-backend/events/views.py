@@ -351,6 +351,7 @@ class EventViewSet(viewsets.ModelViewSet):
         params = self.request.query_params
 
         # Filters from query params
+        id = params.get("id")
         event_name = params.get("event_name")
         client = params.get("client")
         start_date = params.get("start_date")
@@ -360,6 +361,8 @@ class EventViewSet(viewsets.ModelViewSet):
         event_types = params.getlist("type")  # Example: ?type=casamento&type=formatura
 
         # Apply filters dynamically
+        if id:
+            queryset = queryset.filter(id = id)
         if event_name:
             queryset = queryset.filter(event_name__icontains=event_name)
         if client:

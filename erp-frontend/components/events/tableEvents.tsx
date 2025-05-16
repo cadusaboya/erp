@@ -36,6 +36,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { Input } from "../ui/input";
 
 import { deleteEvent } from "@/services/events"; // ✅ adjust path if needed
 
@@ -96,7 +97,23 @@ const TableComponent: React.FC<TableComponentProps> = ({
     <div className="p-6 bg-white shadow-lg rounded-lg">
       <div className="flex justify-between mb-4">
         <h2 className="text-xl font-semibold">{title}</h2>
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
+          <Input
+            type="number"
+            placeholder="ID"
+            className="w-[120px]"
+            value={filters.id ?? ""}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFilters({ ...filters, id: val === "" ? undefined : parseInt(val) });
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setCurrentPage(1);
+                onEventCreated(); // ou a função de busca
+              }
+            }}
+          />
           <Button variant="outline" onClick={() => setFiltersOpen(true)}>
             <Filter size={18} /> Filtros
           </Button>
@@ -140,6 +157,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
             minValue: "",
             maxValue: "",
             type: [],
+            id: undefined,
           })
         }
         filterFields={[

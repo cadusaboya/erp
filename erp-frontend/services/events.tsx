@@ -11,6 +11,7 @@ export const fetchEvents = async (
     const params = new URLSearchParams();
 
     if (parsed.event_name) params.append("event_name", parsed.event_name);
+    if (filters.id !== undefined) params.append("id", filters.id.toString());
     if (parsed.client) params.append("client", parsed.client);
     if (parsed.startDate) params.append("start_date", parsed.startDate);
     if (parsed.endDate) params.append("end_date", parsed.endDate);

@@ -34,6 +34,7 @@ import {
   AlertDialogDescription,
 } from "@/components/ui/alert-dialog";
 import { deleteResource } from "@/services/resources";
+import { Input } from "../ui/input";
 
 // ✅ Suporte à paginação server-side
 interface TableResourcesProps {
@@ -93,7 +94,23 @@ const TableResources: React.FC<TableResourcesProps> = ({
     <div className="p-6 bg-white shadow-lg rounded-lg">
       <div className="flex justify-between mb-4">
         <h2 className="text-xl font-semibold">{title}</h2>
-        <div className="flex gap-4">
+        <div className="flex gap-3 items-center">
+          <Input
+            type="number"
+            placeholder="ID"
+            className="w-[120px]"
+            value={filters.id ?? ""}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFilters({ ...filters, id: val === "" ? undefined : parseInt(val) });
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setCurrentPage(1);
+                onResourceCreated(); // ou a função de busca
+              }
+            }}
+          />
           <Button variant="outline" onClick={() => setFiltersOpen(true)}>
             <Filter size={18} /> Filtros
           </Button>
@@ -113,7 +130,7 @@ const TableResources: React.FC<TableResourcesProps> = ({
           setCurrentPage(1); // 👈 reset page when applying filters
         }}
         clearFilters={() =>
-          setFilters({ name: "", cpf_cnpj: "", email: "", telephone: "" })
+          setFilters({ name: "", cpf_cnpj: "", email: "", telephone: "", id: undefined})
         }
         filterFields={[
           { key: "name", type: "text", label: "Nome", placeholder: "Nome" },

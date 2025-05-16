@@ -11,6 +11,7 @@ export const fetchPayments = async (
     const params = new URLSearchParams();
 
     if (parsed.startDate) params.append("startDate", parsed.startDate);
+    if (filters.id !== undefined) params.append("id", filters.id.toString());
     if (parsed.endDate) params.append("endDate", parsed.endDate);
     if (parsed.person) params.append("person", parsed.person);
     if (parsed.minValue) params.append("minValue", parsed.minValue);

@@ -10,7 +10,8 @@ export const fetchResources = async (
 ) => {
   try {
     const params = new URLSearchParams();
-
+    
+    if (filters.id !== undefined) params.append("id", filters.id.toString());
     if (filters.name) params.append("name", filters.name);
     if (filters.cpf_cnpj) params.append("cpf_cnpj", filters.cpf_cnpj);
     if (filters.email) params.append("email", filters.email);

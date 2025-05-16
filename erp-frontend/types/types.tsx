@@ -41,6 +41,7 @@ export interface PaymentRecord {
 
 export interface FilterPaymentType {
   [key: string]: unknown; // ✅ this fixes the error
+  id?: number;
   startDate?: string;
   endDate?: string;
   person?: string;
@@ -55,6 +56,7 @@ export interface FilterPaymentType {
 
   
   export type FilterFinanceRecordType = {
+    id?: number;
     startDate?: string;
     endDate?: string;
     person?: string;
@@ -68,6 +70,7 @@ export interface FilterPaymentType {
   };
 
   export type FiltersEventType = {
+    id?: number;
     event_name?: string;
     client?: string;
     type?: string[];
@@ -78,6 +81,7 @@ export interface FilterPaymentType {
   };
 
   export interface FiltersClientType {
+    id?: number;
     name?: string;
     cpf_cnpj?: string;
     email?: string;
