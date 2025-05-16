@@ -61,49 +61,56 @@ def generate_bank_statement_report(request):
     user = request.user
 
     company = get_company_or_404(request)
-    payments = Payment.objects.filter(company=company)
 
-    if date_min:
-        payments = payments.filter(date__gte=date_min)
+    # 🔵 1. Obter saldo atual do banco
+    if bank_id:
+        bank = Bank.objects.get(id=bank_id, company=company)
+        saldo_atual = bank.balance
+        bank_name = bank.name
+    else:
+        saldo_atual = sum(bank.balance for bank in Bank.objects.filter(company=company))
+        bank_name = "Consolidado"
+
+    # 🔵 2. Obter todos os pagamentos de date_min até hoje
+    today = timezone.now().date()
+    payments_range = Payment.objects.filter(company=company, date__gte=date_min, date__lte=today)
+    if bank_id:
+        payments_range = payments_range.filter(bank_id=bank_id)
+
+    payments_range = payments_range.select_related('bill__person', 'income__person').order_by('-date', '-id')  # do mais recente ao mais antigo
+
+    saldo = saldo_atual
+    for p in payments_range:
+        if p.bill:
+            saldo += p.value  # desfaz o pagamento
+        elif p.income:
+            saldo -= p.value  # desfaz o recebimento
+
+    saldo_inicial = saldo
+
+    # 🔵 3. Filtrar apenas os pagamentos do período solicitado (para mostrar no extrato)
+    payments = Payment.objects.filter(company=company, date__gte=date_min)
     if date_max:
         payments = payments.filter(date__lte=date_max)
     if bank_id:
         payments = payments.filter(bank_id=bank_id)
 
-    payments = payments.select_related('bank', 'bill__person', 'income__person').order_by("date", "id")  # Mais antigos primeiro
+    payments = payments.select_related('bill__person', 'income__person').order_by("date", "id")
 
-    if bank_id:
-        bank = Bank.objects.get(id=bank_id, company=company)
-        initial_balance = bank.balance
-        bank_name = bank.name
-    else:
-        initial_balance = sum(bank.balance for bank in Bank.objects.filter(company=company))
-        bank_name = "Consolidado"
-
-    # Retroagir saldo para o início do período
-    balance = initial_balance
-    for p in reversed(list(payments)):
-        if p.bill:
-            balance += p.value
-        elif p.income:
-            balance -= p.value
-
-    # Montar extrato
-    balance_moving = balance
+    # 🔵 4. Montar extrato
+    balance_moving = saldo_inicial
     lines = []
     for p in payments:
         if p.bill:
-            tipo = "Despesa"
             favorecido = p.bill.person.name if p.bill.person else "-"
             descricao = p.bill.description
             balance_moving -= p.value
-            value_display = -p.value  # Negativo
+            value_display = -p.value
         elif p.income:
-            tipo = "Receita"
             favorecido = p.income.person.name if p.income.person else "-"
             descricao = p.income.description
             balance_moving += p.value
-            value_display = p.value  # Positivo
+            value_display = p.value
         else:
             continue
 
@@ -115,19 +122,19 @@ def generate_bank_statement_report(request):
             "balance": balance_moving
         })
 
-    # Definir data do saldo
-    if date_max:
-        saldo_date = timezone.datetime.strptime(date_max, "%Y-%m-%d").date()
-    else:
-        saldo_date = timezone.now().date()
-
-    # Criar PDF
+    # 🔵 5. Gerar PDF
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = "inline; filename=relatorio_completo_contas.pdf"
+    response["Content-Disposition"] = "inline; filename=extrato_bancario.pdf"
 
     pdf = canvas.Canvas(response, pagesize=A4)
     width, height = A4
     margin = 30
+
+    col_date = margin
+    col_fav = margin + 60
+    col_desc = margin + 180
+    col_value = width - margin - 90
+    col_balance = width - margin
 
     pdf.setFont("Helvetica-Bold", 14)
     pdf.drawCentredString(width / 2, height - 40, "Arquitetura de Eventos")
@@ -139,21 +146,14 @@ def generate_bank_statement_report(request):
     periodo_text = f"Período: {date_min or '--'} a {date_max or '--'}"
     pdf.drawString(margin, height - 90, periodo_text)
 
-    saldo_text = f"Saldo Atual: R$ {initial_balance:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-    data_saldo_text = f"Data do Saldo: {saldo_date.strftime('%d/%m/%Y')}"
-    pdf.drawString(margin, height - 110, saldo_text)
-    pdf.drawString(margin, height - 125, data_saldo_text)
+    data_saldo_text = f"Data do Saldo: {date_min}"
+    saldo_text = f"Saldo Inicial: R$ {saldo_inicial:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    pdf.drawRightString(col_balance, height - 125, data_saldo_text)
+    pdf.drawRightString(col_balance, height - 110, saldo_text)
+    
 
-    # Cabeçalho
     y = height - 155
     pdf.setFont("Helvetica-Bold", 9)
-
-    col_date = margin
-    col_fav = margin + 60
-    col_desc = margin + 180
-    col_value = width - margin - 90
-    col_balance = width - margin
-
     pdf.drawString(col_date, y, "Data")
     pdf.drawString(col_fav, y, "Favorecido")
     pdf.drawString(col_desc, y, "Descrição")
@@ -163,16 +163,12 @@ def generate_bank_statement_report(request):
 
     pdf.line(margin, y, width - margin, y)
     y -= 15
-
     pdf.setFont("Helvetica", 9)
 
     for line in lines:
         if y < 60:
             pdf.showPage()
             y = height - 50
-            pdf.setFont("Helvetica", 9)
-
-            # Reescrever cabeçalho
             pdf.setFont("Helvetica-Bold", 9)
             pdf.drawString(col_date, y, "Data")
             pdf.drawString(col_fav, y, "Favorecido")
@@ -185,8 +181,8 @@ def generate_bank_statement_report(request):
             pdf.setFont("Helvetica", 9)
 
         pdf.drawString(col_date, y, line["date"].strftime("%d/%m/%Y"))
-        pdf.drawString(col_fav, y, truncate_text(line["favorecido"], 18))   # ✅ added truncate
-        pdf.drawString(col_desc, y, truncate_text(line["descricao"], 37))
+        pdf.drawString(col_fav, y, shorten_text(line["favorecido"], 100, pdf))
+        pdf.drawString(col_desc, y, shorten_text(line["descricao"], 180, pdf))
         pdf.drawRightString(col_value, y, f"{'-' if line['value'] < 0 else ''}R$ {abs(line['value']):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         pdf.drawRightString(col_balance, y, f"R$ {line['balance']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
@@ -198,6 +194,7 @@ def generate_bank_statement_report(request):
     pdf.save()
 
     return response
+
 
 
 @api_view(["GET"])
