@@ -1,34 +1,36 @@
 import { PaymentRecord, FilterPaymentType, PaymentCreatePayload } from "@/types/types";
 import { api } from "@/lib/axios";
+import { transformDates } from "@/lib/dateFormat";
 
 export const fetchPayments = async (
   filters: FilterPaymentType = {},
   page: number = 1
 ) => {
   try {
+    const parsed = transformDates(filters);
     const params = new URLSearchParams();
 
-    if (filters.startDate) params.append("startDate", filters.startDate);
-    if (filters.endDate) params.append("endDate", filters.endDate);
-    if (filters.person) params.append("person", filters.person);
-    if (filters.minValue) params.append("minValue", filters.minValue);
-    if (filters.maxValue) params.append("maxValue", filters.maxValue);
+    if (parsed.startDate) params.append("startDate", parsed.startDate);
+    if (parsed.endDate) params.append("endDate", parsed.endDate);
+    if (parsed.person) params.append("person", parsed.person);
+    if (parsed.minValue) params.append("minValue", parsed.minValue);
+    if (parsed.maxValue) params.append("maxValue", parsed.maxValue);
 
-    if (filters.type && filters.type.length > 0) {
-      filters.type.forEach((t) => params.append("type", t));
+    if (parsed.type && parsed.type.length > 0) {
+      parsed.type.forEach((t: string) => params.append("type", t));
     }
 
-    if (filters.bank_name && filters.bank_name.length > 0) {
-      filters.bank_name.forEach((b) => params.append("bank_name", b));
+    if (parsed.bank_name && parsed.bank_name.length > 0) {
+      parsed.bank_name.forEach((b: string) => params.append("bank_name", b));
     }
 
-    if (filters.bill_id) params.append("bill_id", filters.bill_id.toString());
-    if (filters.income_id) params.append("income_id", filters.income_id.toString());
+    if (parsed.bill_id) params.append("bill_id", parsed.bill_id.toString());
+    if (parsed.income_id) params.append("income_id", parsed.income_id.toString());
 
     params.append("page", page.toString());
 
     const response = await api.get(`/payments/payments/?${params.toString()}`);
-    return response.data; // ✅ { results, count }
+    return response.data;
   } catch (error) {
     console.error("Erro ao buscar pagamentos:", error);
     return { results: [], count: 0 };
@@ -37,7 +39,7 @@ export const fetchPayments = async (
 
 export const createPayment = async (data: PaymentCreatePayload) => {
   try {
-    const response = await api.post("/payments/payments/", data);
+    const response = await api.post("/payments/payments/", transformDates(data));
     return response.data;
   } catch (error) {
     console.error("Erro ao criar pagamento:", error);
@@ -47,7 +49,7 @@ export const createPayment = async (data: PaymentCreatePayload) => {
 
 export const updatePayment = async (id: number, payment: Partial<PaymentRecord>) => {
   try {
-    const response = await api.patch(`/payments/payments/${id}/`, payment);
+    const response = await api.patch(`/payments/payments/${id}/`, transformDates(payment));
     return response.data;
   } catch (error) {
     console.error("Erro ao atualizar pagamento:", error);

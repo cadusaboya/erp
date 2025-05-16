@@ -1,13 +1,14 @@
 import { api } from "@/lib/axios";
 import { FilterFinanceRecordType } from "@/types/types";
+import { transformDates } from "@/lib/dateFormat"; // ✅ Importa função para formatar datas
 
-// 🟢 Util to map person_id to correct field
+// 🟢 Util para mapear person_id corretamente
 const mapPersonId = (type: "bill" | "income", data: any) => {
   const mapped = {
     ...data,
-    [type === "bill" ? "supplier" : "client"]: data.person_id,
+    [type === "bill" ? "supplier" : "client"]: data.person,
   };
-  delete mapped.person_id;
+  delete mapped.person;
   return mapped;
 };
 
@@ -17,21 +18,22 @@ export const fetchRecords = async (
   page = 1
 ) => {
   try {
+    const parsed = transformDates(filters); // ✅ Converte datas
     const params = new URLSearchParams();
 
-    if (filters.startDate) params.append("start_date", filters.startDate);
-    if (filters.endDate) params.append("end_date", filters.endDate);
-    if (filters.description) params.append("description", filters.description);
-    if (filters.person) params.append("person", filters.person);
-    if (filters.docNumber) params.append("doc_number", filters.docNumber);
-    if (filters.status?.length) {
-      filters.status.forEach((s) => params.append("status", s));
+    if (parsed.startDate) params.append("start_date", parsed.startDate);
+    if (parsed.endDate) params.append("end_date", parsed.endDate);
+    if (parsed.description) params.append("description", parsed.description);
+    if (parsed.person) params.append("person", parsed.person);
+    if (parsed.docNumber) params.append("doc_number", parsed.docNumber);
+    if (parsed.status?.length) {
+      parsed.status.forEach((s) => params.append("status", s));
     }
 
     params.append("page", page.toString());
 
     const response = await api.get(`/payments/${type}s/?${params.toString()}`);
-    return response.data; // { count, next, previous, results }
+    return response.data;
   } catch (error) {
     console.error(`Erro ao buscar ${type}s:`, error);
     return { count: 0, results: [] };
@@ -40,7 +42,7 @@ export const fetchRecords = async (
 
 export const createRecord = async (type: "bill" | "income", formData: any) => {
   try {
-    const payload = mapPersonId(type, formData);
+    const payload = mapPersonId(type, transformDates(formData));
     await api.post(`/payments/${type}s/`, payload);
     return true;
   } catch (error) {
@@ -55,7 +57,7 @@ export const updateRecord = async (
   updatedData: any
 ) => {
   try {
-    const payload = mapPersonId(type, updatedData);
+    const payload = mapPersonId(type, transformDates(updatedData));
     await api.put(`/payments/${type}s/${recordId}/`, payload);
     return true;
   } catch (error) {

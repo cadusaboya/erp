@@ -87,7 +87,7 @@ class IncomeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Income
         fields = '__all__'
-        read_only_fields = ('company', 'person_name', 'bank_name')
+        read_only_fields = ('company', 'user', 'person_name', 'bank_name')
 
     def get_remaining_value(self, obj):
         if obj.status != "parcial":
@@ -152,7 +152,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             'id', 'bill_id', 'income_id', 'value', 'bank', 'bank_name',
             'doc_number', 'date', 'person_name', 'description'
         ]
-        read_only_fields = ('company',)
+        read_only_fields = ('company', 'user')
 
     def get_person_name(self, obj):
         if obj.payable and obj.payable.person:
@@ -175,10 +175,10 @@ class BankSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bank
         fields = '__all__'
-        read_only_fields = ('company',)
+        read_only_fields = ('company', 'user')
 
 class CostCenterSerializer(serializers.ModelSerializer):
     class Meta:
         model = CostCenter
         fields = '__all__'
-        read_only_fields = ('company',)
+        read_only_fields = ('user',)
