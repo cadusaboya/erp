@@ -6,9 +6,9 @@ import { transformDates } from "@/lib/dateFormat"; // ✅ Importa função para 
 const mapPersonId = (type: "bill" | "income", data: any) => {
   const mapped = {
     ...data,
-    [type === "bill" ? "supplier" : "client"]: data.person,
+    [type === "bill" ? "supplier" : "client"]: data.person_id,
   };
-  delete mapped.person;
+  delete mapped.person_id;
   return mapped;
 };
 
@@ -44,6 +44,7 @@ export const fetchRecords = async (
 export const createRecord = async (type: "bill" | "income", formData: any) => {
   try {
     const payload = mapPersonId(type, transformDates(formData));
+    console.log(payload)
     await api.post(`/payments/${type}s/`, payload);
     return true;
   } catch (error) {

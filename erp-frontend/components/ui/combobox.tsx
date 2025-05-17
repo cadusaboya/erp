@@ -19,14 +19,14 @@ import {
 } from "@/components/ui/popover"
 
 interface ComboboxOption {
-  label: string
+  label: string // ex: "20101 | Folha de Pagamento"
   value: string
 }
 
 interface ComboboxProps {
   options?: ComboboxOption[];
-  value: string | number | undefined; // aceita mais formatos
-  onChange: (value: string) => void; // mantém como string (você força isso internamente)
+  value: string | number | undefined;
+  onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
   loadOptions?: (query: string) => Promise<ComboboxOption[]>;
@@ -43,6 +43,7 @@ export const Combobox: React.FC<ComboboxProps> = ({
   const [open, setOpen] = React.useState(false);
   const [internalOptions, setInternalOptions] = React.useState<ComboboxOption[]>(options);
   const [loading, setLoading] = React.useState(false);
+  const [filterQuery, setFilterQuery] = React.useState("");
 
   const selectedLabel = internalOptions.find((o) => String(o.value) === String(value))?.label;
 
@@ -53,6 +54,21 @@ export const Combobox: React.FC<ComboboxProps> = ({
     setInternalOptions(results);
     setLoading(false);
   };
+
+  const filteredOptions = React.useMemo(() => {
+    if (loadOptions) return internalOptions;
+
+    return internalOptions.filter((option) => {
+      const [code, ...nameParts] = option.label.toLowerCase().split("|");
+      const name = nameParts.join("|").trim(); // in case the name itself has '|'
+      const query = filterQuery.toLowerCase();
+
+      return (
+        code.trim().startsWith(query) ||
+        name.includes(query)
+      );
+    });
+  }, [internalOptions, filterQuery, loadOptions]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -68,7 +84,6 @@ export const Combobox: React.FC<ComboboxProps> = ({
               ((selectedLabel || placeholder)?.length ?? 10) * 8 + 40,
               150
             )}px`,
-
           }}
         >
           {selectedLabel || placeholder}
@@ -76,19 +91,22 @@ export const Combobox: React.FC<ComboboxProps> = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
-        <Command shouldFilter={!loadOptions}>
+        <Command shouldFilter={false}>
           <CommandInput
             placeholder="Buscar..."
             className="h-9"
             onValueChange={(query) => {
+              setFilterQuery(query);
               if (loadOptions) handleSearch(query);
             }}
           />
           <CommandList>
             {loading && <CommandItem>Carregando...</CommandItem>}
-            {!loading && internalOptions.length === 0 && <CommandEmpty>Nenhum resultado.</CommandEmpty>}
+            {!loading && filteredOptions.length === 0 && (
+              <CommandEmpty>Nenhum resultado.</CommandEmpty>
+            )}
             <CommandGroup>
-              {internalOptions.map((option) => (
+              {filteredOptions.map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.label}

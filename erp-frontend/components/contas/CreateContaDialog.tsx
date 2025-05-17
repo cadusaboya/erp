@@ -139,7 +139,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
                 render={({ field }) => (
                   <Input
                     type="date"
-                    value={field.value}
+                    value={field.value ?? ""}
                     onChange={field.onChange}
                     placeholder="dd/mm/aa"
                   />
@@ -198,6 +198,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
                   chartAccounts={chartAccounts.map((acc) => ({
                     id: acc.id,
                     name: acc.description,
+                    code: acc.code,
                   }))}
                   label="Rateio por Conta"
                 />
