@@ -24,6 +24,7 @@ import {
   ChartAccount,
 } from "@/types/types";
 import { RateioItem } from "@/types/types";
+import { getValidAllocations } from "@/components/RatioTable";
 
 interface EditContaDialogProps {
   open: boolean;
@@ -124,8 +125,8 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
     const success = await updateRecord(type, record.id, {
       ...formData,
       person,
-      event_allocations: eventAllocations,
-      account_allocations: accountAllocations,
+      event_allocations: getValidAllocations(eventAllocations),
+      account_allocations: getValidAllocations(accountAllocations),
     });
     if (success) {
       onRecordUpdated();
@@ -193,25 +194,26 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
               {/* Right column */}
               <div className="space-y-6">
                 <div className="max-h-[35vh] overflow-y-auto pr-2">
-                    <label className="text-sm font-medium block mb-1">Rateio de Eventos</label>
                     <RatioTable
                         allocations={eventAllocations}
                         setAllocations={setEventAllocations}
                         events={events}
                         label="Rateio de Eventos"
+                        mode="event"
                     />
                 </div>
 
                 <div className="max-h-[35vh] overflow-y-auto pr-2">
-                    <label className="text-sm font-medium block mb-1">Rateio por Plano de Contas</label>
                     <RatioTable
                         allocations={accountAllocations}
                         setAllocations={setAccountAllocations}
                         chartAccounts={chartAccounts.map((acc) => ({
                             id: acc.id,
                             name: acc.description,
+                            code: acc.code,
                         }))}
                         label="Rateio por Conta"
+                        mode="account"
                     />
                 </div>
             </div>

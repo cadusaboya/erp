@@ -32,6 +32,7 @@ import RatioTable from "@/components/RatioTable";
 import { Combobox } from "@/components/ui/combobox";
 import { RateioItem } from "@/components/RatioTable";
 import { Controller } from "react-hook-form";
+import { getValidAllocations } from "@/components/RatioTable";
 
 
 
@@ -48,7 +49,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   onRecordCreated,
   type,
 }) => {
-  const { register, handleSubmit, reset, control } = useForm<FinanceRecord>();
+  const { register, handleSubmit, reset, control, watch } = useForm<FinanceRecord>();
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([]);
@@ -59,6 +60,9 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
 
   const [eventAllocations, setEventAllocations] = useState<RateioItem[]>([]);
   const [accountAllocations, setAccountAllocations] = useState<RateioItem[]>([]);
+
+  const rawValue = watch("value");
+  const value = parseFloat(rawValue || "0") || 0;
 
   useEffect(() => {
     const loadData = async () => {
@@ -93,8 +97,8 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
       person,
       cost_center: costCenter,
       status,
-      event_allocations: eventAllocations,
-      account_allocations: accountAllocations,
+      event_allocations: getValidAllocations(eventAllocations),
+      account_allocations: getValidAllocations(accountAllocations),
     });
     if (success) {
       onRecordCreated();
@@ -139,7 +143,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
                 render={({ field }) => (
                   <Input
                     type="date"
-                    value={field.value}
+                    value={field.value ?? ""}
                     onChange={field.onChange}
                     placeholder="dd/mm/aa"
                   />
@@ -182,24 +186,27 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
             {/* Right Column – Both Ratio Tables stacked */}
             <div className="space-y-6">
               <div className="max-h-[35vh] overflow-y-auto pr-2">
-                <label className="text-sm font-medium block mb-1">Rateio de Eventos</label>
                 <RatioTable
                   allocations={eventAllocations}
                   setAllocations={setEventAllocations}
                   events={events || []}
                   label="Rateio de Eventos"
+                  totalValue={value}
+                  mode="event"
                 />
               </div>
               <div className="max-h-[35vh] overflow-y-auto pr-2">
-                <label className="text-sm font-medium block mb-1">Rateio por Plano de Contas</label>
                 <RatioTable
                   allocations={accountAllocations}
                   setAllocations={setAccountAllocations}
                   chartAccounts={chartAccounts.map((acc) => ({
                     id: acc.id,
                     name: acc.description,
+                    code: acc.code,
                   }))}
                   label="Rateio por Conta"
+                  totalValue={value}
+                  mode="account"
                 />
               </div>
             </div>
