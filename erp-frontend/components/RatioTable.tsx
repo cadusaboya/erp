@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
@@ -10,8 +10,8 @@ import { api } from "@/lib/axios";
 
 export interface RateioItem {
   id?: number;
-  event?: string; // ID
-  event_name?: string; // Nome do evento para exibição
+  event?: string;
+  event_name?: string;
   chart_account?: string;
   value: string;
 }
@@ -22,6 +22,8 @@ interface RateioTableProps {
   events?: { id: number; event_name: string }[];
   chartAccounts?: { id: number; code: string; name: string }[];
   label?: string;
+  totalValue?: number;
+  mode: "event" | "account";
 }
 
 const RatioTable: React.FC<RateioTableProps> = ({
@@ -29,12 +31,25 @@ const RatioTable: React.FC<RateioTableProps> = ({
   setAllocations,
   events = [],
   chartAccounts = [],
+  label,
+  totalValue = 0,
+  mode,
 }) => {
-  const isEvent = events && events.length > 0;
+  const isEvent = mode === "event";
 
   const [eventOptionsMap, setEventOptionsMap] = useState<
     Record<number, { label: string; value: string }[]>
   >({});
+
+  useEffect(() => {
+    if (allocations.length === 0) {
+      const emptyItem: RateioItem = isEvent
+        ? { event: "", event_name: "", value: "" }
+        : { chart_account: "", value: "" };
+  
+      setAllocations(Array.from({ length: 3 }, () => ({ ...emptyItem })));
+    }
+  }, []);
 
   const handleChange = (
     index: number,
@@ -46,10 +61,19 @@ const RatioTable: React.FC<RateioTableProps> = ({
     setAllocations(updated);
   };
 
+  const getRemainingValue = (): string => {
+    const used = allocations.reduce((acc, item) => {
+      const val = parseFloat(item.value || "0");
+      return acc + (isNaN(val) ? 0 : val);
+    }, 0);
+    const remaining = Math.max(totalValue - used, 0);
+    return remaining.toFixed(2);
+  };
+
   const addRow = () => {
-    const emptyItem = isEvent
-      ? { event: "", event_name: "", value: "" }
-      : { chart_account: "", value: "" };
+    const emptyItem: RateioItem = isEvent
+      ? { event: "", event_name: "", value: getRemainingValue() }
+      : { chart_account: "", value: getRemainingValue() };
     setAllocations([...allocations, emptyItem]);
   };
 
@@ -59,6 +83,10 @@ const RatioTable: React.FC<RateioTableProps> = ({
 
   return (
     <div className="space-y-2">
+      {label && (
+        <h3 className="text-sm font-semibold text-muted-foreground">{label}</h3>
+      )}
+
       {allocations.map((item, index) => {
         const isEventIdLocked =
           isEvent && item.event && /^\d+$/.test(item.event ?? "") && item.event_name;
@@ -89,6 +117,10 @@ const RatioTable: React.FC<RateioTableProps> = ({
 
                       handleChange(index, "event", value);
                       handleChange(index, "event_name", fetchedEvent.event_name);
+
+                      if (!item.value || parseFloat(item.value) === 0) {
+                        handleChange(index, "value", getRemainingValue());
+                      }
                     } catch {
                       setEventOptionsMap((prev) => ({
                         ...prev,
@@ -126,13 +158,14 @@ const RatioTable: React.FC<RateioTableProps> = ({
                   }
                   loadOptions={isEvent ? searchEvents : undefined}
                   value={isEvent ? item.event || "" : item.chart_account || ""}
-                  onChange={(val) =>
-                    handleChange(
-                      index,
-                      isEvent ? "event" : "chart_account",
-                      val
-                    )
-                  }
+                  onChange={(val) => {
+                    const field = isEvent ? "event" : "chart_account";
+                    handleChange(index, field, val);
+
+                    if (!item.value || parseFloat(item.value) === 0) {
+                      handleChange(index, "value", getRemainingValue());
+                    }
+                  }}
                   placeholder="Selecione"
                 />
               )}
@@ -141,10 +174,9 @@ const RatioTable: React.FC<RateioTableProps> = ({
             <input
               type="number"
               value={item.value}
-              onChange={(e) =>
-                handleChange(index, "value", e.target.value)
-              }
+              onChange={(e) => handleChange(index, "value", e.target.value)}
               placeholder="Valor"
+              step="0.01"
               className="p-2 border rounded w-[100px]"
             />
 
@@ -175,3 +207,12 @@ const RatioTable: React.FC<RateioTableProps> = ({
 };
 
 export default RatioTable;
+
+export const getValidAllocations = (allocations: RateioItem[]): RateioItem[] => {
+  return allocations.filter((item) => {
+    return (
+      item.value !== "" &&
+      (item.chart_account || item.event)
+    );
+  });
+};
