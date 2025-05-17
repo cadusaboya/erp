@@ -117,7 +117,7 @@ class AccountAllocation(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True)
 
 class EventAllocation(models.Model):
-    accrual = models.ForeignKey(Accrual, on_delete=models.PROTECT, related_name="event_allocations")
+    accrual = models.ForeignKey(Accrual, on_delete=models.CASCADE, related_name="event_allocations")
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     value = models.DecimalField(max_digits=10, decimal_places=2)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True)

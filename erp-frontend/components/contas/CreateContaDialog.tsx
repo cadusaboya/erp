@@ -18,7 +18,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { createRecord } from "@/services/records";
+import { createRecord, deleteRecord } from "@/services/records";
+import { createPayment } from "@/services/lancamentos";
 import { fetchEvents } from "@/services/events";
 import { fetchResources, searchResources } from "@/services/resources";
 import { fetchChartAccounts } from "@/services/chartaccounts";
@@ -33,8 +34,17 @@ import { Combobox } from "@/components/ui/combobox";
 import { RateioItem } from "@/components/RatioTable";
 import { Controller } from "react-hook-form";
 import { getValidAllocations } from "@/components/RatioTable";
+import { fetchBanks } from "@/services/banks";
+import { Bank } from "@/types/types";
 
 
+type ExtendedFinanceRecord = FinanceRecord & {
+  payment_date?: string;
+  payment_value?: string;
+  payment_description?: string;
+  payment_bank?: string;
+  payment_doc_number?: string;
+};
 
 interface CreateContaDialogProps {
   open: boolean;
@@ -49,10 +59,11 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   onRecordCreated,
   type,
 }) => {
-  const { register, handleSubmit, reset, control, watch } = useForm<FinanceRecord>();
+  const { register, handleSubmit, reset, control, watch } = useForm<ExtendedFinanceRecord>();
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([]);
+  const [banks, setBanks] = useState<Bank[]>([]);
 
   const [costCenter, setCostCenter] = useState("1");
   const [person, setPerson] = useState("");
@@ -72,26 +83,30 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
             eventsData,
             resourceData,
             chartAccountsData,
+            banksData,
           ] = await Promise.all([
             fetchEvents(),
             fetchResources(type === "bill" ? "suppliers" : "clients"),
             fetchChartAccounts(),
+            fetchBanks(),
           ]);
           setEvents(eventsData.results || []);
           setResources(resourceData.results || []);
           setChartAccounts(chartAccountsData || []);
+          setBanks(banksData || []);
         } catch (error) {
           console.error("Failed to load initial data:", error);
           setEvents([]);
           setResources([]);
           setChartAccounts([]);
+          setBanks([]);
         }
       }
     };
     loadData();
   }, [open, type]);
 
-  const onSubmit = async (formData: FinanceRecord) => {
+  const onSubmit = async (formData: ExtendedFinanceRecord) => {
     const success = await createRecord(type, {
       ...formData,
       person,
@@ -100,6 +115,36 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
       event_allocations: getValidAllocations(eventAllocations),
       account_allocations: getValidAllocations(accountAllocations),
     });
+  
+    console.log("created id:", success?.id);
+  
+    if (success?.id && status === "pago") {
+      try {
+        if (
+          !formData.payment_date ||
+          !formData.payment_value ||
+          !formData.payment_bank
+        ) {
+          console.error("Campos obrigatórios do pagamento não preenchidos.");
+          return;
+        }
+      
+        const paymentPayload = {
+          date: formData.payment_date,
+          value: formData.payment_value,
+          description: formData.payment_description ?? "",
+          bank: Number(formData.payment_bank),
+          doc_number: formData.payment_doc_number ?? "",
+          [type === "bill" ? "bill_id" : "income_id"]: success.id,
+        };
+  
+        await createPayment(paymentPayload);
+      } catch (err) {
+        await deleteRecord(type, success.id);
+        return;
+      }
+    }
+  
     if (success) {
       onRecordCreated();
       reset();
@@ -178,9 +223,62 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="em aberto">Em Aberto</SelectItem>
+                    <SelectItem value="pago">Pago</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {status === "pago" && (
+              <div className="space-y-4 pt-4 border-t border-muted">
+                <Controller
+                  name="payment_date"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Input type="date" {...field} placeholder="Data" />
+                  )}
+                />
+
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="Valor"
+                  {...register("payment_value", { required: true })}
+                />
+
+                <Input
+                  placeholder="Descrição"
+                  {...register("payment_description")}
+                />
+
+                <Controller
+                  name="payment_bank"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Banco" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {banks.map((bank) => (
+                          <SelectItem key={bank.id} value={String(bank.id)}>
+                            {bank.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+
+                <Input
+                  placeholder="Documento"
+                  {...register("payment_doc_number")}
+                />
+              </div>
+            )}
+
+
             </div>
 
             {/* Right Column – Both Ratio Tables stacked */}

@@ -45,11 +45,11 @@ export const createRecord = async (type: "bill" | "income", formData: any) => {
   try {
     const payload = mapPersonId(type, transformDates(formData));
     console.log(payload)
-    await api.post(`/payments/${type}s/`, payload);
-    return true;
+    const res = await api.post(`/payments/${type}s/`, payload);
+    return res.data;
   } catch (error) {
     console.error(`Erro ao criar ${type}:`, error);
-    return false;
+    return null;
   }
 };
 
