@@ -33,7 +33,7 @@ class BillSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bill
         fields = '__all__'
-        read_only_fields = ('company', 'person_name', 'bank_name')
+        read_only_fields = ('company', 'user', 'person_name', 'bank_name')
 
     def get_remaining_value(self, obj):
         if obj.status != "parcial":
