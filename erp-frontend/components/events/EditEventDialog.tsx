@@ -50,7 +50,7 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
       setLoading(true);
 
       try {
-        let response = await fetchResources("clients");
+        const response = await fetchResources("clients");
         let clientList = response.results || [];
 
         if (event?.client && !clientList.find((client: Resource) => client.id === event.client)) {
