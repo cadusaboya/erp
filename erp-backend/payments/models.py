@@ -89,7 +89,6 @@ class Bank(models.Model):
     name = models.CharField(max_length=255)
     balance = models.DecimalField(max_digits=12, decimal_places=2)
     legacy = models.IntegerField(null=True, unique=False)
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f"{self.name} - R$ {self.balance:.2f}"
@@ -114,12 +113,10 @@ class AccountAllocation(models.Model):
     accrual = models.ForeignKey(Accrual, on_delete=models.CASCADE, related_name="allocations")  # bill or income
     chart_account = models.ForeignKey(ChartAccount, on_delete=models.CASCADE)
     value = models.DecimalField(max_digits=10, decimal_places=2)
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True)
 
 class EventAllocation(models.Model):
     accrual = models.ForeignKey(Accrual, on_delete=models.CASCADE, related_name="event_allocations")
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     value = models.DecimalField(max_digits=10, decimal_places=2)
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True)
 
 

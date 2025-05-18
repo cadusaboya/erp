@@ -164,117 +164,137 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
           {/* Left Column – All form fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              {/* Pessoa */}
-              <div>
-                <label className="text-sm font-medium block mb-1">
-                  {type === "bill" ? "Fornecedor" : "Cliente"}
-                </label>
-                <Combobox
-                  options={resources.map((r) => ({ label: r.name, value: String(r.id) }))}
-                  value={person}
-                  onChange={setPerson}
-                  loadOptions={(query) =>
-                                      searchResources(type === "income" ? "clients" : "suppliers", query)
-                                    }
-                  placeholder={`Selecione ${type === "bill" ? "um Fornecedor" : "um Cliente"}`}
-                />
+              <div className="flex flex-wrap gap-4">
+                {/* Pessoa */}
+                <div>
+                  <label className="text-sm font-medium block mb-1">
+                    {type === "bill" ? "Fornecedor" : "Cliente"}
+                  </label>
+                  <Combobox
+                    options={resources.map((r) => ({ label: r.name, value: String(r.id) }))}
+                    value={person}
+                    onChange={setPerson}
+                    loadOptions={(query) =>
+                                        searchResources(type === "income" ? "clients" : "suppliers", query)
+                                      }
+                    placeholder={`Selecione ${type === "bill" ? "um Fornecedor" : "um Cliente"}`}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium block mb-1">
+                    Data
+                  </label>
+                  <Controller
+                    name="date_due"
+                    control={control}
+                    rules={{ required: true }}
+                    render={({ field }) => (
+                      <Input
+                        type="date"
+                        value={field.value ?? ""}
+                        onChange={field.onChange}
+                        placeholder="dd/mm/aa"
+                      />
+                    )}
+                  />
+                </div>
               </div>
 
+              <label className="text-sm font-medium block mb-1">Descrição</label>
               <Input placeholder="Descrição" {...register("description", { required: true })} />
-              <Controller
-                name="date_due"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <Input
-                    type="date"
-                    value={field.value ?? ""}
-                    onChange={field.onChange}
-                    placeholder="dd/mm/aa"
-                  />
-                )}
-              />
-              <Input type="number" step="0.01" placeholder="Valor" {...register("value", { required: true })} />
-              <Input placeholder="Número do Documento" {...register("doc_number")} />
+
+              <div className="flex flex-wrap gap-4">
+                <div>
+                  <label className="text-sm font-medium block mb-1">Valor</label>
+                  <Input className="max-w-[150px]" type="number" step="0.01" placeholder="Valor" {...register("value", { required: true })} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium block mb-1">Documento</label>
+                  <Input className="max-w-[200px]" placeholder="Número do Documento" {...register("doc_number")} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium block mb-1">Status</label>
+                  <Select value={status} onValueChange={setStatus}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="em aberto">Em Aberto</SelectItem>
+                      <SelectItem value="pago">Pago</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
               {/* Centro de Custo */}
-              <div>
-                <label className="text-sm font-medium block mb-1">Centro de Custo</label>
-                <Select value={costCenter} onValueChange={setCostCenter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o centro de custo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Administração</SelectItem>
-                    <SelectItem value="2">Produção de Eventos</SelectItem>
-                    <SelectItem value="3">Diretoria</SelectItem>
-                    <SelectItem value="11">Ordem de Pagamento</SelectItem>
-                    <SelectItem value="12">Boleto</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Status */}
-              <div>
-                <label className="text-sm font-medium block mb-1">Status</label>
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="em aberto">Em Aberto</SelectItem>
-                    <SelectItem value="pago">Pago</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2">
+                <div>
+                  <label className="text-sm font-medium block mb-1">Centro de Custo</label>
+                  <Select value={costCenter} onValueChange={setCostCenter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o centro de custo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">Administração</SelectItem>
+                      <SelectItem value="2">Produção de Eventos</SelectItem>
+                      <SelectItem value="3">Diretoria</SelectItem>
+                      <SelectItem value="11">Ordem de Pagamento</SelectItem>
+                      <SelectItem value="12">Boleto</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {status === "pago" && (
               <div className="space-y-4 pt-4 border-t border-muted">
-                <Controller
-                  name="payment_date"
-                  control={control}
-                  rules={{ required: true }}
-                  render={({ field }) => (
-                    <Input type="date" {...field} placeholder="Data" />
-                  )}
-                />
-
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="Valor"
-                  {...register("payment_value", { required: true })}
-                />
-
-                <Input
-                  placeholder="Descrição"
-                  {...register("payment_description")}
-                />
-
-                <Controller
-                  name="payment_bank"
-                  control={control}
-                  rules={{ required: true }}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Banco" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {banks.map((bank) => (
-                          <SelectItem key={bank.id} value={String(bank.id)}>
-                            {bank.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-
-                <Input
-                  placeholder="Documento"
-                  {...register("payment_doc_number")}
-                />
+                <div className="flex flex-wrap gap-4">
+                  <div className="w-[150px]">
+                    <Controller
+                      name="payment_date"
+                      control={control}
+                      rules={{ required: true }}
+                      render={({ field }) => (
+                        <Input className="w-full" type="date" {...field} placeholder="Data" />
+                      )}
+                    />
+                  </div>
+                  <div className="w-[150px]">
+                    <Input
+                      className="w-full"
+                      type="number"
+                      step="0.01"
+                      placeholder="Valor"
+                      {...register("payment_value", { required: true })}
+                    />
+                  </div>
+                  <div>
+                    <Controller
+                      name="payment_bank"
+                      control={control}
+                      rules={{ required: true }}
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Banco" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {banks.map((bank) => (
+                              <SelectItem key={bank.id} value={String(bank.id)}>
+                                {bank.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2">
+                  <Input
+                    placeholder="Documento de pagamento"
+                    {...register("payment_doc_number")}
+                  />
+                </div>
               </div>
             )}
 

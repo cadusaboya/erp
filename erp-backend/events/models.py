@@ -22,7 +22,6 @@ class Event(models.Model):
     client = models.ForeignKey(Client, on_delete=models.PROTECT)  # Link to Client model
     date = models.DateField()
     total_value = models.DecimalField(max_digits=10, decimal_places=2)
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True)
     legacy = models.IntegerField(null=True, unique=False)
 
     def __str__(self):
