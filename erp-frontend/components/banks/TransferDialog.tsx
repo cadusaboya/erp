@@ -1,16 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Bank } from "@/types/types";
 import { formatDateToInput } from "@/lib/utils";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createPayment } from "@/services/lancamentos";
 
-const DUMMY_BILL_ID = 99998;    // ✅ Your dummy Bill ID
-const DUMMY_INCOME_ID = 99999;  // ✅ Your dummy Income ID
+const DUMMY_BILL_ID = 99998;
+const DUMMY_INCOME_ID = 99999;
 
 interface TransferDialogProps {
   open: boolean;
@@ -19,7 +31,12 @@ interface TransferDialogProps {
   onTransferCreated: () => void;
 }
 
-const TransferDialog: React.FC<TransferDialogProps> = ({ open, onClose, banks, onTransferCreated }) => {
+const TransferDialog: React.FC<TransferDialogProps> = ({
+  open,
+  onClose,
+  banks,
+  onTransferCreated,
+}) => {
   const [bankFrom, setBankFrom] = useState<number | null>(null);
   const [bankTo, setBankTo] = useState<number | null>(null);
   const [value, setValue] = useState<string>("");
@@ -33,11 +50,10 @@ const TransferDialog: React.FC<TransferDialogProps> = ({ open, onClose, banks, o
     const parsedValue = parseFloat(value);
     if (parsedValue <= 0) return alert("O valor deve ser maior que zero.");
 
-    const bankFromName = banks.find(b => b.id === bankFrom)?.name || "";
-    const bankToName = banks.find(b => b.id === bankTo)?.name || "";
+    const bankFromName = banks.find((b) => b.id === bankFrom)?.name || "";
+    const bankToName = banks.find((b) => b.id === bankTo)?.name || "";
 
     try {
-      // ✅ Create Payment saída (Despesas → dummy Bill)
       await createPayment({
         value: String(parsedValue),
         date,
@@ -47,19 +63,17 @@ const TransferDialog: React.FC<TransferDialogProps> = ({ open, onClose, banks, o
         bill_id: DUMMY_BILL_ID,
       });
 
-      // ✅ Create Payment entrada (Receitas → dummy Income)
       await createPayment({
         value: String(parsedValue),
         date,
         description: description || `Transferência de ${bankFromName}`,
         doc_number: "",
         bank: bankTo,
-        income_id: DUMMY_INCOME_ID
+        income_id: DUMMY_INCOME_ID,
       });
 
       onTransferCreated();
       handleClose();
-
     } catch (error) {
       console.error(error);
       alert("Erro ao registrar a transferência.");
@@ -77,16 +91,19 @@ const TransferDialog: React.FC<TransferDialogProps> = ({ open, onClose, banks, o
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent>
+      <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>Transferir Entre Bancos</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="text-sm">Banco Origem</label>
-            <Select onValueChange={(value: string) => setBankFrom(parseInt(value))} value={bankFrom?.toString() ?? ""}>
-              <SelectTrigger>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium block">Banco de Origem</label>
+            <Select
+              onValueChange={(val) => setBankFrom(parseInt(val))}
+              value={bankFrom?.toString() ?? ""}
+            >
+              <SelectTrigger className="min-w-[200px]">
                 <SelectValue placeholder="Selecione o banco de origem" />
               </SelectTrigger>
               <SelectContent>
@@ -99,10 +116,13 @@ const TransferDialog: React.FC<TransferDialogProps> = ({ open, onClose, banks, o
             </Select>
           </div>
 
-          <div>
-            <label className="text-sm">Banco Destino</label>
-            <Select onValueChange={(value: string) => setBankTo(parseInt(value))} value={bankTo?.toString() ?? ""}>
-              <SelectTrigger>
+          <div className="space-y-2">
+            <label className="text-sm font-medium block">Banco de Destino</label>
+            <Select
+              onValueChange={(val) => setBankTo(parseInt(val))}
+              value={bankTo?.toString() ?? ""}
+            >
+              <SelectTrigger className="min-w-[200px]">
                 <SelectValue placeholder="Selecione o banco de destino" />
               </SelectTrigger>
               <SelectContent>
@@ -115,23 +135,37 @@ const TransferDialog: React.FC<TransferDialogProps> = ({ open, onClose, banks, o
             </Select>
           </div>
 
-          <div>
-            <label className="text-sm">Valor</label>
-            <Input type="number" min="0" step="0.01" value={value} onChange={(e) => setValue(e.target.value)} />
+          <div className="space-y-2">
+            <label className="text-sm font-medium block">Valor</label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Valor da transferência"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+            />
           </div>
 
-          <div>
-            <label className="text-sm">Data</label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium block">Data</label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
 
-          <div>
-            <label className="text-sm">Descrição (opcional)</label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium block">Descrição (opcional)</label>
             <Input value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
-
-          <Button onClick={handleSubmit}>Salvar Transferência</Button>
         </div>
+
+        <DialogFooter className="pt-4">
+          <Button variant="outline" onClick={handleClose}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSubmit} className="ml-2">
+            Salvar Transferência
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

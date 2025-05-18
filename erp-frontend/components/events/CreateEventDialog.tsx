@@ -35,7 +35,7 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
   onEventCreated,
 }) => {
   const { register, handleSubmit, reset, setValue, watch } = useForm<Event>();
-  const [clients ] = useState<Resource[]>([]);
+  const [clients] = useState<Resource[]>([]);
 
   const onSubmit = async (formData: Event) => {
     const success = await createEvent(formData);
@@ -52,12 +52,14 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Novo Evento</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          {/* Event Name */}
-          <Input placeholder="Nome do Evento" {...register("event_name", { required: true })} />
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium block">Nome do Evento</label>
+            <Input placeholder="Nome do Evento" {...register("event_name", { required: true })} />
+          </div>
 
-          {/* Event Type (shadcn Select) */}
-          <div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium block">Tipo de Evento</label>
             <Select
               value={watch("type")}
               onValueChange={(val) => setValue("type", val)}
@@ -79,24 +81,34 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
             </Select>
           </div>
 
-          {/* Cliente (Combobox) */}
-          <div>
-          <Combobox
-            options={clients.map((c) => ({ label: c.name, value: String(c.id) }))}
-            value={String(watch("client") ?? "")} // converte number para string
-            loadOptions={(query) => searchResources("clients", query)}
-            onChange={(val) => setValue("client", Number(val))} // converte string para number
-            placeholder="Selecione um Cliente"
-          />
+          <div className="space-y-2">
+            <label className="text-sm font-medium block">Cliente</label>
+            <Combobox
+              options={clients.map((c) => ({ label: c.name, value: String(c.id) }))}
+              value={String(watch("client") ?? "")}
+              loadOptions={(query) => searchResources("clients", query)}
+              onChange={(val) => setValue("client", Number(val))}
+              placeholder="Selecione um Cliente"
+            />
           </div>
 
-          {/* Date */}
-          <Input type="date" {...register("date", { required: true })} />
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-[150px]">
+              <label className="text-sm font-medium block mb-1">Data</label>
+              <Input type="date" {...register("date", { required: true })} />
+            </div>
+            <div className="flex-1 min-w-[150px]">
+              <label className="text-sm font-medium block mb-1">Valor Total</label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="Valor Total"
+                {...register("total_value", { required: true })}
+              />
+            </div>
+          </div>
 
-          {/* Total Value */}
-          <Input type="number" step="0.01" placeholder="Valor Total" {...register("total_value", { required: true })} />
-
-          <DialogFooter>
+          <DialogFooter className="pt-4">
             <Button variant="outline" type="button" onClick={onClose}>
               Cancelar
             </Button>

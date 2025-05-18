@@ -1,12 +1,27 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { updateEvent } from "@/services/events"; // Ensure this service function is implemented
-import { Event } from "@/types/types";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { updateEvent } from "@/services/events";
+import { Event, Resource } from "@/types/types";
+import { Combobox } from "@/components/ui/combobox";
+import { searchResources } from "@/services/resources";
 
 interface EditEventDialogProps {
   open: boolean;
@@ -15,25 +30,26 @@ interface EditEventDialogProps {
   event: Event | null;
 }
 
-const EditEventDialog: React.FC<EditEventDialogProps> = ({ open, onClose, onEventUpdated, event }) => {
-  const { register, handleSubmit, reset } = useForm<Event>();
+const EditEventDialog: React.FC<EditEventDialogProps> = ({
+  open,
+  onClose,
+  onEventUpdated,
+  event,
+}) => {
+  const { register, handleSubmit, reset, setValue, watch } = useForm<Event>();
+  const [clients] = useState<Resource[]>([]);
 
-  // Prefill form with selected event data
   useEffect(() => {
-    if (event) {
-      reset(event);
-    }
+    if (event) reset(event);
   }, [event, reset]);
 
-  // Handle form submission
   const onSubmit = async (formData: Event) => {
     if (!event?.id) return;
-
     const success = await updateEvent(event.id, formData);
     if (success) {
-      onEventUpdated(); // Refresh event list
+      onEventUpdated();
       reset();
-      onClose(); // Close dialog
+      onClose();
     }
   };
 
@@ -43,27 +59,77 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({ open, onClose, onEven
         <DialogHeader>
           <DialogTitle>Editar Evento</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <Input placeholder="Nome do Evento" {...register("event_name", { required: true })} />
-          <Input type="date" placeholder="Data" {...register("date", { required: true })} />
-          <Input placeholder="ID do Cliente" type="number" {...register("client", { required: true })} />
-          <Input type="number" step="0.01" placeholder="Valor Total" {...register("total_value", { required: true })} />
-          <select {...register("type")} className="p-2 border rounded w-full" defaultValue={event?.type}>
-                <option value="">Selecione o Tipo de Evento</option>
-                <option value="15 anos">15 Anos</option>
-                <option value="empresarial">Empresarial</option>
-                <option value="aniversário">Aniversário</option>
-                <option value="batizado">Batizado</option>
-                <option value="bodas">Bodas</option>
-                <option value="casamento">Casamento</option>
-                <option value="chá">Chá</option>
-                <option value="formatura">Formatura</option>
-                <option value="outros">Outros</option>
-          </select>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium block">Nome do Evento</label>
+            <Input
+              placeholder="Nome do Evento"
+              {...register("event_name", { required: true })}
+            />
+          </div>
 
-          <DialogFooter>
-            <Button variant="outline" type="button" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" className="ml-2">Salvar</Button>
+          <div className="space-y-2">
+            <label className="text-sm font-medium block">Tipo de Evento</label>
+            <Select
+              value={watch("type")}
+              onValueChange={(val) => setValue("type", val)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="15 anos">15 Anos</SelectItem>
+                <SelectItem value="empresarial">Empresarial</SelectItem>
+                <SelectItem value="aniversário">Aniversário</SelectItem>
+                <SelectItem value="batizado">Batizado</SelectItem>
+                <SelectItem value="bodas">Bodas</SelectItem>
+                <SelectItem value="casamento">Casamento</SelectItem>
+                <SelectItem value="chá">Chá</SelectItem>
+                <SelectItem value="formatura">Formatura</SelectItem>
+                <SelectItem value="outros">Outros</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium block">Cliente</label>
+            <Combobox
+              options={clients.map((c) => ({
+                label: c.name,
+                value: String(c.id),
+              }))}
+              value={String(watch("client") ?? "")}
+              loadOptions={(query) => searchResources("clients", query)}
+              onChange={(val) => setValue("client", Number(val))}
+              placeholder="Selecione um Cliente"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-[150px]">
+              <label className="text-sm font-medium block mb-1">Data</label>
+              <Input type="date" {...register("date", { required: true })} />
+            </div>
+            <div className="flex-1 min-w-[150px]">
+              <label className="text-sm font-medium block mb-1">
+                Valor Total
+              </label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="Valor Total"
+                {...register("total_value", { required: true })}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="pt-4">
+            <Button variant="outline" type="button" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" className="ml-2">
+              Salvar
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
