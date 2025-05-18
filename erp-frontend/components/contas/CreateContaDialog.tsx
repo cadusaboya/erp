@@ -154,7 +154,15 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          reset();       // ✅ form reset here
+          onClose();     // ✅ parent gets notified
+        }
+      }}
+    >
       <DialogContent className="max-w-6xl">
         <DialogHeader>
           <DialogTitle>

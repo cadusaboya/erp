@@ -64,16 +64,16 @@ def generate_bank_statement_report(request):
 
     # 🔵 1. Obter saldo atual do banco
     if bank_id:
-        bank = Bank.objects.get(id=bank_id, company=company)
+        bank = Bank.objects.get(id=bank_id)
         saldo_atual = bank.balance
         bank_name = bank.name
     else:
-        saldo_atual = sum(bank.balance for bank in Bank.objects.filter(company=company))
+        saldo_atual = sum(bank.balance for bank in Bank.objects.all())
         bank_name = "Consolidado"
 
     # 🔵 2. Obter todos os pagamentos de date_min até hoje
     today = timezone.now().date()
-    payments_range = Payment.objects.filter(company=company, date__gte=date_min, date__lte=today)
+    payments_range = Payment.objects.filter(date__gte=date_min, date__lte=today)
     if bank_id:
         payments_range = payments_range.filter(bank_id=bank_id)
 
@@ -89,7 +89,7 @@ def generate_bank_statement_report(request):
     saldo_inicial = saldo
 
     # 🔵 3. Filtrar apenas os pagamentos do período solicitado (para mostrar no extrato)
-    payments = Payment.objects.filter(company=company, date__gte=date_min)
+    payments = Payment.objects.filter(date__gte=date_min)
     if date_max:
         payments = payments.filter(date__lte=date_max)
     if bank_id:
@@ -1065,7 +1065,7 @@ class BankViewSet(viewsets.ModelViewSet):
         return Bank.objects.all()
 
     def perform_create(self, serializer):
-        serializer.save()
+        serializer.save(user=self.request.user)
 
 class CostCenterViewSet(viewsets.ModelViewSet):
     serializer_class = CostCenterSerializer
@@ -1237,7 +1237,7 @@ def generate_quadro_espelho_report(request):
     if date_max:
         payments = payments.filter(date__lte=date_max)
 
-    events = Event.objects.filter(company=company)
+    events = Event.objects.all()
     if date_min:
         events = events.filter(date__gte=date_min)
     if date_max:

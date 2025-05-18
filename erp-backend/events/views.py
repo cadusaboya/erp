@@ -377,8 +377,7 @@ class EventViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(type__in=event_types)
 
         return queryset.order_by("date")
-
+        
     def perform_create(self, serializer):
         # Associate the new supplier with the authenticated user
-        company = get_company_or_404(self.request)
-        serializer.save(user=self.request.user, company=company)
+        serializer.save(user=self.request.user)

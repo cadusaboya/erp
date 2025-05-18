@@ -173,7 +173,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
                 </div>
               </TableCell>
               <TableCell className="w-1/17 min-w-[120px]">{payment.doc_number}</TableCell>
-              <TableCell className="w-1/17 min-w-[100px]">{payment.bank_name}</TableCell>
+              <TableCell className="w-1/17 min-w-[100px]">{payment.bank_name?.slice(0, 10)}</TableCell>
               <TableCell className="w-1/17 min-w-[100px]">{formatCurrencyBR(payment.value)}</TableCell>
               <TableCell className="w-1/17 min-w-[60px] text-center">
                 <DropdownMenu>
