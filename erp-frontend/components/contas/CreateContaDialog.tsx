@@ -140,6 +140,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   
         await createPayment(paymentPayload);
       } catch (err) {
+        console.log(err);
         await deleteRecord(type, success.id);
         return;
       }
