@@ -601,11 +601,11 @@ def generate_payments_report(request):
 
     user = request.user
     company = get_company_or_404(request)
-    event = get_object_or_404(Event, id=event_id, company=company) if event_id else None
+    event = get_object_or_404(Event, id=event_id) if event_id else None
 
     def get_open_accruals():
-        bill_qs = Bill.objects.filter(company=company).order_by("date_due")
-        income_qs = Income.objects.filter(company=company).order_by("date_due")
+        bill_qs = Bill.objects.order_by("date_due")
+        income_qs = Income.objects.order_by("date_due")
         if date_min:
             bill_qs = bill_qs.filter(date_due__gte=date_min)
             income_qs = income_qs.filter(date_due__gte=date_min)
@@ -651,7 +651,7 @@ def generate_payments_report(request):
         return get_rows(bill_qs), get_rows(income_qs)
 
     def get_paid_payments():
-        payments = Payment.objects.filter(company=company).order_by("date")
+        payments = Payment.objects.order_by("date")
         if date_min:
             payments = payments.filter(date__gte=date_min)
         if date_max:
@@ -1062,12 +1062,10 @@ class BankViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        company = get_company_or_404(self.request)
-        return Bank.objects.filter(company=company)
+        return Bank.objects.all()
 
     def perform_create(self, serializer):
-        company = get_company_or_404(self.request)
-        serializer.save(company=company)
+        serializer.save()
 
 class CostCenterViewSet(viewsets.ModelViewSet):
     serializer_class = CostCenterSerializer
@@ -1106,8 +1104,7 @@ def event_accruals_view(request, event_id):
     }
 
     # Get all payments related to those accruals
-    company = get_company_or_404(request)
-    payments = Payment.objects.filter(company=company).select_related("bill", "income")
+    payments = Payment.objects.select_related("bill", "income")
 
     if start_date:
         payments = payments.filter(date__gte=start_date)

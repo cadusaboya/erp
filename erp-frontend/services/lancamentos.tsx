@@ -40,6 +40,7 @@ export const fetchPayments = async (
 
 export const createPayment = async (data: PaymentCreatePayload) => {
   try {
+    console.log(transformDates(data));
     const response = await api.post("/payments/payments/", transformDates(data));
     return response.data;
   } catch (error) {

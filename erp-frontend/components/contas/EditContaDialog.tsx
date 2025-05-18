@@ -143,7 +143,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
             {type === "bill" ? "Editar Conta a Pagar" : "Editar Recebimento"}
           </DialogTitle>
         </DialogHeader>
-
+  
         {loading ? (
           <div className="p-10 text-center text-muted-foreground">
             Carregando dados...
@@ -153,72 +153,119 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left column */}
               <div className="space-y-4">
+                <div className="flex flex-wrap gap-4">
+                  {/* Pessoa */}
+                  <div>
+                    <label className="text-sm font-medium block mb-1">
+                      {type === "bill" ? "Fornecedor" : "Cliente"}
+                    </label>
+                    <Combobox
+                      options={resources.map((r) => ({
+                        label: r.name,
+                        value: String(r.id),
+                      }))}
+                      loadOptions={(query) =>
+                        searchResources(
+                          type === "income" ? "clients" : "suppliers",
+                          query
+                        )
+                      }
+                      value={person}
+                      onChange={setPerson}
+                      placeholder={`Selecione ${type === "bill" ? "um Fornecedor" : "um Cliente"}`}
+                    />
+                  </div>
+                  {/* Data */}
+                  <div>
+                    <label className="text-sm font-medium block mb-1">
+                      Data
+                    </label>
+                    <Input
+                      type="date"
+                      className="max-w-[150px]"
+                      {...register("date_due")}
+                    />
+                  </div>
+                </div>
+  
+                {/* Descrição */}
                 <div>
                   <label className="text-sm font-medium block mb-1">
-                    {type === "bill" ? "Fornecedor" : "Cliente"}
+                    Descrição
                   </label>
-                  <Combobox
-                    options={resources.map((r) => ({
-                      label: r.name,
-                      value: String(r.id),
-                    }))}
-                    loadOptions={(query) =>
-                      searchResources(
-                        type === "income" ? "clients" : "suppliers",
-                        query
-                      )
-                    }
-                    value={person}
-                    onChange={setPerson}
-                    placeholder={`Selecione ${type === "bill" ? "um Fornecedor" : "um Cliente"}`}
+                  <Input
+                    placeholder="Descrição"
+                    {...register("description")}
                   />
                 </div>
-
-                <Input placeholder="Descrição" {...register("description")} />
-                <Input type="date" {...register("date_due")} />
-                <Input type="number" step="0.01" placeholder="Valor" {...register("value")} />
-                <Input placeholder="Número do Documento" {...register("doc_number")} />
-
-                {/* Status */}
-                <div>
-                  <label className="text-sm font-medium block mb-1">Status</label>
-                  <select {...register("status")} className="p-2 border rounded w-full">
-                    <option value="em aberto">Em Aberto</option>
-                    <option value="vencido">Vencido</option>
-                    <option value="pago">Pago</option>
-                    <option value="parcial">Parcial</option>
-                  </select>
+  
+                {/* Valor + Documento + Status */}
+                <div className="flex flex-wrap gap-4">
+                  <div>
+                    <label className="text-sm font-medium block mb-1">Valor</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      className="max-w-[150px]"
+                      placeholder="Valor"
+                      {...register("value")}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium block mb-1">
+                      Documento
+                    </label>
+                    <Input
+                      className="max-w-[200px]"
+                      placeholder="Número do Documento"
+                      {...register("doc_number")}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium block mb-1">
+                      Status
+                    </label>
+                    <select
+                      {...register("status")}
+                      className="p-2 border rounded w-full"
+                    >
+                      <option value="em aberto">Em Aberto</option>
+                      <option value="vencido">Vencido</option>
+                      <option value="pago">Pago</option>
+                      <option value="parcial">Parcial</option>
+                    </select>
+                  </div>
                 </div>
               </div>
-
+  
               {/* Right column */}
               <div className="space-y-6">
                 <div className="max-h-[35vh] overflow-y-auto pr-2">
-                    <RatioTable
-                        allocations={eventAllocations}
-                        setAllocations={setEventAllocations}
-                        events={events}
-                        label="Rateio de Eventos"
-                        mode="event"
-                    />
+                  <RatioTable
+                    allocations={eventAllocations}
+                    setAllocations={setEventAllocations}
+                    events={events}
+                    label="Rateio de Eventos"
+                    mode="event"
+                  />
                 </div>
-
+  
                 <div className="max-h-[35vh] overflow-y-auto pr-2">
-                    <RatioTable
-                        allocations={accountAllocations}
-                        setAllocations={setAccountAllocations}
-                        chartAccounts={chartAccounts.map((acc) => ({
-                            id: acc.id,
-                            name: acc.description,
-                            code: acc.code,
-                        }))}
-                        label="Rateio por Conta"
-                        mode="account"
-                    />
+                  <RatioTable
+                    allocations={accountAllocations}
+                    setAllocations={setAccountAllocations}
+                    chartAccounts={chartAccounts.map((acc) => ({
+                      id: acc.id,
+                      name: acc.description,
+                      code: acc.code,
+                    }))}
+                    label="Rateio por Conta"
+                    mode="account"
+                  />
                 </div>
+              </div>
             </div>
-            </div>
-
+  
             <DialogFooter className="pt-4">
               <Button variant="outline" type="button" onClick={onClose}>
                 Cancelar
@@ -231,7 +278,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
         )}
       </DialogContent>
     </Dialog>
-  );
+  );  
 };
 
 export default EditContaDialog;

@@ -38,9 +38,8 @@ def generate_events_summary_report(request):
     date_min = request.query_params.get("date_min")
     date_max = request.query_params.get("date_max")
     user = request.user
-
-    company = get_company_or_404(request)
-    events = Event.objects.filter(company=company)
+    
+    events = Event.objects.all()
 
     if date_min:
         events = events.filter(date__gte=date_min)
@@ -57,12 +56,12 @@ def generate_events_summary_report(request):
         # Allocated value
         allocations = EventAllocation.objects.filter(
             event=event,
-            accrual__in=Income.objects.filter(company=company)
+            accrual__in=Income.objects.all()
         )
         allocated_value = allocations.aggregate(total=Sum('value'))['total'] or Decimal('0.00')
 
         # Paid value
-        incomes = Income.objects.filter(company=company, event_allocations__event=event).distinct()
+        incomes = Income.objects.filter(event_allocations__event=event).distinct()
         total_paid = Decimal('0.00')
         for income in incomes:
             for payment in income.payments.all():
@@ -179,7 +178,7 @@ def generate_event_type_monthly_report(request):
         for m in range(1, 13):
             data[label][m] = Decimal("0.00")
 
-    events = Event.objects.filter(company=company, date__year=year)
+    events = Event.objects.filter(date__year=year)
 
     for event in events:
         event_type_label = event.get_type_display() if event.type else "Sem Tipo"
@@ -315,13 +314,12 @@ class EventDetailView(generics.RetrieveAPIView):
         event_data = self.get_serializer(event).data
 
         # ✅ Fetch paid Incomes linked to the event
-        company = get_company_or_404(self.request)
-        incomes = Income.objects.filter(event=event, company=company, status="pago")
+        incomes = Income.objects.filter(event=event, status="pago")
         incomes_data = IncomeSerializer(incomes, many=True).data
         total_incomes = sum(income.value for income in incomes)
 
         # ✅ Fetch paid Bills linked to the event
-        bills = Bill.objects.filter(event=event, company=company, status="pago")
+        bills = Bill.objects.filter(event=event, status="pago")
         bills_data = BillSerializer(bills, many=True).data
         total_bills = sum(bill.value for bill in bills)
 
@@ -347,7 +345,7 @@ class EventViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         company = get_company_or_404(self.request)
-        queryset = Event.objects.filter(company=company)
+        queryset = Event.objects.all()
         params = self.request.query_params
 
         # Filters from query params
