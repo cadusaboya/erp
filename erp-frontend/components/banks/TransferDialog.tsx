@@ -9,8 +9,8 @@ import { formatDateToInput } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createPayment } from "@/services/lancamentos";
 
-const DUMMY_BILL_ID = 1;    // ✅ Your dummy Bill ID
-const DUMMY_INCOME_ID = 2;  // ✅ Your dummy Income ID
+const DUMMY_BILL_ID = 99998;    // ✅ Your dummy Bill ID
+const DUMMY_INCOME_ID = 99999;  // ✅ Your dummy Income ID
 
 interface TransferDialogProps {
   open: boolean;

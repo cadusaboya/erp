@@ -21,7 +21,7 @@ const withAllOption = (options: { label: string; value: string }[]) => [
 ];
 
 export default function ReportsPage() {
-  const [type, setType] = useState("bills");
+  const [type, setType] = useState("both");
   const [status, setStatus] = useState("");
   const [person, setPerson] = useState("");
   const [eventId, setEventId] = useState("");
