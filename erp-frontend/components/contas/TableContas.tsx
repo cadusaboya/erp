@@ -142,7 +142,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
               const val = e.target.value;
             
               if (val === "") {
-                setFilters({ startDate: "", endDate: "", person: "", description: "", id: undefined, status: ["em aberto", "vencido", "parcial"], minValue: "", maxValue: "" })
+                setFilters({ startDate: "2023-01-01", endDate: "", person: "", description: "", id: undefined, status: ["em aberto", "vencido", "parcial"], minValue: "", maxValue: "" })
               } else {
                 const updatedStatus = filters.status?.includes("pago")
                   ? filters.status
@@ -300,7 +300,6 @@ const TableComponent: React.FC<TableComponentProps> = ({
       <CreateDialog open={createPaymentOpen} onClose={() => setCreatePaymentOpen(false)} title="Registrar Pagamento" fields={[
         { key: "date", type: "date", label: "Data", placeholder: "" },
         { key: "value", type: "number", label: "Valor", placeholder: "R$ 0.00" },
-        { key: "description", type: "text", label: "Descrição", placeholder: "Motivo do pagamento" },
         { key: "bank", type: "select", label: "Banco", options: bankOptions.map((bank) => ({ label: bank.name, value: String(bank.id) })) },
         { key: "doc_number", type: "text", label: "Documento", placeholder: "Nº do comprovante" },
       ]} onSubmit={handleSubmitPayment} />

@@ -101,6 +101,7 @@ const RatioTable: React.FC<RateioTableProps> = ({
                 defaultValue={item.event ?? ""}
                 onKeyDown={async (e) => {
                   if (e.key === "Enter") {
+                    e.preventDefault();
                     const input = (e.target as HTMLInputElement).value;
                     if (!input.match(/^\d+$/)) return;
 

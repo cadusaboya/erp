@@ -27,7 +27,7 @@ export default function Page() {
   const [data, setData] = useState<FinanceRecord[]>([]);
   const [bankOptions, setBankOptions] = useState<BankOption[]>([]);
   const [filters, setFilters] = useState<FiltersParams>({
-    startDate: "",
+    startDate: "2023-01-01",
     endDate: "",
     status: ["em aberto", "vencido", "parcial"],
     person: "",

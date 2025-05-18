@@ -1065,7 +1065,7 @@ class BankViewSet(viewsets.ModelViewSet):
         return Bank.objects.all()
 
     def perform_create(self, serializer):
-        serializer.save()
+        serializer.save(user=self.request.user)
 
 class CostCenterViewSet(viewsets.ModelViewSet):
     serializer_class = CostCenterSerializer

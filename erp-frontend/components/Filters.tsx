@@ -56,78 +56,80 @@ const FiltersDialog = <T extends object>({
           <DialogTitle>Filtros Avançados</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-4">
-          {filterFields.map((field) => {
-            if (field.type === "checkboxes") {
-              return (
-                <div
-                  key={String(field.key)}
-                  className="border rounded-md p-4 bg-white shadow-sm col-span-full"
-                >
-                  <label className="font-semibold mb-3 block">{field.label}</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {field.options?.map((option) => (
-                      <label
-                        key={option}
-                        className="flex items-center gap-2 text-sm cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={
-                            Array.isArray(draftFilters[field.key]) &&
-                            (draftFilters[field.key] as string[]).includes(option)
-                          }
-                          onChange={() => handleCheckboxChange(field.key, option)}
-                        />
-                        <span>
-                          {option
-                            .split(" ")
-                            .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-                            .join(" ")}
-                        </span>
-                      </label>
-                    ))}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            applyFilters(draftFilters);
+            setFilters(draftFilters);
+            onClose();
+          }}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-4">
+            {filterFields.map((field) => {
+              if (field.type === "checkboxes") {
+                return (
+                  <div
+                    key={String(field.key)}
+                    className="border rounded-md p-4 bg-white shadow-sm col-span-full"
+                  >
+                    <label className="font-semibold mb-3 block">{field.label}</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                      {field.options?.map((option) => (
+                        <label
+                          key={option}
+                          className="flex items-center gap-2 text-sm cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={
+                              Array.isArray(draftFilters[field.key]) &&
+                              (draftFilters[field.key] as string[]).includes(option)
+                            }
+                            onChange={() => handleCheckboxChange(field.key, option)}
+                          />
+                          <span>
+                            {option
+                              .split(" ")
+                              .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                              .join(" ")}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
+                );
+              }
+
+              return (
+                <div key={String(field.key)} className="space-y-2">
+                  <label className="text-sm font-medium block">{field.label}</label>
+                  <Input
+                    type={field.type}
+                    placeholder={field.placeholder}
+                    value={(draftFilters[field.key] as string) || ""}
+                    onChange={(e) =>
+                      setDraftFilters({ ...draftFilters, [field.key]: e.target.value } as T)
+                    }
+                  />
                 </div>
               );
-            }
+            })}
+          </div>
 
-            return (
-              <div key={String(field.key)} className="space-y-2">
-                <label className="text-sm font-medium block">{field.label}</label>
-                <Input
-                  type={field.type}
-                  placeholder={field.placeholder}
-                  value={(draftFilters[field.key] as string) || ""}
-                  onChange={(e) =>
-                    setDraftFilters({ ...draftFilters, [field.key]: e.target.value } as T)
-                  }
-                />
-              </div>
-            );
-          })}
-        </div>
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => {
-              clearFilters();
-              onClose();
-            }}
-          >
-            Limpar Filtros
-          </Button>
-          <Button
-            onClick={() => {
-              applyFilters(draftFilters);
-              setFilters(draftFilters);
-              onClose();
-            }}
-          >
-            Aplicar Filtros
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => {
+                clearFilters();
+                onClose();
+              }}
+            >
+              Limpar Filtros
+            </Button>
+            <Button type="submit">Aplicar Filtros</Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
