@@ -69,7 +69,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const itemsPerPage = 12;
+  const itemsPerPage = 10;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   const handleEditClick = (event: Event) => {

@@ -70,7 +70,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
 
-  const itemsPerPage = 12;
+  const itemsPerPage = 10;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   const applyFilters = (newFilters: FilterPaymentType) => {
