@@ -92,7 +92,7 @@ class IncomeSerializer(serializers.ModelSerializer):
     def get_remaining_value(self, obj):
         if obj.status != "parcial":
             return None
-        total_paid = sum(p.value for p in obj.payments.all())
+        total_paid = sum(p.value for p in obj.payments.filter(status="pago"))
         return obj.value - total_paid
 
     def to_representation(self, instance):
@@ -150,7 +150,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         model = Payment
         fields = [
             'id', 'bill_id', 'income_id', 'value', 'bank', 'bank_name',
-            'doc_number', 'date', 'person_name', 'description'
+            'doc_number', 'date', 'person_name', 'description', 'status'
         ]
         read_only_fields = ('company', 'user')
 

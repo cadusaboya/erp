@@ -17,6 +17,7 @@ class CostCenter(models.Model):
 class Accrual(models.Model):
     STATUS_CHOICES = [
         ('em aberto', 'Em Aberto'),
+        ('agendado', 'Agendado'),
         ('pago', 'Pago'),
         ('vencido', 'Vencido'),
         ('parcial', 'Parcial')
@@ -49,6 +50,11 @@ class Bill(Accrual):
         return f"Conta de {self.person.name} - {self.value}"
     
 class Payment(models.Model):
+    STATUS_CHOICES = [
+        ('agendado', 'Agendado'),
+        ('pago', 'Pago'),
+    ]
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     bill = models.ForeignKey('Bill', on_delete=models.CASCADE, null=True, blank=True, related_name='payments')
     income = models.ForeignKey('Income', on_delete=models.CASCADE, null=True, blank=True, related_name='payments')
@@ -58,6 +64,7 @@ class Payment(models.Model):
     bank = models.ForeignKey('Bank', on_delete=models.CASCADE)
     doc_number = models.CharField(max_length=100, blank=True)
     company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pago')
 
     @property
     def payable(self):
@@ -65,7 +72,7 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Pagamento de R$ {self.value} em {self.date}"
-    
+
     def get_allocated_value_to_event(self, event_id):
         alloc = None
         total = None
@@ -82,6 +89,7 @@ class Payment(models.Model):
 
         ratio = alloc.value / total if total else 0
         return round(self.value * ratio, 2)
+
 
 
 class Bank(models.Model):

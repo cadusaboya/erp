@@ -23,6 +23,9 @@ from functools import reduce
 from decimal import Decimal, ROUND_HALF_UP
 import logging
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status as drf_status
 
 def safe_decimal(value):
     return Decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
@@ -897,7 +900,14 @@ class PaymentViewSet(viewsets.ModelViewSet):
         company = get_company_or_404(self.request)
         params = self.request.query_params
 
-        qs = Payment.objects.filter(company=company)
+        qs = Payment.objects.filter(company=company)  # sempre começa assim
+
+        if self.action == "list":
+            status_list = params.getlist("status")
+            if status_list:
+                qs = qs.filter(status__in=status_list)
+            else:
+                qs = qs.filter(status="pago")
 
         # Filters
         start_date = params.get("startDate")
@@ -962,11 +972,17 @@ class PaymentViewSet(viewsets.ModelViewSet):
             payment.description = parent.description
             payment.save(update_fields=["description"])
 
-        # Get all existing payments for this bill/income
+        # Se o pagamento está apenas agendado, não atualiza saldo nem status
+        if payment.status == "agendado":
+            parent.status = "agendado"
+            parent.save()
+            return
+
+        # Get all existing payments efetivados
         if payment.bill:
-            existing_payments = Payment.objects.filter(bill=payment.bill, company=company)
+            existing_payments = Payment.objects.filter(bill=payment.bill, company=company, status="pago")
         elif payment.income:
-            existing_payments = Payment.objects.filter(income=payment.income, company=company)
+            existing_payments = Payment.objects.filter(income=payment.income, company=company, status="pago")
 
         total_paid = sum(safe_decimal(p.value) for p in existing_payments)
         parent_value = safe_decimal(parent.value)
@@ -1012,11 +1028,15 @@ class PaymentViewSet(viewsets.ModelViewSet):
             payment.description = parent.description
             payment.save(update_fields=["description"])
 
-        # Parent status update
+        # 🔁 Atualiza status da conta SEMPRE (usando apenas pagamentos efetivos)
         if payment.bill:
-            existing_payments = Payment.objects.filter(bill=payment.bill, company=company)
+            existing_payments = Payment.objects.filter(
+                bill=payment.bill, company=company, status="pago"
+            )
         elif payment.income:
-            existing_payments = Payment.objects.filter(income=payment.income, company=company)
+            existing_payments = Payment.objects.filter(
+                income=payment.income, company=company, status="pago"
+            )
 
         total_paid = sum(safe_decimal(p.value) for p in existing_payments)
         parent_value = safe_decimal(parent.value)
@@ -1032,7 +1052,10 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
         parent.save()
 
-        # Update bank balance
+        # ⚠️ Só altera saldo do banco se pagamento estiver efetivado (pago)
+        if payment.status != "pago":
+            return
+
         value_diff = payment.value - old_value
 
         if old_bank == payment.bank and old_bill == payment.bill and old_income == payment.income:
@@ -1055,6 +1078,94 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     payment.bank.balance += payment.value
                 payment.bank.save()
 
+    @transaction.atomic
+    def destroy(self, request, *args, **kwargs):
+        company = get_company_or_404(request)
+        instance = self.get_object()
+
+        parent = instance.bill or instance.income
+        if not parent:
+            raise ValidationError("Pagamento inválido: objeto relacionado não encontrado.")
+
+        # Estorna o valor no saldo do banco se já estava efetivado
+        if instance.status == "pago" and instance.bank:
+            if instance.bill:
+                instance.bank.balance += instance.value
+            elif instance.income:
+                instance.bank.balance -= instance.value
+            instance.bank.save()
+
+        # Exclui o pagamento
+        instance.delete()
+
+        # Atualiza o status da conta (considerando apenas pagamentos efetivados restantes)
+        if instance.bill:
+            remaining_payments = Payment.objects.filter(bill=instance.bill, company=company, status="pago")
+        else:
+            remaining_payments = Payment.objects.filter(income=instance.income, company=company, status="pago")
+
+        total_paid = sum(safe_decimal(p.value) for p in remaining_payments)
+        parent_value = safe_decimal(parent.value)
+
+        if parent_value == 0:
+            parent.status = "pago"
+        elif abs(total_paid - parent_value) < Decimal("0.01"):
+            parent.status = "pago"
+        elif total_paid > 0:
+            parent.status = "parcial"
+        else:
+            parent.status = "em aberto"
+
+        parent.save()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["patch"], url_path="marcar-pago")
+    @transaction.atomic
+    def marcar_como_pago(self, request, pk=None):
+        company = get_company_or_404(request)
+        payment = self.get_object()
+
+        if payment.status == "pago":
+            return Response({"detail": "Este pagamento já está marcado como pago."}, status=400)
+
+        date = request.data.get("date")
+        if not date:
+            return Response({"detail": "Campo 'date' é obrigatório."}, status=400)
+
+        # Atualiza status e data
+        payment.status = "pago"
+        payment.date = date
+        payment.save(update_fields=["status", "date"])
+
+        # Atualiza saldo do banco
+        if payment.bank:
+            if payment.bill:
+                payment.bank.balance -= payment.value
+            elif payment.income:
+                payment.bank.balance += payment.value
+            payment.bank.save()
+
+        # Atualiza status da conta vinculada
+        parent = payment.bill or payment.income
+        if parent:
+            if payment.bill:
+                pagamentos = Payment.objects.filter(bill=payment.bill, company=company, status="pago")
+            else:
+                pagamentos = Payment.objects.filter(income=payment.income, company=company, status="pago")
+
+            total_pago = sum(p.value for p in pagamentos)
+            if parent.value == 0:
+                parent.status = "pago"
+            elif abs(total_pago - parent.value) < Decimal("0.01"):
+                parent.status = "pago"
+            elif total_pago > 0:
+                parent.status = "parcial"
+            else:
+                parent.status = "em aberto"
+            parent.save()
+
+        return Response({"detail": "Pagamento marcado como pago com sucesso."}, status=drf_status.HTTP_200_OK)
 
 
 class BankViewSet(viewsets.ModelViewSet):
@@ -1467,3 +1578,95 @@ def generate_quadro_realizado_report(request):
     pdf.save()
 
     return response
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def generate_scheduled_payments_report(request):
+    from reportlab.lib.pagesizes import landscape, A4
+    from reportlab.pdfgen import canvas
+    from events.utils.pdffunctions import draw_header, check_page_break, truncate_text
+
+    user = request.user
+    company = get_company_or_404(request)
+    date_min = request.query_params.get("date_min")
+    date_max = request.query_params.get("date_max")
+
+    # 🔎 Filtrar apenas os pagamentos agendados
+    payments = Payment.objects.filter(company=company, status="agendado")
+    if date_min:
+        payments = payments.filter(date__gte=date_min)
+    if date_max:
+        payments = payments.filter(date__lte=date_max)
+
+    payments = payments.select_related("bill__person", "income__person").order_by("date")
+
+    bills = []
+    incomes = []
+
+    for p in payments:
+        parent = p.bill or p.income
+        if not parent:
+            continue
+        row = {
+            "id": p.id,
+            "date": p.date,
+            "person": parent.person.name if parent.person else "-",
+            "description": p.description or parent.description or "-",
+            "doc_number": p.doc_number or "DN",
+            "value": p.value,
+        }
+        if p.bill:
+            bills.append(row)
+        elif p.income:
+            incomes.append(row)
+
+    # 📄 Gerar PDF
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = "inline; filename=pagamentos_agendados.pdf"
+
+    pdf = canvas.Canvas(response, pagesize=landscape(A4))
+    width, height = landscape(A4)
+    cols = [50, width * 0.12, width * 0.2, width * 0.45, width * 0.8, width * 0.9]
+
+    y = draw_header(pdf, width, height, "Geral", "Pagamentos Agendados", "Pagamentos Agendados")
+
+    def draw_table(pdf, items, label, y):
+        if not items:
+            return y, Decimal("0.00")
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(cols[0], y, label)
+        y -= 20
+        total = Decimal("0.00")
+        pdf.setFont("Helvetica", 8)
+        for row in items:
+            y = check_page_break(pdf, y, height, width, "Geral", None, "Pagamentos Agendados")
+            pdf.setFont("Helvetica", 9)
+            pdf.drawString(cols[0], y, str(row["id"]))
+            pdf.drawString(cols[1], y, row["date"].strftime("%d/%m/%y"))
+            pdf.drawString(cols[2], y, truncate_text(row["person"], 35))
+            pdf.drawString(cols[3], y, truncate_text(row["description"], 52))
+            pdf.drawString(cols[4], y, row["doc_number"])
+            pdf.drawString(cols[5], y, f"R$ {row['value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+            total += row["value"]
+            y -= 15
+        pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(cols[4], y, "Total")
+        pdf.drawString(cols[5], y, f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        y -= 20
+        return y, total
+
+    y, total_bills = draw_table(pdf, bills, "Despesas Agendadas", y)
+    y, total_incomes = draw_table(pdf, incomes, "Receitas Agendadas", y)
+
+    pdf.setFont("Helvetica-Bold", 10)
+    pdf.drawString(cols[4], y, "Total Geral")
+    total_geral = total_bills + total_incomes
+    pdf.drawString(cols[5], y, f"R$ {total_geral:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+
+    pdf.setFont("Helvetica", 7)
+    pdf.drawString(width - 100, 30, "Página 1 de 1")
+    pdf.showPage()
+    pdf.save()
+
+    return response
+

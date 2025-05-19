@@ -1,5 +1,5 @@
 from rest_framework.routers import DefaultRouter
-from .views import BillViewSet, IncomeViewSet, BankViewSet, generate_chartaccount_summary_report, generate_quadro_realizado_report, generate_quadro_espelho_report, combined_extract, PaymentViewSet, generate_bank_statement_report, generate_chart_account_balance, generate_payments_report, generate_cost_center_consolidated_report, CostCenterViewSet, event_accruals_view, ChartAccountViewSet
+from .views import BillViewSet, generate_scheduled_payments_report, IncomeViewSet, BankViewSet, generate_chartaccount_summary_report, generate_quadro_realizado_report, generate_quadro_espelho_report, combined_extract, PaymentViewSet, generate_bank_statement_report, generate_chart_account_balance, generate_payments_report, generate_cost_center_consolidated_report, CostCenterViewSet, event_accruals_view, ChartAccountViewSet
 from django.urls import path, include
 
 router = DefaultRouter()
@@ -20,6 +20,7 @@ urlpatterns = [
     path("report/chartaccountsummary/", generate_chartaccount_summary_report),
     path("report/bank/", generate_bank_statement_report),
     path("report/espelho/", generate_quadro_espelho_report),
-    path("report/realizado/", generate_quadro_realizado_report)
+    path("report/realizado/", generate_quadro_realizado_report),
+    path("report/agendado/", generate_scheduled_payments_report)
     
 ]
