@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/axios";
+import { toast } from "sonner"; // at the top
 
 interface BankOption {
   id: number;
@@ -141,8 +142,35 @@ const TableComponent: React.FC<TableComponentProps> = ({
       ...(type === "bill" ? { bill_id: recordToPay.id } : { income_id: recordToPay.id }),
     };
   
-    await createPayment(payload);
-    onRecordUpdated();
+    const res = await createPayment(payload);
+    if (res?.id) {
+      toast.success(`Pagamento criado com sucesso!`, {
+        description: `ID: ${res.id}`,
+      });
+      onRecordUpdated();
+    }
+    else {
+      toast.error("Criar pagamento falhou");
+    }
+
+    try {
+      const res = await createPayment(payload);
+    
+      if (res?.id) {
+        toast.success("Pagamento criado com sucesso!", {
+          description: `ID: ${res.id}`,
+        });
+        onRecordUpdated();
+      } else {
+        toast.error("Criar Pagamento Falhou!", {
+          description: `Backend não retornou ID`,
+        });
+      }
+    } catch (error) {
+        toast.error("Criar Pagamento Falhou!", {
+          description: error instanceof Error ? error.message : "Erro desconhecido",
+        });
+    }
   };
   
 
