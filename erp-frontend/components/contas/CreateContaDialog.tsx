@@ -161,8 +161,14 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
       open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
-          reset();       // ✅ form reset here
-          onClose();     // ✅ parent gets notified
+          reset();                       // ✅ Reset do formulário
+          setEventAllocations([]);      // ✅ Reset dos rateios de evento
+          setAccountAllocations([]);    // ✅ Reset dos rateios por conta
+          setPerson("");                // (se quiser resetar também)
+          setCostCenter("1");           // (opcional)
+          setStatus("em aberto");       // (opcional)
+          setIsScheduled(false);        // (opcional)
+          onClose();                    // ✅ Fecha o diálogo
         }
       }}
     >
