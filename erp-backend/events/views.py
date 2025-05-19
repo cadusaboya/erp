@@ -68,6 +68,7 @@ def generate_events_summary_report(request):
                 total_paid += Decimal(payment.get_allocated_value_to_event(event.id))
 
         event_data.append({
+            "id": event.id,
             "name": event.event_name,
             "date": event.date,
             "client": event.client.name if event.client else "-",
@@ -93,15 +94,17 @@ def generate_events_summary_report(request):
     pdf.drawString(margin, height - 90, periodo_text)
 
     # Column positions
-    col_date = margin
-    col_client = margin + 55
-    col_event = margin + 250
-    col_contract = margin + 550
-    col_allocated = margin + 650
+    col_id = margin
+    col_date = margin + 35
+    col_client = margin + 95
+    col_event = margin + 280
+    col_contract = margin + 560
+    col_allocated = margin + 660
     col_paid = margin + 750
 
     y = height - 120
     pdf.setFont("Helvetica-Bold", 9)
+    pdf.drawString(col_id, y, "ID")
     pdf.drawString(col_date, y, "Data")
     pdf.drawString(col_client, y, "Cliente")
     pdf.drawString(col_event, y, "Evento")
@@ -120,6 +123,7 @@ def generate_events_summary_report(request):
             pdf.showPage()
             y = height - 50
             pdf.setFont("Helvetica-Bold", 9)
+            pdf.drawString(col_id, y, "ID")
             pdf.drawString(col_date, y, "Data")
             pdf.drawString(col_client, y, "Cliente")
             pdf.drawString(col_event, y, "Evento")
@@ -131,6 +135,7 @@ def generate_events_summary_report(request):
             y -= 15
             pdf.setFont("Helvetica", 9)
 
+        pdf.drawString(col_id, y, str(event["id"]))
         pdf.drawString(col_date, y, event["date"].strftime("%d/%m/%Y"))
         pdf.drawString(col_client, y, truncate_text(event["client"], 30))
         pdf.drawString(col_event, y, truncate_text(event["name"], 30))

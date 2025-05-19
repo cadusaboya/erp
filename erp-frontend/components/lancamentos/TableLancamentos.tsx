@@ -141,19 +141,21 @@ const TableComponent: React.FC<TableComponentProps> = ({
       <Table className="table-fixed w-full">
         <TableHeader>
           <TableRow>
-            <TableCell className="w-1/17 min-w-[40px]">Tipo</TableCell>
-            <TableCell className="w-1/17 min-w-[40px]">Data</TableCell>
+            <TableCell className="w-1/18 min-w-[50px]">ID</TableCell>
+            <TableCell className="w-1/14 min-w-[40px]">Tipo</TableCell>
+            <TableCell className="w-1/12 min-w-[40px]">Data</TableCell>
             <TableCell className="w-4/17 min-w-[180px]">Pessoa</TableCell>
             <TableCell className="w-4/17 min-w-[180px]">Descrição</TableCell>
-            <TableCell className="w-1/17 min-w-[120px]">Doc. de Pgto</TableCell>
-            <TableCell className="w-1/17 min-w-[100px]">Banco</TableCell>
-            <TableCell className="w-1/17 min-w-[100px]">Valor</TableCell>
+            <TableCell className="w-1/17 min-w-[120px]">Doc.</TableCell>
+            <TableCell className="w-1/10 min-w-[100px]">Banco</TableCell>
+            <TableCell className="w-1/13 min-w-[100px]">Valor</TableCell>
             <TableCell className="w-1/17 min-w-[60px] text-center">Ações</TableCell>
           </TableRow>
         </TableHeader>
         <tbody>
           {data.map((payment) => (
             <TableRow key={payment.id} className="h-[56px] align-middle">
+              <TableCell className="w-1/14 min-w-[60px]">{payment.id}</TableCell>
               <TableCell className="w-1/17 min-w-[40px]">
                 {payment.bill_id ? "Despesa" : "Receita"}
               </TableCell>

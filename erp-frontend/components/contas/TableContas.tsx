@@ -209,6 +209,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
       <Table className="table-fixed w-full">
         <TableHeader>
           <TableRow>
+            <TableCell className="w-1/18 min-w-[50px]">ID</TableCell>
             <TableCell className="w-2/14 min-w-[100px]">Data de Vencimento</TableCell>
             <TableCell className="w-4/14 min-w-[140px]">Pessoa</TableCell>
             <TableCell className="w-4/14 min-w-[180px]">Descrição</TableCell>
@@ -221,6 +222,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
         <tbody>
           {data.map((record) => (
             <TableRow key={`${record.id}-${record.status}`} className="h-[56px] align-middle">
+              <TableCell className="w-1/16 min-w-[50px]">{record.id || "N/A"}</TableCell>
               <TableCell className="w-2/14 min-w-[100px]">
                 {new Date(record.date_due + "T00:00:00").toLocaleDateString("pt-BR", { timeZone: "UTC" })}
               </TableCell>

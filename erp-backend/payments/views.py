@@ -118,6 +118,7 @@ def generate_bank_statement_report(request):
 
         lines.append({
             "date": p.date,
+            "id": p.id,
             "favorecido": favorecido,
             "descricao": descricao,
             "value": value_display,
@@ -133,9 +134,10 @@ def generate_bank_statement_report(request):
     margin = 30
 
     col_date = margin
-    col_fav = margin + 60
-    col_desc = margin + 180
-    col_value = width - margin - 90
+    col_id = col_date + 50
+    col_fav = col_id + 40
+    col_desc = col_fav + 120
+    col_value = width - margin - 80
     col_balance = width - margin
 
     pdf.setFont("Helvetica-Bold", 14)
@@ -157,6 +159,7 @@ def generate_bank_statement_report(request):
     y = height - 155
     pdf.setFont("Helvetica-Bold", 9)
     pdf.drawString(col_date, y, "Data")
+    pdf.drawString(col_id, y, "ID")
     pdf.drawString(col_fav, y, "Favorecido")
     pdf.drawString(col_desc, y, "Descrição")
     pdf.drawRightString(col_value, y, "Valor")
@@ -173,6 +176,7 @@ def generate_bank_statement_report(request):
             y = height - 50
             pdf.setFont("Helvetica-Bold", 9)
             pdf.drawString(col_date, y, "Data")
+            pdf.drawString(col_id, y, "ID")
             pdf.drawString(col_fav, y, "Favorecido")
             pdf.drawString(col_desc, y, "Descrição")
             pdf.drawRightString(col_value, y, "Valor")
@@ -183,6 +187,7 @@ def generate_bank_statement_report(request):
             pdf.setFont("Helvetica", 9)
 
         pdf.drawString(col_date, y, line["date"].strftime("%d/%m/%Y"))
+        pdf.drawString(col_id, y, str(line["id"]))
         pdf.drawString(col_fav, y, shorten_text(line["favorecido"], 100, pdf))
         pdf.drawString(col_desc, y, shorten_text(line["descricao"], 180, pdf))
         value_text = f"{'-' if line['value'] < 0 else ''}R$ {abs(line['value']):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -254,6 +259,7 @@ def generate_chartaccount_summary_report(request):
             paid_value = round(p.value * ratio, 2)
 
             results.append({
+                "id": p.id,
                 "date": p.date,
                 "type": "Despesa" if p.bill else "Receita",
                 "person": accrual.person.name if accrual.person else "-",
@@ -273,8 +279,9 @@ def generate_chartaccount_summary_report(request):
     # X positions
     cols = [
         margin,
-        margin + 100,
-        margin + 290,
+        margin + 50,
+        margin + 130,
+        margin + 320,
         width - 200,
         width - margin - 70
     ]
@@ -292,11 +299,12 @@ def generate_chartaccount_summary_report(request):
     def draw_header():
         nonlocal y
         pdf.setFont("Helvetica-Bold", 9)
-        pdf.drawString(cols[0], y, "Data")
-        pdf.drawString(cols[1], y, "Pessoa")
-        pdf.drawString(cols[2], y, "Descrição")
-        pdf.drawString(cols[3], y, "Doc.")
-        pdf.drawString(cols[4], y, "Valor")
+        pdf.drawString(cols[0], y, "ID")
+        pdf.drawString(cols[1], y, "Data")
+        pdf.drawString(cols[2], y, "Pessoa")
+        pdf.drawString(cols[3], y, "Descrição")
+        pdf.drawString(cols[4], y, "Doc.")
+        pdf.drawString(cols[5], y, "Valor")
         y -= 5
         pdf.line(margin, y, width - margin, y)
         y -= 15
@@ -313,11 +321,12 @@ def generate_chartaccount_summary_report(request):
             draw_header()
             pdf.setFont("Helvetica", 9)
 
-        pdf.drawString(cols[0], y, row["date"].strftime("%d/%m/%Y"))
-        pdf.drawString(cols[1], y, truncate_text(row["person"], 30))
-        pdf.drawString(cols[2], y, truncate_text(row["description"], 45))
-        pdf.drawString(cols[3], y, row["doc_number"])
-        pdf.drawString(cols[4], y, f"R$ {row['value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        pdf.drawString(cols[0], y, str(row["id"]))
+        pdf.drawString(cols[1], y, row["date"].strftime("%d/%m/%Y"))
+        pdf.drawString(cols[2], y, truncate_text(row["person"], 30))
+        pdf.drawString(cols[3], y, truncate_text(row["description"], 45))
+        pdf.drawString(cols[4], y, row["doc_number"])
+        pdf.drawString(cols[5], y, f"R$ {row['value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
         total += row["value"]
         y -= 15
