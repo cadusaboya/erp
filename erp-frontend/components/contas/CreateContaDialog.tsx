@@ -72,6 +72,8 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   const [eventAllocations, setEventAllocations] = useState<RateioItem[]>([]);
   const [accountAllocations, setAccountAllocations] = useState<RateioItem[]>([]);
 
+  const [isScheduled, setIsScheduled] = useState(false);
+
   const rawValue = watch("value");
   const value = parseFloat(rawValue || "0") || 0;
 
@@ -133,6 +135,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
           date: formData.payment_date,
           value: formData.payment_value,
           description: formData.payment_description ?? "",
+          status: (isScheduled ? "agendado" : "pago") as "agendado" | "pago",
           bank: Number(formData.payment_bank),
           doc_number: formData.payment_doc_number ?? "",
           [type === "bill" ? "bill_id" : "income_id"]: success.id,
@@ -304,6 +307,16 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
                     {...register("payment_doc_number")}
                   />
                 </div>
+                <div className="pt-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={isScheduled}
+                      onChange={(e) => setIsScheduled(e.target.checked)}
+                    />
+                    Agendar pagamento (cheque ou boleto)
+                  </label>
+                </div>
               </div>
             )}
 
@@ -328,7 +341,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
                   setAllocations={setAccountAllocations}
                   chartAccounts={chartAccounts.map((acc) => ({
                     id: acc.id,
-                    name: acc.description,
+                    description: acc.description,
                     code: acc.code,
                   }))}
                   label="Rateio por Conta"

@@ -10,7 +10,7 @@ import { MoreVertical, PlusCircle } from "lucide-react";
 import { FinanceRecord, FilterFinanceRecordType, PaymentCreatePayload, PaymentRecord } from "@/types/types";
 import { PaymentsDialog } from "@/components/lancamentos/ViewMoreDialog";
 import { fetchPayments, createPayment } from "@/services/lancamentos";
-import CreateDialog from "@/components/CreateDialog";
+import CreatePaymentDialog from "../lancamentos/CreatePaymentDialog";
 import { deleteRecord } from "@/services/records";
 import { formatCurrencyBR } from "@/lib/utils";
 import {
@@ -38,6 +38,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import { api } from "@/lib/axios";
 
 interface BankOption {
   id: number;
@@ -88,7 +89,10 @@ const TableComponent: React.FC<TableComponentProps> = ({
   };
 
   const handlePaymentsClick = async (record: FinanceRecord) => {
-    const filters = type === "bill" ? { bill_id: record.id } : { income_id: record.id };
+    const filters = {
+      ...(type === "bill" ? { bill_id: record.id } : { income_id: record.id }),
+      status: ["pago", "agendado"],
+    };
     const paymentData = await fetchPayments(filters);
     setPayments(paymentData.results || []);
     setSelectedRecord(record);
@@ -111,14 +115,28 @@ const TableComponent: React.FC<TableComponentProps> = ({
     setCurrentPage(1);
   };
 
+  const markPaymentAsPaid = async (id: number, date: string) => {
+    // Espera-se que date esteja no formato "DD/MM/YY"
+    const [day, month, yearShort] = date.split("/");
+    const fullYear = parseInt(yearShort, 10) < 50 ? "20" + yearShort : "19" + yearShort; // você pode ajustar conforme necessário
+  
+    const isoDate = `${fullYear}-${month}-${day}`; // resultado: "2025-05-30"
+  
+    await api.patch(`/payments/payments/${id}/marcar-pago/`, { date: isoDate });
+    setPaymentsDialogOpen(false);
+    onRecordUpdated();
+  };
+  
+
   const handleSubmitPayment = async (formData: Record<string, string>) => {
     if (!recordToPay) return;
   
     const payload: PaymentCreatePayload = {
       value: formData.value,
-      date: formData.date,
+      date: formData.date,                      // sempre obrigatório
       doc_number: formData.doc_number,
       description: formData.description,
+      status: formData.status as "pago" | "agendado", // precisa incluir!
       bank: parseInt(formData.bank),
       ...(type === "bill" ? { bill_id: recordToPay.id } : { income_id: recordToPay.id }),
     };
@@ -142,7 +160,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
               const val = e.target.value;
             
               if (val === "") {
-                setFilters({ startDate: "2023-01-01", endDate: "", person: "", description: "", id: undefined, status: ["em aberto", "vencido", "parcial"], minValue: "", maxValue: "" })
+                setFilters({ startDate: "2023-01-01", endDate: "", person: "", description: "", id: undefined, status: ["em aberto", "vencido", "parcial", "agendado"], minValue: "", maxValue: "" })
               } else {
                 const updatedStatus = filters.status?.includes("pago")
                   ? filters.status
@@ -177,7 +195,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
         onClose={() => setFiltersOpen(false)}
         applyFilters={applyFilters}
         clearFilters={() =>
-          setFilters({ startDate: "", endDate: "", person: "", description: "", id: undefined, status: ["em aberto", "vencido", "parcial"], minValue: "", maxValue: "" })
+          setFilters({ startDate: "", endDate: "", person: "", description: "", id: undefined, status: ["em aberto", "vencido", "parcial", "agendado"], minValue: "", maxValue: "" })
         }
         filterFields={[
           { key: "startDate", type: "date", label: "Data Inicial", placeholder: "Data Inicial" },
@@ -186,7 +204,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
           { key: "description", type: "text", label: "Descrição", placeholder: "Descrição" },
           { key: "minValue", type: "number", label: "Valor Mínimo", placeholder: "Valor Mínimo" },
           { key: "maxValue", type: "number", label: "Valor Máximo", placeholder: "Valor Máximo" },
-          { key: "status", type: "checkboxes", label: "Tipo", options: ["em aberto", "vencido", "parcial", "pago"] },
+          { key: "status", type: "checkboxes", label: "Tipo", options: ["em aberto", "vencido", "parcial", "pago", "agendado"] },
         ]}
       />
 
@@ -296,13 +314,22 @@ const TableComponent: React.FC<TableComponentProps> = ({
       {/* Dialogs */}
       <EditContaDialog open={editOpen} onClose={() => setEditOpen(false)} onRecordUpdated={onRecordUpdated} record={selectedRecord} type={type} />
       <CreateContaDialog open={createOpen} onClose={() => setCreateOpen(false)} onRecordCreated={onRecordUpdated} type={type} />
-      <PaymentsDialog open={paymentsDialogOpen} onClose={() => setPaymentsDialogOpen(false)} payments={payments} totalValue={selectedRecord?.value || "0.00"} />
-      <CreateDialog open={createPaymentOpen} onClose={() => setCreatePaymentOpen(false)} title="Registrar Pagamento" fields={[
-        { key: "date", type: "date", label: "Data", placeholder: "" },
-        { key: "value", type: "number", label: "Valor", placeholder: "R$ 0.00" },
-        { key: "bank", type: "select", label: "Banco", options: bankOptions.map((bank) => ({ label: bank.name, value: String(bank.id) })) },
-        { key: "doc_number", type: "text", label: "Documento", placeholder: "Nº do comprovante" },
-      ]} onSubmit={handleSubmitPayment} />
+      <PaymentsDialog
+        open={paymentsDialogOpen}
+        onClose={() => setPaymentsDialogOpen(false)}
+        payments={payments}
+        totalValue={selectedRecord?.value || "0.00"}
+        onMarkAsPaid={async (paymentId, date) => {
+          await markPaymentAsPaid(paymentId, date); // sua função para PATCH
+        }}
+      />
+      <CreatePaymentDialog
+        open={createPaymentOpen}
+        onClose={() => setCreatePaymentOpen(false)}
+        onSubmit={handleSubmitPayment}
+        bankOptions={bankOptions.map((bank) => ({ label: bank.name, value: String(bank.id) }))}
+      />
+
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

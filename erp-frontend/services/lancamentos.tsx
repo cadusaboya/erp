@@ -10,6 +10,9 @@ export const fetchPayments = async (
     const parsed = transformDates(filters);
     const params = new URLSearchParams();
 
+    if (parsed.status && parsed.status.length > 0) {
+      parsed.status.forEach((s: string) => params.append("status", s));
+    }
     if (parsed.startDate) params.append("startDate", parsed.startDate);
     if (filters.id !== undefined) params.append("id", filters.id.toString());
     if (parsed.endDate) params.append("endDate", parsed.endDate);

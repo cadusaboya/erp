@@ -20,7 +20,7 @@ interface RateioTableProps {
   allocations: RateioItem[];
   setAllocations: (data: RateioItem[]) => void;
   events?: { id: number; event_name: string }[];
-  chartAccounts?: { id: number; code: string; name: string }[];
+  chartAccounts?: { id: number; code: string; description: string }[];
   label?: string;
   totalValue?: number;
   mode: "event" | "account";
@@ -43,13 +43,22 @@ const RatioTable: React.FC<RateioTableProps> = ({
 
   useEffect(() => {
     if (allocations.length === 0) {
-      const emptyItem: RateioItem = isEvent
-        ? { event: "", event_name: "", value: "" }
-        : { chart_account: "", value: "" };
-  
-      setAllocations(Array.from({ length: 3 }, () => ({ ...emptyItem })));
+      if (mode === "account" && chartAccounts.length > 0) {
+        const emptyAccountRows = Array.from({ length: 3 }, () => ({
+          chart_account: "",
+          value: "",
+        }));
+        setAllocations(emptyAccountRows);
+      } else if (mode === "event") {
+        const emptyEventRows = Array.from({ length: 3 }, () => ({
+          event: "",
+          event_name: "",
+          value: "",
+        }));
+        setAllocations(emptyEventRows);
+      }
     }
-  }, []);
+  }, [allocations.length, mode, chartAccounts]);
 
   const handleChange = (
     index: number,
@@ -153,7 +162,7 @@ const RatioTable: React.FC<RateioTableProps> = ({
                             value: String(ev.id),
                           }))
                       : chartAccounts.map((acc) => ({
-                          label: acc.code + " | " + acc.name,
+                          label: acc.code + " | " + acc.description,
                           value: String(acc.id),
                         }))
                   }

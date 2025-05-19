@@ -264,7 +264,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
                     setAllocations={setAccountAllocations}
                     chartAccounts={chartAccounts.map((acc) => ({
                       id: acc.id,
-                      name: acc.description,
+                      description: acc.description,
                       code: acc.code,
                     }))}
                     label="Rateio por Conta"

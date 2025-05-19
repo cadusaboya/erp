@@ -56,6 +56,7 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
     try {
       await createPayment({
         value: String(parsedValue),
+        status: "pago",
         date,
         description: description || `Transferência para ${bankToName}`,
         doc_number: "",
@@ -65,6 +66,7 @@ const TransferDialog: React.FC<TransferDialogProps> = ({
 
       await createPayment({
         value: String(parsedValue),
+        status: "pago",
         date,
         description: description || `Transferência de ${bankFromName}`,
         doc_number: "",

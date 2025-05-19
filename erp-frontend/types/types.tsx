@@ -2,12 +2,13 @@ export interface PaymentCreatePayload {
   [key: string]: unknown; // ✅ this fixes the error
   bill_id?: number;
   income_id?: number;
-  income?: number;
   description?: string;
   value: string;
-  date: string;
+  date?: string;
+  scheduled_date?: string;
   bank?: number;
   doc_number: string;
+  status: "pago" | "agendado";
 }
 
 export interface PaymentFormData {
@@ -37,6 +38,7 @@ export interface PaymentRecord {
   doc_number: string;
   person_name: string | null;
   person_type: "supplier" | "client" | null;
+  status: "pago" | "agendado";
 }
 
 export interface FilterPaymentType {
@@ -51,6 +53,7 @@ export interface FilterPaymentType {
   bank_name?: string[];
   bill_id?: number;
   income_id?: number;
+  status?: string[];
 }
 
 

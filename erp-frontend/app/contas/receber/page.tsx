@@ -29,7 +29,7 @@ export default function Page() {
   const [filters, setFilters] = useState<FiltersParams>({
     startDate: "2023-01-01",
     endDate: "",
-    status: ["em aberto", "vencido", "parcial"],
+    status: ["em aberto", "vencido", "parcial", "agendado"],
     person: "",
     description: "",
     docNumber: "",
