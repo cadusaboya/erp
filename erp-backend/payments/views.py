@@ -185,7 +185,13 @@ def generate_bank_statement_report(request):
         pdf.drawString(col_date, y, line["date"].strftime("%d/%m/%Y"))
         pdf.drawString(col_fav, y, shorten_text(line["favorecido"], 100, pdf))
         pdf.drawString(col_desc, y, shorten_text(line["descricao"], 180, pdf))
-        pdf.drawRightString(col_value, y, f"{'-' if line['value'] < 0 else ''}R$ {abs(line['value']):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        value_text = f"{'-' if line['value'] < 0 else ''}R$ {abs(line['value']):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+        if line["value"] < 0:
+            pdf.setFillColorRGB(0.8, 0, 0)  # vermelho suave
+        pdf.drawRightString(col_value, y, value_text)
+        pdf.setFillColorRGB(0, 0, 0)  # volta pro preto
+
         pdf.drawRightString(col_balance, y, f"R$ {line['balance']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
         y -= 20

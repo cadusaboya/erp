@@ -202,8 +202,6 @@ const TableComponent: React.FC<TableComponentProps> = ({
           { key: "endDate", type: "date", label: "Data Final", placeholder: "Data Final" },
           { key: "person", type: "text", label: "Pessoa", placeholder: "Pessoa" },
           { key: "description", type: "text", label: "Descrição", placeholder: "Descrição" },
-          { key: "minValue", type: "number", label: "Valor Mínimo", placeholder: "Valor Mínimo" },
-          { key: "maxValue", type: "number", label: "Valor Máximo", placeholder: "Valor Máximo" },
           { key: "status", type: "checkboxes", label: "Tipo", options: ["em aberto", "vencido", "parcial", "pago", "agendado"] },
         ]}
       />
