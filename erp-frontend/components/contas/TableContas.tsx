@@ -141,18 +141,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
       bank: parseInt(formData.bank),
       ...(type === "bill" ? { bill_id: recordToPay.id } : { income_id: recordToPay.id }),
     };
-  
-    const res = await createPayment(payload);
-    if (res?.id) {
-      toast.success(`Pagamento criado com sucesso!`, {
-        description: `ID: ${res.id}`,
-      });
-      onRecordUpdated();
-    }
-    else {
-      toast.error("Criar pagamento falhou");
-    }
-
+    
     try {
       const res = await createPayment(payload);
     
