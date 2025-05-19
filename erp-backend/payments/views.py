@@ -74,9 +74,8 @@ def generate_bank_statement_report(request):
         saldo_atual = sum(bank.balance for bank in Bank.objects.all())
         bank_name = "Consolidado"
 
-    # 🔵 2. Obter todos os pagamentos de date_min até hoje
-    today = timezone.now().date()
-    payments_range = Payment.objects.filter(date__gte=date_min, date__lte=today)
+    # 🔵 2. Obter todos os pagamentos até date_min
+    payments_range = Payment.objects.filter(date__gte=date_min, status="pago")
     if bank_id:
         payments_range = payments_range.filter(bank_id=bank_id)
 
@@ -92,7 +91,7 @@ def generate_bank_statement_report(request):
     saldo_inicial = saldo
 
     # 🔵 3. Filtrar apenas os pagamentos do período solicitado (para mostrar no extrato)
-    payments = Payment.objects.filter(date__gte=date_min)
+    payments = Payment.objects.filter(date__gte=date_min, status="pago")
     if date_max:
         payments = payments.filter(date__lte=date_max)
     if bank_id:
