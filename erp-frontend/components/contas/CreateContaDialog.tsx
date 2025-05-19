@@ -36,6 +36,7 @@ import { Controller } from "react-hook-form";
 import { getValidAllocations } from "@/components/RatioTable";
 import { fetchBanks } from "@/services/banks";
 import { Bank } from "@/types/types";
+import { toast } from "sonner"; // at the top
 
 
 type ExtendedFinanceRecord = FinanceRecord & {
@@ -118,8 +119,6 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
       account_allocations: getValidAllocations(accountAllocations),
     });
   
-    console.log("created id:", success?.id);
-  
     if (success?.id && status === "pago") {
       try {
         if (
@@ -127,10 +126,10 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
           !formData.payment_value ||
           !formData.payment_bank
         ) {
-          console.error("Campos obrigatórios do pagamento não preenchidos.");
+          toast.error("Preencha todos os campos obrigatórios do pagamento.");
           return;
         }
-      
+  
         const paymentPayload = {
           date: formData.payment_date,
           value: formData.payment_value,
@@ -143,16 +142,22 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   
         await createPayment(paymentPayload);
       } catch (err) {
-        console.log(err);
+        console.error(err);
         await deleteRecord(type, success.id);
+        toast.error("Erro ao registrar o pagamento. A conta foi removida.");
         return;
       }
     }
   
     if (success) {
+      toast.success(`${type === "bill" ? "Conta a pagar" : "Conta a receber"} criada com sucesso!`, {
+        description: `ID: ${success.id}`,
+      });
       onRecordCreated();
       reset();
       onClose();
+    } else {
+      toast.error("Erro ao criar o registro. Tente novamente.");
     }
   };
 
@@ -272,7 +277,13 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
                       control={control}
                       rules={{ required: true }}
                       render={({ field }) => (
-                        <Input className="w-full" type="date" {...field} placeholder="Data" />
+                        <Input
+                          className="w-full"
+                          type="date"
+                          {...field}
+                          value={field.value ?? ""} // evita undefined
+                          placeholder="Data"
+                        />
                       )}
                     />
                   </div>
