@@ -58,7 +58,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
         const [eventsResponse, resourcesResponse, chartAccountData] = await Promise.all([
           fetchEvents({}, 1),
           fetchResources(type === "bill" ? "suppliers" : "clients", {}, 1),
-          fetchChartAccounts()
+          fetchChartAccounts(true)
         ]);
 
         let eventsData = eventsResponse.results;

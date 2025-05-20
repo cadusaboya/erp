@@ -90,7 +90,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
           ] = await Promise.all([
             fetchEvents(),
             fetchResources(type === "bill" ? "suppliers" : "clients"),
-            fetchChartAccounts(),
+            fetchChartAccounts(true),
             fetchBanks(),
           ]);
           setEvents(eventsData.results || []);
