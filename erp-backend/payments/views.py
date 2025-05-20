@@ -1211,7 +1211,15 @@ class ChartAccountViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['code', 'description']
 
     def get_queryset(self):
-        return ChartAccount.objects.all()
+        queryset = ChartAccount.objects.all()
+
+        # Optional filter: only accounts with no children
+        leaf_only = self.request.query_params.get('leaf_only')
+        if leaf_only == 'true':
+            queryset = queryset.annotate(child_count=models.Count('children')).filter(child_count=0)
+
+        return queryset
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
