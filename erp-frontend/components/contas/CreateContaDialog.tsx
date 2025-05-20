@@ -54,6 +54,7 @@ interface CreateContaDialogProps {
   type: "bill" | "income";
 }
 
+
 const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   open,
   onClose,
@@ -77,6 +78,16 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
 
   const rawValue = watch("value");
   const value = parseFloat(rawValue || "0") || 0;
+
+  const resetDialog = () => {
+    reset();                       // Reset react-hook-form
+    setEventAllocations([]);      // Reset event allocations
+    setAccountAllocations([]);    // Reset account allocations
+    setPerson("");                // Reset person
+    setCostCenter("1");           // Default cost center
+    setStatus("em aberto");       // Default status
+    setIsScheduled(false);        // Uncheck checkbox
+  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -154,7 +165,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
         description: `ID: ${success.id}`,
       });
       onRecordCreated();
-      reset();
+      resetDialog();
       onClose();
     } else {
       toast.error("Erro ao criar o registro. Tente novamente.");
@@ -166,13 +177,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
       open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
-          reset();                       // ✅ Reset do formulário
-          setEventAllocations([]);      // ✅ Reset dos rateios de evento
-          setAccountAllocations([]);    // ✅ Reset dos rateios por conta
-          setPerson("");                // (se quiser resetar também)
-          setCostCenter("1");           // (opcional)
-          setStatus("em aberto");       // (opcional)
-          setIsScheduled(false);        // (opcional)
+          resetDialog();                       // ✅ Reset do formulário
           onClose();                    // ✅ Fecha o diálogo
         }
       }}
