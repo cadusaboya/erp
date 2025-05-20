@@ -228,7 +228,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
           <TableRow>
             <TableCell className="w-1/18 min-w-[50px]">ID</TableCell>
             <TableCell className="w-2/14 min-w-[100px]">Data de Vencimento</TableCell>
-            <TableCell className="w-4/14 min-w-[140px]">Pessoa</TableCell>
+            <TableCell className="w-4/14 min-w-[140px]">{type === "bill" ? "Fornecedor" : "Cliente"}</TableCell>
             <TableCell className="w-4/14 min-w-[180px]">Descrição</TableCell>
             <TableCell className="w-1/14 min-w-[120px]">Doc. Núm.</TableCell>
             <TableCell className="w-1/10 min-w-[120px]">Status</TableCell>
