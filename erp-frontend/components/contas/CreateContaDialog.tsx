@@ -210,7 +210,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
                 </div>
                 <div>
                   <label className="text-sm font-medium block mb-1">
-                    Data
+                    Data de Vencimento
                   </label>
                   <Controller
                     name="date_due"
