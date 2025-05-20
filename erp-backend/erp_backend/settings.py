@@ -119,10 +119,10 @@ DATABASES = {
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'postgres',   # your RDS database name
-#         'USER': 'postgres',  # or erpuser if you created it
-#         'PASSWORD': 'cadu020197',  # your RDS password
-#         'HOST': 'database-1.cla0q80qed85.us-east-1.rds.amazonaws.com',  # your RDS endpoint
+#         'NAME': 'demo_financeiro',
+#         'USER': 'erpuser',  # or 'erpuser'
+#         'PASSWORD': '',  # if postgres on local mac has no password
+#         'HOST': 'localhost',
 #         'PORT': '5432',
 #     }
 # }
