@@ -1,18 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { api } from "@/lib/axios";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/axios";
 import { API_URL } from "@/types/apiUrl";
 
 export default function Home() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [email, setEmail] = useState("");
-  const [cpf, setCpf] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [isRegistering, setIsRegistering] = useState(false);
   const [message, setMessage] = useState("");
   const router = useRouter();
 
@@ -27,18 +22,7 @@ export default function Home() {
     e.preventDefault();
     setMessage("");
 
-    if (isRegistering) {
-      // Register a new user
-      await api.post(`${API_URL}/accounts/register/`, {
-        username,
-        password,
-        email,
-        cpf,
-        telefone,
-      });
-      setMessage("User registered successfully! You can now log in.");
-    } else {
-      // Login existing user
+    try {
       const response = await api.post(`${API_URL}/accounts/login/`, {
         username,
         password,
@@ -50,15 +34,18 @@ export default function Home() {
       localStorage.setItem("token", token);
       setMessage("Login successful! Redirecting...");
       setTimeout(() => (window.location.href = "/dashboard"), 1000);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Login error:", error.message);
+      }
+      setMessage("Login failed. Check your credentials.");
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
       <div className="w-96 bg-white p-6 rounded-lg shadow-lg">
-        <h2 className="text-2xl font-bold mb-4">
-          {isRegistering ? "Create an Account" : "Login"}
-        </h2>
+        <h2 className="text-2xl font-bold mb-4">Login</h2>
 
         {message && <p className="text-red-500 mb-4 text-sm whitespace-pre-wrap">{message}</p>}
 
@@ -71,35 +58,6 @@ export default function Home() {
             required
             className="w-full p-2 mb-2 border border-gray-300 rounded"
           />
-
-          {isRegistering && (
-            <>
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full p-2 mb-2 border border-gray-300 rounded"
-              />
-              <input
-                type="text"
-                placeholder="CPF"
-                value={cpf}
-                onChange={(e) => setCpf(e.target.value)}
-                required
-                className="w-full p-2 mb-2 border border-gray-300 rounded"
-              />
-              <input
-                type="text"
-                placeholder="Telefone"
-                value={telefone}
-                onChange={(e) => setTelefone(e.target.value)}
-                required
-                className="w-full p-2 mb-2 border border-gray-300 rounded"
-              />
-            </>
-          )}
 
           <input
             type="password"
@@ -114,19 +72,9 @@ export default function Home() {
             type="submit"
             className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
           >
-            {isRegistering ? "Sign Up" : "Login"}
+            Login
           </button>
         </form>
-
-        <p className="mt-4 text-sm text-gray-600">
-          {isRegistering ? "Already have an account?" : "Don't have an account?"}{" "}
-          <button
-            onClick={() => setIsRegistering(!isRegistering)}
-            className="text-blue-500 underline"
-          >
-            {isRegistering ? "Login here" : "Create one"}
-          </button>
-        </p>
       </div>
     </div>
   );
