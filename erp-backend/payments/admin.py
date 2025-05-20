@@ -16,6 +16,6 @@ class ChartAccountAdmin(admin.ModelAdmin):
 
 @admin.register(CostCenter)
 class CostCenterAdmin(admin.ModelAdmin):
-    list_display = ('name', 'user')
+    list_display = ('name',)
     search_fields = ('name',)
     list_filter = ('user',)

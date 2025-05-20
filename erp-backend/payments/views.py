@@ -1101,52 +1101,6 @@ class PaymentViewSet(viewsets.ModelViewSet):
         instance.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-
-@receiver(pre_delete, sender=Payment)
-def handle_payment_deletion(sender, instance, **kwargs):
-    company = instance.company
-    parent = instance.bill or instance.income
-
-    if not parent:
-        raise ValidationError("Pagamento inválido: objeto relacionado não encontrado.")
-
-    # 🔁 Estorna o valor no saldo do banco se já estava efetivado
-    if instance.status == "pago" and instance.bank:
-        if instance.bill:
-            instance.bank.balance += instance.value
-        elif instance.income:
-            instance.bank.balance -= instance.value
-        instance.bank.save()
-
-    # 🔄 Atualiza o status da conta (baseado nos pagamentos efetivados restantes)
-    if instance.bill:
-        remaining_payments = Payment.objects.filter(
-            bill=instance.bill,
-            company=company,
-            status="pago"
-        ).exclude(id=instance.id)
-    else:
-        remaining_payments = Payment.objects.filter(
-            income=instance.income,
-            company=company,
-            status="pago"
-        ).exclude(id=instance.id)
-
-    total_paid = sum(safe_decimal(p.value) for p in remaining_payments)
-    parent_value = safe_decimal(parent.value)
-
-    if parent_value == 0:
-        parent.status = "pago"
-    elif abs(total_paid - parent_value) < Decimal("0.01"):
-        parent.status = "pago"
-    elif total_paid > 0:
-        parent.status = "parcial"
-    else:
-        parent.status = "em aberto"
-
-    parent.save()
-
-
     @action(detail=True, methods=["patch"], url_path="marcar-pago")
     @transaction.atomic
     def marcar_como_pago(self, request, pk=None):
@@ -1193,6 +1147,51 @@ def handle_payment_deletion(sender, instance, **kwargs):
             parent.save()
 
         return Response({"detail": "Pagamento marcado como pago com sucesso."}, status=drf_status.HTTP_200_OK)
+
+
+@receiver(pre_delete, sender=Payment)
+def handle_payment_deletion(sender, instance, **kwargs):
+    company = instance.company
+    parent = instance.bill or instance.income
+
+    if not parent:
+        raise ValidationError("Pagamento inválido: objeto relacionado não encontrado.")
+
+    # 🔁 Estorna o valor no saldo do banco se já estava efetivado
+    if instance.status == "pago" and instance.bank:
+        if instance.bill:
+            instance.bank.balance += instance.value
+        elif instance.income:
+            instance.bank.balance -= instance.value
+        instance.bank.save()
+
+    # 🔄 Atualiza o status da conta (baseado nos pagamentos efetivados restantes)
+    if instance.bill:
+        remaining_payments = Payment.objects.filter(
+            bill=instance.bill,
+            company=company,
+            status="pago"
+        ).exclude(id=instance.id)
+    else:
+        remaining_payments = Payment.objects.filter(
+            income=instance.income,
+            company=company,
+            status="pago"
+        ).exclude(id=instance.id)
+
+    total_paid = sum(safe_decimal(p.value) for p in remaining_payments)
+    parent_value = safe_decimal(parent.value)
+
+    if parent_value == 0:
+        parent.status = "pago"
+    elif abs(total_paid - parent_value) < Decimal("0.01"):
+        parent.status = "pago"
+    elif total_paid > 0:
+        parent.status = "parcial"
+    else:
+        parent.status = "em aberto"
+
+    parent.save()
 
 
 class BankViewSet(viewsets.ModelViewSet):

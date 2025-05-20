@@ -24,4 +24,4 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='viewer')
 
     def __str__(self):
-        return f"{self.username} ({self.company.name if self.company else 'No Company'})"
+        return f"{self.username}"
