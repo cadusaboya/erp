@@ -25,6 +25,7 @@ import {
 } from "@/types/types";
 import { RateioItem } from "@/types/types";
 import { getValidAllocations } from "@/components/RatioTable";
+import { Controller } from "react-hook-form";
 
 interface EditContaDialogProps {
   open: boolean;
@@ -41,7 +42,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
   record,
   type,
 }) => {
-  const { register, handleSubmit, reset } = useForm<FinanceRecord>();
+  const { register, handleSubmit, reset, control } = useForm<FinanceRecord>();
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([]);
@@ -188,10 +189,18 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
                     <label className="text-sm font-medium block mb-1">
                       Data
                     </label>
-                    <Input
-                      type="date"
-                      className="max-w-[150px]"
-                      {...register("date_due")}
+                    <Controller
+                      name="date_due"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          type="date"
+                          className="max-w-[150px]"
+                          {...field}
+                          value={field.value ?? ""}
+                          placeholder="Data de Vencimento"
+                        />
+                      )}
                     />
                   </div>
                 </div>

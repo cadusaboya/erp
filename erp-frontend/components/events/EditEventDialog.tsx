@@ -26,6 +26,7 @@ import {
   fetchSingleResource,
   searchResources,
 } from "@/services/resources";
+import { Controller } from "react-hook-form";
 
 interface EditEventDialogProps {
   open: boolean;
@@ -40,7 +41,7 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
   onEventUpdated,
   event,
 }) => {
-  const { register, handleSubmit, reset, setValue, watch } = useForm<Event>();
+  const { register, handleSubmit, reset, setValue, watch, control } = useForm<Event>();
   const [clients, setClients] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -149,7 +150,19 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
             <div className="flex flex-wrap gap-4">
               <div className="flex-1 min-w-[150px]">
                 <label className="text-sm font-medium block mb-1">Data</label>
-                <Input type="date" {...register("date", { required: true })} />
+                <Controller
+                      name="date"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          type="date"
+                          className="max-w-[150px]"
+                          {...field}
+                          value={field.value ?? ""}
+                          placeholder="Data de Vencimento"
+                        />
+                      )}
+                    />
               </div>
               <div className="flex-1 min-w-[150px]">
                 <label className="text-sm font-medium block mb-1">Valor Total</label>
