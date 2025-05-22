@@ -15,10 +15,9 @@ class ClientViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
         params = self.request.query_params
 
-        queryset = Client.objects.filter(user=user)
+        queryset = Client.objects.all()
 
         id = params.get("id")
         name = params.get("name")
@@ -49,10 +48,9 @@ class SupplierViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        user = self.request.user
         params = self.request.query_params
 
-        queryset = Supplier.objects.filter(user=user)
+        queryset = Supplier.objects.all()
 
         id = params.get("id")
         name = params.get("name")

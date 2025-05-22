@@ -42,7 +42,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
   record,
   type,
 }) => {
-  const { register, handleSubmit, reset, control } = useForm<FinanceRecord>();
+  const { register, handleSubmit, reset, watch, control } = useForm<FinanceRecord>();
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([]);
@@ -50,6 +50,10 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
   const [accountAllocations, setAccountAllocations] = useState<RateioItem[]>([]);
   const [person, setPerson] = useState<string>("");
   const [loading, setLoading] = useState(false);
+
+  const rawValue = watch("value");
+  const value = parseFloat(rawValue || "0") || 0;
+  
 
   useEffect(() => {
     const load = async () => {
@@ -225,7 +229,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
                       step="0.01"
                       className="max-w-[150px]"
                       placeholder="Valor"
-                      {...register("value")}
+                      {...register("value", { required: true })}
                     />
                   </div>
                   <div>
@@ -263,6 +267,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
                     setAllocations={setEventAllocations}
                     events={events}
                     label="Rateio de Eventos"
+                    totalValue={value}
                     mode="event"
                   />
                 </div>
@@ -277,6 +282,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
                       code: acc.code,
                     }))}
                     label="Rateio por Conta"
+                    totalValue={value}
                     mode="account"
                   />
                 </div>

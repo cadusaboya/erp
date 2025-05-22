@@ -70,6 +70,14 @@ const RatioTable: React.FC<RateioTableProps> = ({
     setAllocations(updated);
   };
 
+  const getTotalAllocated = (): string => {
+    const total = allocations.reduce((acc, item) => {
+      const val = parseFloat(item.value || "0");
+      return acc + (isNaN(val) ? 0 : val);
+    }, 0);
+    return total.toFixed(2);
+  };
+
   const getRemainingValue = (): string => {
     const used = allocations.reduce((acc, item) => {
       const val = parseFloat(item.value || "0");
@@ -201,7 +209,7 @@ const RatioTable: React.FC<RateioTableProps> = ({
         );
       })}
 
-      <div className="flex justify-start mt-2">
+      <div className="flex justify-between items-center mt-2">
         <Button
           type="button"
           variant="outline"
@@ -211,6 +219,9 @@ const RatioTable: React.FC<RateioTableProps> = ({
         >
           <Plus className="w-4 h-4" />
         </Button>
+        <div className="text-sm text-muted-foreground pr-13">
+          <span className="font-semibold">Total Rateio:</span> R$ {getTotalAllocated()}
+        </div>
       </div>
     </div>
   );
