@@ -21,6 +21,11 @@ class Event(models.Model):
     type = models.CharField(max_length=20, choices=EVENT_TYPES)
     client = models.ForeignKey(Client, on_delete=models.PROTECT)  # Link to Client model
     date = models.DateField()
+    date_end = models.DateField(null=True, blank=True)
+    local = models.CharField(max_length=255, null=True, blank=True)
+    fiscal_doc = models.CharField(max_length=255, null=True, blank=True)
+    paid = models.BooleanField(default=False)
+
     total_value = models.DecimalField(max_digits=10, decimal_places=2)
     legacy = models.IntegerField(null=True, unique=False)
 

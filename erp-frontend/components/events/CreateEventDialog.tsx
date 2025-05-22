@@ -51,8 +51,8 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
       open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
-          reset();       // ✅ form reset here
-          onClose();     // ✅ parent gets notified
+          reset();
+          onClose();
         }
       }}
     >
@@ -61,39 +61,17 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
           <DialogTitle>Novo Evento</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+
+          {/* Nome do Evento */}
           <div className="space-y-2">
             <label className="text-sm font-medium block">Nome do Evento</label>
-            <Input placeholder="Nome do Evento" {...register("event_name", { required: true })} />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium block">Tipo de Evento</label>
-            <Controller
-              name="type"
-              control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um Tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="15 anos">15 Anos</SelectItem>
-                    <SelectItem value="empresarial">Empresarial</SelectItem>
-                    <SelectItem value="aniversário">Aniversário</SelectItem>
-                    <SelectItem value="batizado">Batizado</SelectItem>
-                    <SelectItem value="bodas">Bodas</SelectItem>
-                    <SelectItem value="casamento">Casamento</SelectItem>
-                    <SelectItem value="chá">Chá</SelectItem>
-                    <SelectItem value="formatura">Formatura</SelectItem>
-                    <SelectItem value="outros">Outros</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
+            <Input
+              placeholder="Nome do Evento"
+              {...register("event_name", { required: true })}
             />
-
           </div>
 
+          {/* Linha 2: Cliente */}
           <div className="space-y-2">
             <label className="text-sm font-medium block">Cliente</label>
             <Combobox
@@ -105,6 +83,47 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
             />
           </div>
 
+          {/* Linha 3: Tipo - Valor */}
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-[150px]">
+              <label className="text-sm font-medium block mb-1">Tipo de Evento</label>
+              <Controller
+                name="type"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um Tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="15 anos">15 Anos</SelectItem>
+                      <SelectItem value="empresarial">Empresarial</SelectItem>
+                      <SelectItem value="aniversário">Aniversário</SelectItem>
+                      <SelectItem value="batizado">Batizado</SelectItem>
+                      <SelectItem value="bodas">Bodas</SelectItem>
+                      <SelectItem value="casamento">Casamento</SelectItem>
+                      <SelectItem value="chá">Chá</SelectItem>
+                      <SelectItem value="formatura">Formatura</SelectItem>
+                      <SelectItem value="outros">Outros</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            <div className="flex-1 min-w-[150px]">
+              <label className="text-sm font-medium block mb-1">Valor Total</label>
+              <Input
+                type="number"
+                step="0.01"
+                placeholder="Valor Total"
+                {...register("total_value", { required: true })}
+              />
+            </div>
+          </div>
+
+          {/* Linha 4: Data Inicial - Data Final */}
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-[150px]">
               <label className="text-sm font-medium block mb-1">Data</label>
@@ -121,13 +140,40 @@ const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                 )}
               />
             </div>
+
             <div className="flex-1 min-w-[150px]">
-              <label className="text-sm font-medium block mb-1">Valor Total</label>
+              <label className="text-sm font-medium block mb-1">Data Final</label>
+              <Controller
+                name="date_end"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    type="date"
+                    value={field.value ?? ""}
+                    onChange={field.onChange}
+                    placeholder="dd/mm/aa"
+                  />
+                )}
+              />
+            </div>
+          </div>
+
+          {/* Linha 5: Local - Documento Fiscal */}
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-[200px]">
+              <label className="text-sm font-medium block mb-1">Local</label>
+              <Input
+                placeholder="Local do Evento"
+                {...register("local")}
+              />
+            </div>
+
+            <div className="flex-1 min-w-[200px]">
+              <label className="text-sm font-medium block mb-1">Documento Fiscal</label>
               <Input
                 type="number"
-                step="0.01"
-                placeholder="Valor Total"
-                {...register("total_value", { required: true })}
+                placeholder="Número do Documento Fiscal"
+                {...register("fiscal_doc")}
               />
             </div>
           </div>

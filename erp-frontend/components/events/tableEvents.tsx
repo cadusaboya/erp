@@ -153,20 +153,32 @@ const TableComponent: React.FC<TableComponentProps> = ({
             event_name: "",
             client: "",
             startDate: "",
-            endDate: "",
             minValue: "",
             maxValue: "",
             type: [],
             id: undefined,
+            fiscal_doc: undefined,
+            local: "",
           })
         }
         filterFields={[
           { key: "event_name", type: "text", label: "Nome do Evento", placeholder: "Nome do Evento" },
           { key: "client", type: "text", label: "Cliente", placeholder: "Cliente" },
-          { key: "startDate", type: "date", label: "Data Inicial", placeholder: "Data Inicial" },
-          { key: "endDate", type: "date", label: "Data Final", placeholder: "Data Final" },
           { key: "minValue", type: "number", label: "Valor Mínimo", placeholder: "Valor Mínimo" },
           { key: "maxValue", type: "number", label: "Valor Máximo", placeholder: "Valor Máximo" },
+          { key: "startDate", type: "date", label: "Data Inicial", placeholder: "Data Inicial" },
+          {
+            key: "local",
+            type: "text",
+            label: "Local",
+            placeholder: "Local do Evento",
+          },
+          {
+            key: "fiscal_doc",
+            type: "number",
+            label: "Nº Documento Fiscal",
+            placeholder: "Número da NF",
+          },
           {
             key: "type",
             type: "checkboxes",
@@ -175,6 +187,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
           },
         ]}
       />
+
 
     <Table className="table-fixed w-full">
         <TableHeader>

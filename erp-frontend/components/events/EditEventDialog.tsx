@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +26,6 @@ import {
   fetchSingleResource,
   searchResources,
 } from "@/services/resources";
-import { Controller } from "react-hook-form";
 
 interface EditEventDialogProps {
   open: boolean;
@@ -102,6 +101,8 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
           </div>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+
+            {/* Nome do Evento */}
             <div className="space-y-2">
               <label className="text-sm font-medium block">Nome do Evento</label>
               <Input
@@ -110,29 +111,7 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium block">Tipo de Evento</label>
-              <Select
-                value={watch("type")}
-                onValueChange={(val) => setValue("type", val)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um Tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="15 anos">15 Anos</SelectItem>
-                  <SelectItem value="empresarial">Empresarial</SelectItem>
-                  <SelectItem value="aniversário">Aniversário</SelectItem>
-                  <SelectItem value="batizado">Batizado</SelectItem>
-                  <SelectItem value="bodas">Bodas</SelectItem>
-                  <SelectItem value="casamento">Casamento</SelectItem>
-                  <SelectItem value="chá">Chá</SelectItem>
-                  <SelectItem value="formatura">Formatura</SelectItem>
-                  <SelectItem value="outros">Outros</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
+            {/* Cliente */}
             <div className="space-y-2">
               <label className="text-sm font-medium block">Cliente</label>
               <Combobox
@@ -147,23 +126,31 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
               />
             </div>
 
+            {/* Tipo - Valor */}
             <div className="flex flex-wrap gap-4">
               <div className="flex-1 min-w-[150px]">
-                <label className="text-sm font-medium block mb-1">Data</label>
-                <Controller
-                      name="date"
-                      control={control}
-                      render={({ field }) => (
-                        <Input
-                          type="date"
-                          className="max-w-[150px]"
-                          {...field}
-                          value={field.value ?? ""}
-                          placeholder="Data de Vencimento"
-                        />
-                      )}
-                    />
+                <label className="text-sm font-medium block mb-1">Tipo de Evento</label>
+                <Select
+                  value={watch("type")}
+                  onValueChange={(val) => setValue("type", val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="15 anos">15 Anos</SelectItem>
+                    <SelectItem value="empresarial">Empresarial</SelectItem>
+                    <SelectItem value="aniversário">Aniversário</SelectItem>
+                    <SelectItem value="batizado">Batizado</SelectItem>
+                    <SelectItem value="bodas">Bodas</SelectItem>
+                    <SelectItem value="casamento">Casamento</SelectItem>
+                    <SelectItem value="chá">Chá</SelectItem>
+                    <SelectItem value="formatura">Formatura</SelectItem>
+                    <SelectItem value="outros">Outros</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+
               <div className="flex-1 min-w-[150px]">
                 <label className="text-sm font-medium block mb-1">Valor Total</label>
                 <Input
@@ -171,6 +158,61 @@ const EditEventDialog: React.FC<EditEventDialogProps> = ({
                   step="0.01"
                   placeholder="Valor Total"
                   {...register("total_value", { required: true })}
+                />
+              </div>
+            </div>
+
+            {/* Data Inicial - Data Final */}
+            <div className="flex flex-wrap gap-4">
+              <div className="flex-1 min-w-[150px]">
+                <label className="text-sm font-medium block mb-1">Data</label>
+                <Controller
+                  name="date"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      type="date"
+                      className="max-w-[150px]"
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  )}
+                />
+              </div>
+
+              <div className="flex-1 min-w-[150px]">
+                <label className="text-sm font-medium block mb-1">Data Final</label>
+                <Controller
+                  name="date_end"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      type="date"
+                      className="max-w-[150px]"
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Local - Documento Fiscal */}
+            <div className="flex flex-wrap gap-4">
+              <div className="flex-1 min-w-[200px]">
+                <label className="text-sm font-medium block mb-1">Local</label>
+                <Input
+                  placeholder="Local do Evento"
+                  {...register("local")}
+                />
+              </div>
+
+              <div className="flex-1 min-w-[200px]">
+                <label className="text-sm font-medium block mb-1">Documento Fiscal</label>
+                <Input
+                  type="number"
+                  placeholder="Número do Documento Fiscal"
+                  {...register("fiscal_doc")}
                 />
               </div>
             </div>

@@ -349,7 +349,6 @@ class EventViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        company = get_company_or_404(self.request)
         queryset = Event.objects.all()
         params = self.request.query_params
 
@@ -361,11 +360,14 @@ class EventViewSet(viewsets.ModelViewSet):
         end_date = params.get("end_date")
         min_value = params.get("min_value")
         max_value = params.get("max_value")
-        event_types = params.getlist("type")  # Example: ?type=casamento&type=formatura
+        event_types = params.getlist("type")
+        local = params.get("local")
+        fiscal_doc = params.get("fiscal_doc")
+        paid = params.get("paid")
 
         # Apply filters dynamically
         if id:
-            queryset = queryset.filter(id = id)
+            queryset = queryset.filter(id=id)
         if event_name:
             queryset = queryset.filter(event_name__icontains=event_name)
         if client:
@@ -375,11 +377,15 @@ class EventViewSet(viewsets.ModelViewSet):
         if end_date:
             queryset = queryset.filter(date__lte=end_date)
         if min_value:
-            queryset = queryset.filter(value__gte=min_value)
+            queryset = queryset.filter(total_value__gte=min_value)
         if max_value:
-            queryset = queryset.filter(value__lte=max_value)
+            queryset = queryset.filter(total_value__lte=max_value)
         if event_types:
             queryset = queryset.filter(type__in=event_types)
+        if local:
+            queryset = queryset.filter(local__icontains=local)
+        if fiscal_doc:
+            queryset = queryset.filter(fiscal_doc=fiscal_doc)
 
         return queryset.order_by("date")
         

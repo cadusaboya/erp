@@ -81,6 +81,8 @@ export interface FilterPaymentType {
     endDate?: string;
     minValue?: string;
     maxValue?: string;
+    local?: string;
+    fiscal_doc?: string;
   };
 
   export interface FiltersClientType {
@@ -120,6 +122,9 @@ export interface FilterPaymentType {
     client_name: string;
     date: string;
     total_value: string;
+    date_end?: string;
+    local: string;
+    fiscal_doc: string;
   };
 
   export interface Resource {
