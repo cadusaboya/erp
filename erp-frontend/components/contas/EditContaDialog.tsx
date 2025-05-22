@@ -263,17 +263,6 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
               <div className="space-y-6">
                 <div className="max-h-[35vh] overflow-y-auto pr-2">
                   <RatioTable
-                    allocations={eventAllocations}
-                    setAllocations={setEventAllocations}
-                    events={events}
-                    label="Rateio de Eventos"
-                    totalValue={value}
-                    mode="event"
-                  />
-                </div>
-  
-                <div className="max-h-[35vh] overflow-y-auto pr-2">
-                  <RatioTable
                     allocations={accountAllocations}
                     setAllocations={setAccountAllocations}
                     chartAccounts={chartAccounts.map((acc) => ({
@@ -284,6 +273,17 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
                     label="Rateio por Conta"
                     totalValue={value}
                     mode="account"
+                  />
+                </div>
+                
+                <div className="max-h-[35vh] overflow-y-auto pr-2">
+                  <RatioTable
+                    allocations={eventAllocations}
+                    setAllocations={setEventAllocations}
+                    events={events}
+                    label="Rateio de Eventos"
+                    totalValue={value}
+                    mode="event"
                   />
                 </div>
               </div>
