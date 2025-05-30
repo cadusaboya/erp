@@ -1033,8 +1033,13 @@ class PaymentViewSet(viewsets.ModelViewSet):
         old_bank = old_instance.bank
         old_bill = old_instance.bill
         old_income = old_instance.income
+        old_status = old_instance.status
 
-        # Save updated payment
+        old_bank_id = old_bank.id if old_bank else None
+        old_bill_id = old_bill.id if old_bill else None
+        old_income_id = old_income.id if old_income else None
+
+        # Salva a nova versão
         payment = serializer.save(user=user, company=company)
 
         parent = payment.bill or payment.income
@@ -1045,7 +1050,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
             payment.description = parent.description
             payment.save(update_fields=["description"])
 
-        # 🔁 Atualiza status da conta SEMPRE (usando apenas pagamentos efetivos)
+        # Atualiza status da conta vinculada com base nos pagamentos pagos
         if payment.bill:
             existing_payments = Payment.objects.filter(
                 bill=payment.bill, company=company, status="pago"
@@ -1069,31 +1074,51 @@ class PaymentViewSet(viewsets.ModelViewSet):
 
         parent.save()
 
-        # ⚠️ Só altera saldo do banco se pagamento estiver efetivado (pago)
-        if payment.status != "pago":
+        # ✅ Só atualiza saldo se status anterior ou novo for 'pago'
+        if old_status != "pago" and payment.status != "pago":
             return
+
+        new_bank = payment.bank
+        new_bank_id = new_bank.id if new_bank else None
+        new_bill_id = payment.bill.id if payment.bill else None
+        new_income_id = payment.income.id if payment.income else None
 
         value_diff = payment.value - old_value
 
-        if old_bank == payment.bank and old_bill == payment.bill and old_income == payment.income:
-            if payment.bill:
-                payment.bank.balance -= value_diff
-            elif payment.income:
-                payment.bank.balance += value_diff
+        # ✅ Aplica só a diferença quando tudo se manteve
+        if (
+            old_status == "pago"
+            and payment.status == "pago"
+            and old_bank_id == new_bank_id
+            and old_bill_id == new_bill_id
+            and old_income_id == new_income_id
+        ):
+            if new_bank:
+                if payment.bill:
+                    new_bank.balance -= value_diff
+                elif payment.income:
+                    new_bank.balance += value_diff
+                new_bank.save()
+
+        # 🔁 Caso mais complexo: estorna antigo e aplica novo
         else:
-            if old_bank:
+            # Estorna antigo
+            if old_status == "pago" and old_bank:
                 if old_bill:
                     old_bank.balance += old_value
                 elif old_income:
                     old_bank.balance -= old_value
                 old_bank.save()
 
-            if payment.bank:
+            # Aplica novo
+            if payment.status == "pago" and new_bank:
                 if payment.bill:
-                    payment.bank.balance -= payment.value
+                    new_bank.balance -= payment.value
                 elif payment.income:
-                    payment.bank.balance += payment.value
-                payment.bank.save()
+                    new_bank.balance += payment.value
+                new_bank.save()
+
+
 
     @transaction.atomic
     def destroy(self, request, *args, **kwargs):
