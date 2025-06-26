@@ -109,8 +109,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'erp',
-        'USER': 'erpuser',  # or 'erpuser'
-        'PASSWORD': '',  # if postgres on local mac has no password
+        'USER': 'postgres',  # or 'erpuser'
+        'PASSWORD': 'postgres',  # if postgres on local mac has no password
         'HOST': 'localhost',
         'PORT': '5432',
     }

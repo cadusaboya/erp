@@ -349,11 +349,17 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
                 <RatioTable
                   allocations={accountAllocations}
                   setAllocations={setAccountAllocations}
-                  chartAccounts={chartAccounts.map((acc) => ({
-                    id: acc.id,
-                    description: acc.description,
-                    code: acc.code,
-                  }))}
+                  chartAccounts={chartAccounts
+                    .filter((acc) =>
+                      type === 'bill'
+                        ? acc.code.toString().startsWith('2') // Contas a Pagar → só contas do tipo dívida
+                        : acc.code.toString().startsWith('1') // Contas a Receber → só contas do tipo receita
+                    )
+                    .map((acc) => ({
+                      id: acc.id,
+                      description: acc.description,
+                      code: acc.code,
+                    }))}
                   label="Rateio por Conta"
                   totalValue={value}
                   mode="account"
