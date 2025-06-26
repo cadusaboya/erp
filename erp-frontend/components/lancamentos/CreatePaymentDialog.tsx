@@ -1,8 +1,20 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface BankOption {
   label: string;
@@ -14,12 +26,29 @@ interface CreatePaymentDialogProps {
   onClose: () => void;
   onSubmit: (formData: Record<string, string>) => void;
   bankOptions: BankOption[];
+  defaultValue?: string;
 }
 
-const CreatePaymentDialog: React.FC<CreatePaymentDialogProps> = ({ open, onClose, onSubmit, bankOptions }) => {
+const CreatePaymentDialog: React.FC<CreatePaymentDialogProps> = ({
+  open,
+  onClose,
+  onSubmit,
+  bankOptions,
+  defaultValue,
+}) => {
   const [formData, setFormData] = useState<Record<string, string>>({
     status: "pago",
+    value: defaultValue || "",
   });
+
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        status: "pago",
+        value: defaultValue || "",
+      });
+    }
+  }, [open, defaultValue]);
 
   const handleChange = (key: string, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -27,20 +56,27 @@ const CreatePaymentDialog: React.FC<CreatePaymentDialogProps> = ({ open, onClose
 
   const handleSubmit = () => {
     const cleanData = { ...formData };
-  
+
     if (cleanData.status === "agendado") {
-      cleanData.date = cleanData.scheduled_date
+      cleanData.date = cleanData.scheduled_date;
     } else if (cleanData.status === "pago") {
-      delete cleanData.scheduled_date
+      delete cleanData.scheduled_date;
     }
-  
+
     onSubmit(cleanData);
+    handleClose();
+  };
+
+  const handleClose = () => {
     onClose();
-    setFormData({ status: "pago" });
+    setFormData({
+      status: "pago",
+      value: "",
+    });
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Registrar Pagamento</DialogTitle>
@@ -50,7 +86,10 @@ const CreatePaymentDialog: React.FC<CreatePaymentDialogProps> = ({ open, onClose
           {/* Status */}
           <div>
             <label className="text-sm font-medium block mb-1">Status</label>
-            <Select value={formData.status || "pago"} onValueChange={(val) => handleChange("status", val)}>
+            <Select
+              value={formData.status}
+              onValueChange={(val) => handleChange("status", val)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o status" />
               </SelectTrigger>
@@ -64,7 +103,9 @@ const CreatePaymentDialog: React.FC<CreatePaymentDialogProps> = ({ open, onClose
           {/* Data do pagamento (se status for pago) */}
           {formData.status === "pago" && (
             <div>
-              <label className="text-sm font-medium block mb-1">Data do pagamento</label>
+              <label className="text-sm font-medium block mb-1">
+                Data do pagamento
+              </label>
               <Input
                 type="date"
                 value={formData.date || ""}
@@ -76,7 +117,9 @@ const CreatePaymentDialog: React.FC<CreatePaymentDialogProps> = ({ open, onClose
           {/* Data do agendamento (se status for agendado) */}
           {formData.status === "agendado" && (
             <div>
-              <label className="text-sm font-medium block mb-1">Data do agendamento</label>
+              <label className="text-sm font-medium block mb-1">
+                Data do agendamento
+              </label>
               <Input
                 type="date"
                 value={formData.scheduled_date || ""}
@@ -99,7 +142,10 @@ const CreatePaymentDialog: React.FC<CreatePaymentDialogProps> = ({ open, onClose
           {/* Banco */}
           <div>
             <label className="text-sm font-medium block mb-1">Banco</label>
-            <Select value={formData.bank || ""} onValueChange={(val) => handleChange("bank", val)}>
+            <Select
+              value={formData.bank || ""}
+              onValueChange={(val) => handleChange("bank", val)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um banco" />
               </SelectTrigger>
@@ -126,7 +172,9 @@ const CreatePaymentDialog: React.FC<CreatePaymentDialogProps> = ({ open, onClose
         </div>
 
         <DialogFooter className="mt-6">
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button variant="outline" onClick={handleClose}>
+            Cancelar
+          </Button>
           <Button onClick={handleSubmit}>Salvar</Button>
         </DialogFooter>
       </DialogContent>

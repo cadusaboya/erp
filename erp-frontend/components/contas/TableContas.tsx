@@ -344,6 +344,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
         open={createPaymentOpen}
         onClose={() => setCreatePaymentOpen(false)}
         onSubmit={handleSubmitPayment}
+        defaultValue={recordToPay?.value?.toString() || ""} // 👈 envia valor default aqui
         bankOptions={bankOptions.map((bank) => ({ label: bank.name, value: String(bank.id) }))}
       />
 
