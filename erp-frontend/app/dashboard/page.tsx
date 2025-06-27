@@ -18,6 +18,8 @@ export default function Page() {
     minValue: "",
     maxValue: "",
     type: [],
+    fiscal_doc: "",
+    local: "",
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);

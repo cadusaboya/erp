@@ -32,10 +32,10 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
           api.get(`/events/view/${eventId}/`),
           api.get(`/payments/event-allocations/${eventId}/`)
         ]);
-    
+
         const eventData = eventRes.data;
         const paymentData = paymentRes.data;
-    
+
         setEvent(eventData.event);
         setFinancialSummary({
           total_despesas: paymentData.total_despesas,
@@ -49,72 +49,25 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
         console.error("Erro ao buscar dados do evento:", error);
       }
     };
-    
 
     fetchEventData();
   }, [eventId, open]);
 
-  const handleDownloadPDF = async () => {
+  const handleDownload = async (url: string, filename: string) => {
     const token = localStorage.getItem("token");
     if (!token) return alert("Token não encontrado");
 
     try {
-      const response = await fetch(`${API_URL}/payments/report/?type=both&status=pago&event_id=${eventId}`, {
+      const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) throw new Error("Erro ao gerar o PDF");
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = `evento_${eventId}_report.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error("Erro ao baixar PDF:", error);
-    }
-  };
-
-  const handleDownloadPDF2 = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) return alert("Token não encontrado");
-
-    try {
-      const response = await fetch(`${API_URL}/payments/report/?type=both&status=todos&event_id=${eventId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error("Erro ao gerar o PDF");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `evento_${eventId}_report.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error("Erro ao baixar PDF:", error);
-    }
-  };
-
-  const handleDownloadPDF3 = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) return alert("Token não encontrado");
-
-    try {
-      const response = await fetch(`${API_URL}/payments/report/?type=em+aberto&status=todos&event_id=${eventId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error("Erro ao gerar o PDF");
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `evento_${eventId}_report.pdf`;
+      a.href = downloadUrl;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -129,32 +82,90 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
         <DialogHeader>
           <DialogTitle className="flex justify-between items-center">
             {event?.event_name || "Carregando..."}
-            <Button variant="outline" onClick={handleDownloadPDF} className="ml-auto">
-              <FileText size={18} className="mr-2" /> Pagamentos
-            </Button>
-            <Button variant="outline" onClick={handleDownloadPDF2} className="ml-2">
-              <FileText size={18} className="mr-2" /> Contas
-            </Button>
-            <Button variant="outline" onClick={handleDownloadPDF3} className="ml-2">
-              <FileText size={18} className="mr-2" /> Contas Pendentes
-            </Button>
+            <div className="flex gap-2 ml-auto">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  handleDownload(
+                    `${API_URL}/payments/report/?type=both&status=pago&event_id=${eventId}`,
+                    `evento_${eventId}_pagamentos.pdf`
+                  )
+                }
+              >
+                <FileText size={18} className="mr-2" /> Pagamentos
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  handleDownload(
+                    `${API_URL}/payments/report/?type=both&status=todos&event_id=${eventId}`,
+                    `evento_${eventId}_contas.pdf`
+                  )
+                }
+              >
+                <FileText size={18} className="mr-2" /> Contas
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  handleDownload(
+                    `${API_URL}/payments/report/?type=em+aberto&status=todos&event_id=${eventId}`,
+                    `evento_${eventId}_pendentes.pdf`
+                  )
+                }
+              >
+                <FileText size={18} className="mr-2" /> Contas Pendentes
+              </Button>
+            </div>
           </DialogTitle>
         </DialogHeader>
 
         {event && financialSummary && (
           <>
+            {/* 🔵 Card de Detalhes do Evento */}
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle>Detalhes do Evento</CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-2 gap-4">
-                <p><strong>Nome:</strong> {event.event_name}</p>
-                <p><strong>Cliente:</strong> {event.client_name}</p>
-                <p><strong>Data:</strong> {new Date(event.date).toLocaleDateString("pt-BR")}</p>
-                <p><strong>Valor Total:</strong> {formatCurrencyBR(event.total_value)}</p>
+              <CardContent className="grid grid-cols-3 gap-4">
+                <div>
+                  <p className="text-muted-foreground text-sm">Nome do Evento</p>
+                  <p className="font-medium">{event.event_name}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Cliente</p>
+                  <p className="font-medium">{event.client_name}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Tipo</p>
+                  <p className="font-medium capitalize">{event.type}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Data Inicial</p>
+                  <p className="font-medium">{new Date(event.date).toLocaleDateString("pt-BR")}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Data Final</p>
+                  <p className="font-medium">
+                    {event.date_end ? new Date(event.date_end).toLocaleDateString("pt-BR") : "-"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Valor Total</p>
+                  <p className="font-medium">{formatCurrencyBR(event.total_value)}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Local</p>
+                  <p className="font-medium">{event.local || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">Documento Fiscal</p>
+                  <p className="font-medium">{event.fiscal_doc || "-"}</p>
+                </div>
               </CardContent>
             </Card>
 
+            {/* 🟢 Resumo Financeiro */}
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle>Resumo Financeiro</CardTitle>
@@ -167,6 +178,7 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
               </CardContent>
             </Card>
 
+            {/* 🟦 Receitas */}
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle>Receitas (Pagamentos Recebidos)</CardTitle>
@@ -195,6 +207,7 @@ export default function EventDetailsDialog({ open, onClose, eventId }: EventDeta
               </CardContent>
             </Card>
 
+            {/* 🟥 Despesas */}
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle>Despesas (Pagamentos Realizados)</CardTitle>

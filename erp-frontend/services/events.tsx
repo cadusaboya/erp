@@ -14,13 +14,14 @@ export const fetchEvents = async (
     if (filters.id !== undefined) params.append("id", filters.id.toString());
     if (parsed.client) params.append("client", parsed.client);
     if (parsed.startDate) params.append("start_date", parsed.startDate);
-    if (parsed.endDate) params.append("end_date", parsed.endDate);
     if (parsed.minValue) params.append("min_value", parsed.minValue);
     if (parsed.maxValue) params.append("max_value", parsed.maxValue);
     if (parsed.type && parsed.type.length > 0) {
       parsed.type.forEach((t: string) => params.append("type", t));
     }
 
+    if (parsed.local) params.append("local", parsed.local);
+    if (filters.fiscal_doc !== undefined) params.append("fiscal_doc", filters.fiscal_doc.toString());
     params.append("page", page.toString());
 
     const response = await api.get(`/events/?${params.toString()}`);
@@ -30,6 +31,7 @@ export const fetchEvents = async (
     return { results: [], count: 0 };
   }
 };
+
 
 export const searchEvents = async (query: string) => {
   try {
