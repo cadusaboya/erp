@@ -61,7 +61,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   onRecordCreated,
   type,
 }) => {
-  const { register, handleSubmit, reset, control, watch } = useForm<ExtendedFinanceRecord>();
+  const { register, handleSubmit, reset, control, watch, setValue } = useForm<ExtendedFinanceRecord>();
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([]);
@@ -78,6 +78,12 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
 
   const rawValue = watch("value");
   const value = parseFloat(rawValue || "0") || 0;
+
+  useEffect(() => {
+  if (status === "pago" && rawValue) {
+    setValue("payment_value", rawValue);
+  }
+}, [status, rawValue, setValue]);
 
   const resetDialog = () => {
     reset();                       // Reset react-hook-form
