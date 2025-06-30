@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import {
   Dialog,
   DialogContent,
@@ -15,17 +15,9 @@ import { fetchEvents, fetchSingleEvent } from "@/services/events";
 import { fetchResources, fetchSingleResource, searchResources } from "@/services/resources";
 import { fetchChartAccounts } from "@/services/chartaccounts";
 import { updateRecord } from "@/services/records";
-import RatioTable from "@/components/RatioTable";
+import RatioTable, { getValidAllocations } from "@/components/RatioTable";
 import { Combobox } from "@/components/ui/combobox";
-import {
-  FinanceRecord,
-  Event,
-  Resource,
-  ChartAccount,
-} from "@/types/types";
-import { RateioItem } from "@/types/types";
-import { getValidAllocations } from "@/components/RatioTable";
-import { Controller } from "react-hook-form";
+import { FinanceRecord, Event, Resource, ChartAccount, RateioItem } from "@/types/types";
 
 interface EditContaDialogProps {
   open: boolean;
@@ -49,11 +41,11 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
   const [eventAllocations, setEventAllocations] = useState<RateioItem[]>([]);
   const [accountAllocations, setAccountAllocations] = useState<RateioItem[]>([]);
   const [person, setPerson] = useState<string>("");
+  const [costCenter, setCostCenter] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
   const rawValue = watch("value");
   const value = parseFloat(rawValue || "0") || 0;
-  
 
   useEffect(() => {
     const load = async () => {
@@ -63,7 +55,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
         const [eventsResponse, resourcesResponse, chartAccountData] = await Promise.all([
           fetchEvents({}, 1),
           fetchResources(type === "bill" ? "suppliers" : "clients", {}, 1),
-          fetchChartAccounts(true)
+          fetchChartAccounts(true),
         ]);
 
         let eventsData = eventsResponse.results;
@@ -92,12 +84,15 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
         setEvents(eventsData);
         setResources(resourcesData);
         setChartAccounts(chartAccountData);
-
         if (record) {
           reset(record);
 
           if (record.person) {
             setPerson(String(record.person));
+          }
+
+          if (record.cost_center) {
+            setCostCenter(String(record.cost_center));
           }
 
           if (record.event_allocations) {
@@ -130,6 +125,8 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
     const success = await updateRecord(type, record.id, {
       ...formData,
       person,
+      cost_center: costCenter,
+      expected_date: formData.expected_date,
       event_allocations: getValidAllocations(eventAllocations),
       account_allocations: getValidAllocations(accountAllocations),
     });
@@ -145,8 +142,8 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
       open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
-          reset();       // ✅ form reset here
-          onClose();     // ✅ parent gets notified
+          reset();
+          onClose();
         }
       }}
     >
@@ -156,7 +153,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
             {type === "bill" ? "Editar Conta a Pagar" : "Editar Recebimento"}
           </DialogTitle>
         </DialogHeader>
-  
+
         {loading ? (
           <div className="p-10 text-center text-muted-foreground">
             Carregando dados...
@@ -167,7 +164,6 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
               {/* Left column */}
               <div className="space-y-4">
                 <div className="flex flex-wrap gap-4">
-                  {/* Pessoa */}
                   <div>
                     <label className="text-sm font-medium block mb-1">
                       {type === "bill" ? "Fornecedor" : "Cliente"}
@@ -188,7 +184,6 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
                       placeholder={`Selecione ${type === "bill" ? "um Fornecedor" : "um Cliente"}`}
                     />
                   </div>
-                  {/* Data */}
                   <div>
                     <label className="text-sm font-medium block mb-1">
                       Data
@@ -207,9 +202,28 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
                       )}
                     />
                   </div>
+                  {type === "income" && (
+                    <div>
+                      <label className="text-sm font-medium block mb-1">
+                        Data Esperada
+                      </label>
+                      <Controller
+                        name="expected_date"
+                        control={control}
+                        render={({ field }) => (
+                          <Input
+                            type="date"
+                            className="max-w-[150px]"
+                            {...field}
+                            value={field.value ?? ""}
+                            placeholder="Data esperada"
+                          />
+                        )}
+                      />
+                    </div>
+                  )}
                 </div>
-  
-                {/* Descrição */}
+
                 <div>
                   <label className="text-sm font-medium block mb-1">
                     Descrição
@@ -219,8 +233,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
                     {...register("description")}
                   />
                 </div>
-  
-                {/* Valor + Documento + Status */}
+
                 <div className="flex flex-wrap gap-4">
                   <div>
                     <label className="text-sm font-medium block mb-1">Valor</label>
@@ -258,7 +271,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
                   </div>
                 </div>
               </div>
-  
+
               {/* Right column */}
               <div className="space-y-6">
                 <div className="max-h-[35vh] overflow-y-auto pr-2">
@@ -268,8 +281,8 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
                     chartAccounts={chartAccounts
                       .filter((acc) =>
                         type === 'bill'
-                          ? acc.code.toString().startsWith('2') // Contas a Pagar → só contas do tipo dívida
-                          : acc.code.toString().startsWith('1') // Contas a Receber → só contas do tipo receita
+                          ? acc.code.toString().startsWith('2')
+                          : acc.code.toString().startsWith('1')
                       )
                       .map((acc) => ({
                         id: acc.id,
@@ -281,7 +294,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
                     mode="account"
                   />
                 </div>
-                
+
                 <div className="max-h-[35vh] overflow-y-auto pr-2">
                   <RatioTable
                     allocations={eventAllocations}
@@ -294,7 +307,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
                 </div>
               </div>
             </div>
-  
+
             <DialogFooter className="pt-4">
               <Button variant="outline" type="button" onClick={onClose}>
                 Cancelar
@@ -307,7 +320,7 @@ const EditContaDialog: React.FC<EditContaDialogProps> = ({
         )}
       </DialogContent>
     </Dialog>
-  );  
+  );
 };
 
 export default EditContaDialog;

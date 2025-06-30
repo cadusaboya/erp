@@ -58,14 +58,15 @@ def draw_header(pdf, width, height, event_name, event_id, title):
     y = height - 140
 
     # ✅ MATCH columns with your table body
-    cols = [50, width * 0.12, width * 0.2, width * 0.45, width * 0.8, width * 0.9]
+    cols = [50, width * 0.12, width * 0.18, width * 0.24, width * 0.5, width * 0.85, width * 0.9]
 
     pdf.drawString(cols[0], y, "Nro.")
     pdf.drawString(cols[1], y, "Data")
-    pdf.drawString(cols[2], y, "Favorecido")
-    pdf.drawString(cols[3], y, "Memo")
-    pdf.drawString(cols[4], y, "Doc.")
-    pdf.drawString(cols[5], y, "Valor")
+    pdf.drawString(cols[2], y, "Previsão")
+    pdf.drawString(cols[3], y, "Favorecido")
+    pdf.drawString(cols[4], y, "Memo")
+    pdf.drawString(cols[5], y, "Doc.")
+    pdf.drawString(cols[6], y, "Valor")
 
     y -= 5
     pdf.line(width * 0.05, y, width * 0.95, y)

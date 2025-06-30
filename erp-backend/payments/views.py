@@ -665,6 +665,7 @@ def generate_payments_report(request):
                     "description": item.description,
                     "doc_number": item.doc_number or "DN",
                     "value": value,
+                    "expected_date": getattr(item, "expected_date", None),  # 👈 ADICIONE ESTA LINHA
                 })
             return rows
 
@@ -710,6 +711,7 @@ def generate_payments_report(request):
                 "description": p.description,
                 "doc_number": p.doc_number or "DN",
                 "value": adjusted_value,
+                "expected_date": getattr(accrual, "expected_date", None),  # 👈 ADICIONE ESTA LINHA
             }
             if p.bill:
                 bills.append(row)
@@ -730,7 +732,7 @@ def generate_payments_report(request):
 
     pdf = canvas.Canvas(response, pagesize=landscape(A4))
     width, height = landscape(A4)
-    cols = [50, width * 0.12, width * 0.2, width * 0.45, width * 0.8, width * 0.9]
+    cols = [50, width * 0.12, width * 0.18, width * 0.24, width * 0.5, width * 0.85, width * 0.9]
     event_name = event.event_name if event else "Todos os Eventos"
 
     if status == "pago":
@@ -766,15 +768,18 @@ def generate_payments_report(request):
             pdf.setFont("Helvetica", 9)
             pdf.drawString(cols[0], y, str(row["id"]))
             pdf.drawString(cols[1], y, row["date"].strftime("%d/%m/%y"))
-            pdf.drawString(cols[2], y, truncate_text(row["person"], 35))
-            pdf.drawString(cols[3], y, truncate_text(row["description"], 52))
-            pdf.drawString(cols[4], y, row["doc_number"])
-            pdf.drawString(cols[5], y, f"R$ {row['value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+            pdf.drawString(cols[2], y, row["expected_date"].strftime("%d/%m/%y") if row.get("expected_date") else "")
+            pdf.drawString(cols[3], y, truncate_text(row["person"], 35))
+            pdf.drawString(cols[4], y, truncate_text(row["description"], 52))
+            pdf.drawString(cols[5], y, row["doc_number"])
+            value_str = f"R$ {row['value']:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            pdf.drawString(cols[6], y, value_str)
+
             total += row["value"]
             y -= 15
         pdf.setFont("Helvetica-Bold", 9)
-        pdf.drawString(cols[4], y, f"Total")
-        pdf.drawString(cols[5], y, f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        pdf.drawString(cols[5], y, f"Total")
+        pdf.drawString(cols[6], y, f"R$ {total:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         y -= 20
         return y, total
 
@@ -798,16 +803,16 @@ def generate_payments_report(request):
         saldo = total_receitas - total_despesas
 
         pdf.setFont("Helvetica-Bold", 9)
-        pdf.drawString(cols[4], y, "Total Receitas")
-        pdf.drawString(cols[5], y, f"R$ {total_receitas:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        pdf.drawString(cols[5], y, "Total Receitas")
+        pdf.drawString(cols[6], y, f"R$ {total_receitas:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         y -= 15
 
-        pdf.drawString(cols[4], y, "Total Despesas")
-        pdf.drawString(cols[5], y, f"R$ {total_despesas:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        pdf.drawString(cols[5], y, "Total Despesas")
+        pdf.drawString(cols[6], y, f"R$ {total_despesas:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         y -= 15
 
-        pdf.drawString(cols[4], y, "Saldo do Evento")
-        pdf.drawString(cols[5], y, f"R$ {saldo:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+        pdf.drawString(cols[5], y, "Saldo do Evento")
+        pdf.drawString(cols[6], y, f"R$ {saldo:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         y -= 20
 
     pdf.setFont("Helvetica", 7)

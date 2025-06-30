@@ -37,9 +37,11 @@ class Accrual(models.Model):
 class Income(Accrual):
     person = models.ForeignKey('clients.Client', on_delete=models.CASCADE, related_name='incomes')
     legacy = models.IntegerField(null=True, unique=False)
+    expected_date = models.DateField(null=True, blank=True)  # 👈 Optional date field
 
     def __str__(self):
         return f"Receita de {self.person.name} - {self.value}"
+    
 
 
 class Bill(Accrual):

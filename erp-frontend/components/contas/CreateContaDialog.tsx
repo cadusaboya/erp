@@ -23,12 +23,7 @@ import { createPayment } from "@/services/lancamentos";
 import { fetchEvents } from "@/services/events";
 import { fetchResources, searchResources } from "@/services/resources";
 import { fetchChartAccounts } from "@/services/chartaccounts";
-import {
-  FinanceRecord,
-  Event,
-  Resource,
-  ChartAccount,
-} from "@/types/types";
+import { FinanceRecord, Event, Resource, ChartAccount } from "@/types/types";
 import RatioTable from "@/components/RatioTable";
 import { Combobox } from "@/components/ui/combobox";
 import { RateioItem } from "@/components/RatioTable";
@@ -36,8 +31,7 @@ import { Controller } from "react-hook-form";
 import { getValidAllocations } from "@/components/RatioTable";
 import { fetchBanks } from "@/services/banks";
 import { Bank } from "@/types/types";
-import { toast } from "sonner"; // at the top
-
+import { toast } from "sonner";
 
 type ExtendedFinanceRecord = FinanceRecord & {
   payment_date?: string;
@@ -54,14 +48,14 @@ interface CreateContaDialogProps {
   type: "bill" | "income";
 }
 
-
 const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   open,
   onClose,
   onRecordCreated,
   type,
 }) => {
-  const { register, handleSubmit, reset, control, watch, setValue } = useForm<ExtendedFinanceRecord>();
+  const { register, handleSubmit, reset, control, watch, setValue } =
+    useForm<ExtendedFinanceRecord>();
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([]);
@@ -80,36 +74,32 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   const value = parseFloat(rawValue || "0") || 0;
 
   useEffect(() => {
-  if (status === "pago" && rawValue) {
-    setValue("payment_value", rawValue);
-  }
-}, [status, rawValue, setValue]);
+    if (status === "pago" && rawValue) {
+      setValue("payment_value", rawValue);
+    }
+  }, [status, rawValue, setValue]);
 
   const resetDialog = () => {
-    reset();                       // Reset react-hook-form
-    setEventAllocations([]);      // Reset event allocations
-    setAccountAllocations([]);    // Reset account allocations
-    setPerson("");                // Reset person
-    setCostCenter("1");           // Default cost center
-    setStatus("em aberto");       // Default status
-    setIsScheduled(false);        // Uncheck checkbox
+    reset();
+    setEventAllocations([]);
+    setAccountAllocations([]);
+    setPerson("");
+    setCostCenter("1");
+    setStatus("em aberto");
+    setIsScheduled(false);
   };
 
   useEffect(() => {
     const loadData = async () => {
       if (open) {
         try {
-          const [
-            eventsData,
-            resourceData,
-            chartAccountsData,
-            banksData,
-          ] = await Promise.all([
-            fetchEvents(),
-            fetchResources(type === "bill" ? "suppliers" : "clients"),
-            fetchChartAccounts(true),
-            fetchBanks(),
-          ]);
+          const [eventsData, resourceData, chartAccountsData, banksData] =
+            await Promise.all([
+              fetchEvents(),
+              fetchResources(type === "bill" ? "suppliers" : "clients"),
+              fetchChartAccounts(true),
+              fetchBanks(),
+            ]);
           setEvents(eventsData.results || []);
           setResources(resourceData.results || []);
           setChartAccounts(chartAccountsData || []);
@@ -135,7 +125,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
       event_allocations: getValidAllocations(eventAllocations),
       account_allocations: getValidAllocations(accountAllocations),
     });
-  
+
     if (success?.id && status === "pago") {
       try {
         if (
@@ -146,7 +136,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
           toast.error("Preencha todos os campos obrigatórios do pagamento.");
           return;
         }
-  
+
         const paymentPayload = {
           date: formData.payment_date,
           value: formData.payment_value,
@@ -156,7 +146,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
           doc_number: formData.payment_doc_number ?? "",
           [type === "bill" ? "bill_id" : "income_id"]: success.id,
         };
-  
+
         await createPayment(paymentPayload);
       } catch (err) {
         console.error(err);
@@ -165,11 +155,14 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
         return;
       }
     }
-  
+
     if (success) {
-      toast.success(`${type === "bill" ? "Conta a pagar" : "Conta a receber"} criada com sucesso!`, {
-        description: `ID: ${success.id}`,
-      });
+      toast.success(
+        `${type === "bill" ? "Conta a pagar" : "Conta a receber"} criada com sucesso!`,
+        {
+          description: `ID: ${success.id}`,
+        }
+      );
       onRecordCreated();
       resetDialog();
       onClose();
@@ -183,8 +176,8 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
       open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
-          resetDialog();                       // ✅ Reset do formulário
-          onClose();                    // ✅ Fecha o diálogo
+          resetDialog();
+          onClose();
         }
       }}
     >
@@ -194,7 +187,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
             {type === "bill" ? "Nova Conta a Pagar" : "Novo Recebimento"}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} >
+        <form onSubmit={handleSubmit(onSubmit)}>
           {/* Left Column – All form fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
@@ -261,7 +254,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
               </div>
 
               {/* Centro de Custo */}
-              <div className="grid grid-cols-1 md:grid-cols-2">
+              <div className="flex flex-wrap gap-4">
                 <div>
                   <label className="text-sm font-medium block mb-1">Centro de Custo</label>
                   <Select value={costCenter} onValueChange={setCostCenter}>
@@ -277,6 +270,26 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
                     </SelectContent>
                   </Select>
                 </div>
+
+                {type === "income" && (
+                  <div>
+                    <label className="text-sm font-medium block mb-1">
+                      Data Esperada
+                    </label>
+                    <Controller
+                      name="expected_date"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          type="date"
+                          value={field.value ?? ""}
+                          onChange={field.onChange}
+                        />
+                      )}
+                    />
+                  </div>
+                )}
+
               </div>
 
               {status === "pago" && (

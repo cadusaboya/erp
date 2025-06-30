@@ -112,6 +112,7 @@ export interface FilterPaymentType {
     payment_doc_number?: number;
     event_allocations?: RateioItem[];
     account_allocations?: RateioItem[];
+    expected_date?: string;
   };
 
   export interface Event {
