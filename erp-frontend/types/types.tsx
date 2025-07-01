@@ -109,7 +109,7 @@ export interface FilterPaymentType {
     status: "em aberto" | "pago" | "vencido" | "parcial";
     bank?: number;
     bank_name: string;
-    payment_doc_number?: number;
+    payment_doc_number?: string;
     event_allocations?: RateioItem[];
     account_allocations?: RateioItem[];
     expected_date?: string;

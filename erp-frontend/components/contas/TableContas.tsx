@@ -80,6 +80,7 @@ const TableComponent: React.FC<TableComponentProps> = ({
   const [createPaymentOpen, setCreatePaymentOpen] = useState(false);
   const [recordToPay, setRecordToPay] = useState<FinanceRecord | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [duplicateData, setDuplicateData] = useState<FinanceRecord | null>(null);
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -269,12 +270,20 @@ const TableComponent: React.FC<TableComponentProps> = ({
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => setTimeout(() => handleEditClick(record), 0)}>Editar</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTimeout(() => handlePaymentsClick(record), 0)}>Pagamentos</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTimeout(() => handleNewPayment(record), 0)}>Pagar</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setTimeout(() => handleDelete(record), 0)}>Excluir</DropdownMenuItem>
-                  </DropdownMenuContent>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => setTimeout(() => handleEditClick(record), 0)}>Editar</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTimeout(() => handlePaymentsClick(record), 0)}>Pagamentos</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTimeout(() => handleNewPayment(record), 0)}>Pagar</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTimeout(() => handleDelete(record), 0)}>Excluir</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setTimeout(() => {
+                          setDuplicateData(record);
+                          setCreateOpen(true);
+                        }, 0); // ⏱ allows Dropdown to fully unmount before Dialog opens
+                      }}>
+                        Duplicar
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
             </TableRow>
@@ -330,7 +339,17 @@ const TableComponent: React.FC<TableComponentProps> = ({
 
       {/* Dialogs */}
       <EditContaDialog open={editOpen} onClose={() => setEditOpen(false)} onRecordUpdated={onRecordUpdated} record={selectedRecord} type={type} />
-      <CreateContaDialog open={createOpen} onClose={() => setCreateOpen(false)} onRecordCreated={onRecordUpdated} type={type} />
+      <CreateContaDialog
+        open={createOpen}
+        onClose={() => {
+          setCreateOpen(false);
+          setDuplicateData(null);
+        }}
+        onRecordCreated={onRecordUpdated}
+        type={type}
+        defaultValues={duplicateData || undefined}
+      />
+
       <PaymentsDialog
         open={paymentsDialogOpen}
         onClose={() => setPaymentsDialogOpen(false)}

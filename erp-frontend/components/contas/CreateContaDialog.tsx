@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import {
   Dialog,
   DialogContent,
@@ -20,17 +20,13 @@ import {
 } from "@/components/ui/select";
 import { createRecord, deleteRecord } from "@/services/records";
 import { createPayment } from "@/services/lancamentos";
-import { fetchEvents } from "@/services/events";
-import { fetchResources, searchResources } from "@/services/resources";
+import { fetchEvents, fetchSingleEvent } from "@/services/events";
+import { fetchResources, fetchSingleResource, searchResources } from "@/services/resources";
 import { fetchChartAccounts } from "@/services/chartaccounts";
-import { FinanceRecord, Event, Resource, ChartAccount } from "@/types/types";
-import RatioTable from "@/components/RatioTable";
-import { Combobox } from "@/components/ui/combobox";
-import { RateioItem } from "@/components/RatioTable";
-import { Controller } from "react-hook-form";
-import { getValidAllocations } from "@/components/RatioTable";
 import { fetchBanks } from "@/services/banks";
-import { Bank } from "@/types/types";
+import { FinanceRecord, Event, Resource, ChartAccount, RateioItem, Bank } from "@/types/types";
+import RatioTable, { getValidAllocations } from "@/components/RatioTable";
+import { Combobox } from "@/components/ui/combobox";
 import { toast } from "sonner";
 
 type ExtendedFinanceRecord = FinanceRecord & {
@@ -46,6 +42,7 @@ interface CreateContaDialogProps {
   onClose: () => void;
   onRecordCreated: () => void;
   type: "bill" | "income";
+  defaultValues?: Partial<FinanceRecord>;
 }
 
 const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
@@ -53,9 +50,10 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   onClose,
   onRecordCreated,
   type,
+  defaultValues,
 }) => {
-  const { register, handleSubmit, reset, control, watch, setValue } =
-    useForm<ExtendedFinanceRecord>();
+  const { register, handleSubmit, reset, control, watch, setValue } = useForm<ExtendedFinanceRecord>();
+
   const [events, setEvents] = useState<Event[]>([]);
   const [resources, setResources] = useState<Resource[]>([]);
   const [chartAccounts, setChartAccounts] = useState<ChartAccount[]>([]);
@@ -64,11 +62,10 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   const [costCenter, setCostCenter] = useState("1");
   const [person, setPerson] = useState("");
   const [status, setStatus] = useState("em aberto");
-
   const [eventAllocations, setEventAllocations] = useState<RateioItem[]>([]);
   const [accountAllocations, setAccountAllocations] = useState<RateioItem[]>([]);
-
   const [isScheduled, setIsScheduled] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const rawValue = watch("value");
   const value = parseFloat(rawValue || "0") || 0;
@@ -80,7 +77,17 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   }, [status, rawValue, setValue]);
 
   const resetDialog = () => {
-    reset();
+    reset({
+      value: "",
+      description: "",
+      date_due: "",
+      expected_date: "",
+      doc_number: "",
+      payment_date: "",
+      payment_value: "",
+      payment_bank: "",
+      payment_description: "",
+    });
     setEventAllocations([]);
     setAccountAllocations([]);
     setPerson("");
@@ -91,30 +98,81 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
 
   useEffect(() => {
     const loadData = async () => {
-      if (open) {
-        try {
-          const [eventsData, resourceData, chartAccountsData, banksData] =
-            await Promise.all([
-              fetchEvents(),
-              fetchResources(type === "bill" ? "suppliers" : "clients"),
-              fetchChartAccounts(true),
-              fetchBanks(),
-            ]);
-          setEvents(eventsData.results || []);
-          setResources(resourceData.results || []);
-          setChartAccounts(chartAccountsData || []);
-          setBanks(banksData || []);
-        } catch (error) {
-          console.error("Failed to load initial data:", error);
-          setEvents([]);
-          setResources([]);
-          setChartAccounts([]);
-          setBanks([]);
-        }
+      if (!open) return;
+      setLoading(true);
+      try {
+        const [eventsData, resourceData, chartAccountsData, banksData] = await Promise.all([
+          fetchEvents(),
+          fetchResources(type === "bill" ? "suppliers" : "clients"),
+          fetchChartAccounts(true),
+          fetchBanks(),
+        ]);
+
+        if (defaultValues) {
+          if (defaultValues.person && !resourceData.results.find((r: Resource) => r.id === defaultValues.person)) {
+            const single = await fetchSingleResource(
+              type === "bill" ? "suppliers" : "clients",
+              defaultValues.person
+            );
+            resourceData.results = [...resourceData.results, single];
+          }
+
+          if (defaultValues.event_allocations?.length) {
+            const missingEventIds = defaultValues.event_allocations
+              .map((ea) => Number(ea.event))
+              .filter((id) => !eventsData.results.find((e: Event) => e.id === id));
+
+            const missingEvents = await Promise.all(
+              missingEventIds.map((id) => fetchSingleEvent(id))
+            );
+            eventsData.results = [...eventsData.results, ...missingEvents];
+          }
+
+          reset({
+            ...defaultValues,
+            value: defaultValues?.value?.toString() || "",
+            date_due: defaultValues?.date_due || "",
+            expected_date: defaultValues?.expected_date || "",
+            payment_doc_number: defaultValues?.payment_doc_number || "",
+          });
+
+          if (defaultValues.person) setPerson(String(defaultValues.person));
+          if (defaultValues.cost_center) setCostCenter(String(defaultValues.cost_center));
+          if (defaultValues.status) setStatus(defaultValues.status);
+
+          if (defaultValues.event_allocations) {
+            setEventAllocations(
+              defaultValues.event_allocations.map((ea) => ({
+                event: String(ea.event),
+                value: String(ea.value),
+              }))
+            );
+          }
+
+          if (defaultValues.account_allocations) {
+            setAccountAllocations(
+              defaultValues.account_allocations.map((aa) => ({
+                chart_account: String(aa.chart_account),
+                value: String(aa.value),
+              }))
+            );
+          }
+        } else {
+            resetDialog();
+          }
+
+        setResources(resourceData.results || []);
+        setEvents(eventsData.results || []);
+        setChartAccounts(chartAccountsData || []);
+        setBanks(banksData || []);
+      } catch (error) {
+        console.error("Erro ao carregar dados do formulário:", error);
+      } finally {
+        setLoading(false);
       }
     };
     loadData();
-  }, [open, type]);
+  }, [open, type, defaultValues, reset]);
 
   const onSubmit = async (formData: ExtendedFinanceRecord) => {
     const success = await createRecord(type, {
@@ -128,11 +186,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
 
     if (success?.id && status === "pago") {
       try {
-        if (
-          !formData.payment_date ||
-          !formData.payment_value ||
-          !formData.payment_bank
-        ) {
+        if (!formData.payment_date || !formData.payment_value || !formData.payment_bank) {
           toast.error("Preencha todos os campos obrigatórios do pagamento.");
           return;
         }
@@ -141,7 +195,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
           date: formData.payment_date,
           value: formData.payment_value,
           description: formData.payment_description ?? "",
-          status: (isScheduled ? "agendado" : "pago") as "agendado" | "pago",
+          status: (isScheduled ? "agendado" : "pago") as "pago" | "agendado",
           bank: Number(formData.payment_bank),
           doc_number: formData.payment_doc_number ?? "",
           [type === "bill" ? "bill_id" : "income_id"]: success.id,
@@ -157,12 +211,9 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
     }
 
     if (success) {
-      toast.success(
-        `${type === "bill" ? "Conta a pagar" : "Conta a receber"} criada com sucesso!`,
-        {
-          description: `ID: ${success.id}`,
-        }
-      );
+      toast.success(`${type === "bill" ? "Conta a pagar" : "Conta a receber"} criada com sucesso!`, {
+        description: `ID: ${success.id}`,
+      });
       onRecordCreated();
       resetDialog();
       onClose();
@@ -172,22 +223,22 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(isOpen) => {
-        if (!isOpen) {
-          resetDialog();
-          onClose();
-        }
-      }}
-    >
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) {
+        resetDialog();
+        onClose();
+      }
+    }}>
       <DialogContent className="max-w-6xl">
         <DialogHeader>
-          <DialogTitle>
-            {type === "bill" ? "Nova Conta a Pagar" : "Novo Recebimento"}
-          </DialogTitle>
+          <DialogTitle>{type === "bill" ? "Nova Conta a Pagar" : "Novo Recebimento"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        {loading ? (
+          <div className="p-10 text-center text-muted-foreground">
+            Carregando dados...
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit(onSubmit)}>
           {/* Left Column – All form fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
@@ -407,6 +458,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
             </Button>
           </DialogFooter>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );
