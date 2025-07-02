@@ -175,14 +175,26 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
   }, [open, type, defaultValues, reset]);
 
   const onSubmit = async (formData: ExtendedFinanceRecord) => {
-    const success = await createRecord(type, {
-      ...formData,
+    const {
+      expected_date,
+      ...rest
+    } = formData;
+
+    const payload: any = {
+      ...rest,
       person,
       cost_center: costCenter,
       status,
       event_allocations: getValidAllocations(eventAllocations),
       account_allocations: getValidAllocations(accountAllocations),
-    });
+    };
+
+    // Only add expected_date if it's not empty
+    if (expected_date) {
+      payload.expected_date = expected_date;
+    }
+
+    const success = await createRecord(type, payload);
 
     if (success?.id && status === "pago") {
       try {
