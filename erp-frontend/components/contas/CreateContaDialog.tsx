@@ -180,7 +180,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
       ...rest
     } = formData;
 
-    const payload: any = {
+    const payload = {
       ...rest,
       person,
       cost_center: costCenter,
@@ -191,7 +191,7 @@ const CreateContaDialog: React.FC<CreateContaDialogProps> = ({
 
     // Only add expected_date if it's not empty
     if (expected_date) {
-      payload.expected_date = expected_date;
+      (payload as typeof payload & { expected_date: string }).expected_date = expected_date;
     }
 
     const success = await createRecord(type, payload);
