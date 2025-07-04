@@ -16,6 +16,7 @@ from reportlab.lib import colors
 from reportlab.lib.colors import red, blue, black
 from events.utils.pdffunctions import draw_header, draw_rows, check_page_break, truncate_text
 from accounts.utils import get_company_or_404
+from accounts.models import Company
 from events.models import Event
 from datetime import datetime
 from collections import defaultdict
@@ -618,14 +619,17 @@ def generate_payments_report(request):
     person_id = request.query_params.get("person")
     event_id = request.query_params.get("event_id")
     cost_center_id = request.query_params.get("cost_center")
+    company_id = request.query_params.get("company_id")
+    if company_id:
+        companies = Company.objects.filter(id=company_id)
+    else:
+        companies = Company.objects.all()
 
-    user = request.user
-    company = get_company_or_404(request)
     event = get_object_or_404(Event, id=event_id) if event_id else None
 
     def get_open_accruals():
-        bill_qs = Bill.objects.order_by("date_due")
-        income_qs = Income.objects.order_by("date_due")
+        bill_qs = Bill.objects.filter(company__in=companies).order_by("date_due")
+        income_qs = Income.objects.filter(company__in=companies).order_by("date_due")
         if date_min:
             bill_qs = bill_qs.filter(date_due__gte=date_min)
             income_qs = income_qs.filter(date_due__gte=date_min)
@@ -672,7 +676,9 @@ def generate_payments_report(request):
         return get_rows(bill_qs), get_rows(income_qs)
 
     def get_paid_payments():
-        payments = Payment.objects.order_by("date")
+        payments = Payment.objects.filter(
+            Q(bill__company__in=companies) | Q(income__company__in=companies)
+        ).order_by("date")
         if date_min:
             payments = payments.filter(date__gte=date_min)
         if date_max:
@@ -732,7 +738,7 @@ def generate_payments_report(request):
 
     pdf = canvas.Canvas(response, pagesize=landscape(A4))
     width, height = landscape(A4)
-    cols = [50, width * 0.12, width * 0.18, width * 0.24, width * 0.5, width * 0.85, width * 0.9]
+    cols = [50, width * 0.12, width * 0.18, width * 0.24, width * 0.5, width * 0.84, width * 0.9]
     event_name = event.event_name if event else "Todos os Eventos"
 
     if status == "pago":
@@ -803,15 +809,15 @@ def generate_payments_report(request):
         saldo = total_receitas - total_despesas
 
         pdf.setFont("Helvetica-Bold", 9)
-        pdf.drawString(cols[5], y, "Total Receitas")
+        pdf.drawString(cols[5]-32, y, "Total Receitas")
         pdf.drawString(cols[6], y, f"R$ {total_receitas:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         y -= 15
 
-        pdf.drawString(cols[5], y, "Total Despesas")
+        pdf.drawString(cols[5]-32, y, "Total Despesas")
         pdf.drawString(cols[6], y, f"R$ {total_despesas:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         y -= 15
 
-        pdf.drawString(cols[5], y, "Saldo do Evento")
+        pdf.drawString(cols[5]-32, y, "Saldo do Evento")
         pdf.drawString(cols[6], y, f"R$ {saldo:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
         y -= 20
 

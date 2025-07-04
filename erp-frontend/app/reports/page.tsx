@@ -27,6 +27,7 @@ export default function ReportsPage() {
   const [eventId, setEventId] = useState("");
   const [dateMin, setDateMin] = useState("");
   const [dateMax, setDateMax] = useState("");
+  const [company_id, setCompanyId] = useState("");
   const [year, setYear] = useState("");
   const [costCenter, setCostCenter] = useState("");
   const [bankId, setBankId] = useState("");
@@ -70,6 +71,7 @@ export default function ReportsPage() {
       person,
       event_id: eventId,
       cost_center: costCenter !== "todos" ? costCenter : "",
+      company_id: company_id !== "todos" ? company_id : "",
       date_min: dateMin,
       date_max: dateMax,
       ...extraParams,
@@ -234,6 +236,17 @@ export default function ReportsPage() {
                     {costCenters.map(cc => (
                       <SelectItem key={cc.id} value={String(cc.id)}>{cc.name}</SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs">Empresa</label>
+                <Select value={company_id} onValueChange={setCompanyId}>
+                  <SelectTrigger><SelectValue placeholder="Empresa" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">*</SelectItem>
+                    <SelectItem value="1">MACHADO SERVIÇOS</SelectItem>
+                    <SelectItem value="2">PETROLA SERVIÇOS</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
